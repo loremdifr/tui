@@ -1,0 +1,43 @@
+	[ ]	fix the declaration of stb style files: the IMPL should not be encapsulated inside the initial if guard declaration
+
+MUST-HAVE:
+
+	[ ]	pages functionpointers must be optional
+	[ ]	probably all containers need scrolling
+	[ ]	resize aware and min size guards
+	[ ]	margin between widgets is being accounted for twice
+	[ ]	some way of declaring widgets inline vs block
+	[x]	focused element + element navigation functionality provided by the framework @done (26-05-24 05:28)
+		who should hold this reference? because the existing widgets disappear every frame
+		so realistically the only way is that the user gives the framework an ID and the framework tracks that ID.
+		But then, how does the framework know it's position to move to?
+		maps the ID to the current index in the frame and moves to that ID!
+		[x]	widgets are only being called by render, their init, process, and input is never called @done (26-05-24 13:11)
+		[x]	automatic "go back" navigation always enabled (ESC) @done (26-05-24 14:56)
+	[ ]	popup layer functionality
+	[x]	bottom hotkeys declaration support @done (26-05-24 14:55)
+
+	Widgets:
+		[x]	label @done (26-05-22 01:11)
+		[x]	button @done (26-05-24 14:56)
+		[ ]	text input
+		[ ]	select
+		[ ]	select with autocomplete
+		[ ]	number input
+		[ ]	checkbox
+		[ ]	tabs
+		[ ]	radio
+		---
+		[ ]	table ?
+		[ ]	two or more elements side by side? two buttons... a label and soemthing else..?
+			[ ]	perhaps a widget that's a container?
+
+Extra stuff:
+	[ ]	mouse support
+		[ ]	click
+		[ ]	hover
+		[ ]	drag
+
+[ ]	scrollable content
+	[ ]	top menu declaration support
+	[ ]	tooltip layout functionality
