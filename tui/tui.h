@@ -294,6 +294,8 @@ private void tui_reset_hotkeys(void){
 	HOTKEY_HINTS.total = 0;
 
 	//arrows to select widgets
+	tui_register_key(KEY_LEFT,   KEY_MOD_NONE,  &tui_cursor_prev_widget);
+	tui_register_key(KEY_RIGHT,  KEY_MOD_NONE,  &tui_cursor_next_widget);
 	tui_register_key(KEY_UP,     KEY_MOD_NONE,  &tui_cursor_prev_widget);
 	tui_register_key(KEY_DOWN,   KEY_MOD_NONE,  &tui_cursor_next_widget);
 	tui_register_key_hint(u8"[↑] [↓]", u8"Select");

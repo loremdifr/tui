@@ -126,23 +126,16 @@ private inline int center_in_container(int base, int length, int container_lengt
     return base;
 }
 
-private void tui_render_widget(Panel *panel, Widget *widget, vec2i position){
-    //center widget horizontally
-    position.x = center_in_container(
-        position.x,
-        widget->size.w,
-        panel->outer_rect.size.w - PADDING - BORDER
-    );
+private void tui_render_widget(Widget *widget, vec2i position){
     widget->render(widget, LAYOUT_STATE.screen, position);
     //always reset color after a widget!
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 }
 
 private void tui_render_panel(Panel *panel){
-    vec2i cursor_pos = {
-        .x = panel->outer_rect.pos.x + BORDER + PADDING,
-        .y = panel->outer_rect.pos.y + BORDER + PADDING
-    };
+    const int BASE_X = panel->outer_rect.pos.x + BORDER + PADDING;
+    const int BASE_Y = panel->outer_rect.pos.y + BORDER + PADDING;
+    vec2i cursor_pos = {.x = BASE_X, .y = BASE_Y};
 
     //panels always render their content centered vertically
     //widget heights are precomputed
@@ -158,11 +151,31 @@ private void tui_render_panel(Panel *panel){
         || cursor_pos.y > panel->outer_rect.pos.y + panel->outer_rect.size.h - 1){
             break;
         }
+        //render current widget
         Widget *widget = &panel->widgets[i];
-        tui_render_widget(panel, widget, cursor_pos);
+        tui_render_widget(widget, cursor_pos);
 
-        //move below the prev widget
-        cursor_pos.y += widget->size.y + PADDING;
+        if (i >= panel->widget_count - 1) break; //no more panels, break early
+
+        //determine cursor movement
+        Widget *next_widget = &panel->widgets[i+1];
+        if(widget->is_inline && next_widget->is_inline){
+            //if two widgets are inline, they go next to each other
+            //so we move cursor to the right of the widget we just rendered
+            cursor_pos.x += widget->size.x;
+        }else{
+            //move cursror below the widget we just rendered
+            cursor_pos.x = BASE_X;
+            cursor_pos.y += widget->size.y;
+
+            //center widget horizontally
+            // cursor_pos.x = center_in_container(
+            //     cursor_pos.x,
+            //     widget->size.w,
+            //     panel->outer_rect.size.w - PADDING - BORDER
+            // );
+        }
+
     }
 
     //draw panel border, connected to other panels

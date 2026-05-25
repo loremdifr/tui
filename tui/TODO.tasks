@@ -5,7 +5,9 @@ MUST-HAVE:
 	[ ]	pages functionpointers must be optional
 	[ ]	probably all containers need scrolling
 	[ ]	resize aware and min size guards
-	[ ]	margin between widgets is being accounted for twice
+	[x]	margin between widgets is being accounted for twice @done (26-05-25 20:20)
+		- it's not, it's an illussion because of the empty space provided by the box characters
+		- might need to make it so MARGIN is defined inside the element somehow, and labels get 1 more than others.
 	[ ]	some way of declaring widgets inline vs block
 	[x]	focused element + element navigation functionality provided by the framework @done (26-05-24 05:28)
 		who should hold this reference? because the existing widgets disappear every frame

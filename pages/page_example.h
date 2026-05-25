@@ -70,11 +70,11 @@ private void page_example_render(void){
 			tui_widget_label("show_popup: false");
 		}
 		tui_widget_label(u8"Hello World! 🌎");
-		tui_widget_label("Press [Q] to quit");
+		
 
 		tui_widget_input_text("INPUT_TEXT_1", //WIDGET_ID, do not repeat!
 			.label=u8"Nombre: ",
-			.placeholder=u8"Emmanuel Etcheber",
+			.placeholder=u8"carlitos",
 			.storage=name,
 			.capacity=name_length_max
 		);
@@ -87,9 +87,16 @@ private void page_example_render(void){
 
 		tui_widget_button("BUTTON_1", //WIDGET_ID, do not repeat!
 			.label=u8"Mostrar Popup",
-			.on_click=&show_example_popup
+			.on_click=&show_example_popup,
+			.is_inline=true,
 		);
-		tui_widget_button("BUTTON_2", .label=u8"Salir", .on_click=&tui_quit);
+		tui_widget_button("BUTTON_2",
+			.label=u8"Salir",
+			.on_click=&tui_quit,
+			.is_inline=true,
+		);
+
+		tui_widget_label("Press [Q] to quit");
 	tui_panel_end();
 
 	if(!show_popup) return;

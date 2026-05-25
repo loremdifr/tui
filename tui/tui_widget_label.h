@@ -35,7 +35,7 @@ void tui_widget_label_(const uint8_t *text){
         .id        = tui_create_widget_id(),
         .data      = widget_data,
         .size.w    = utf8_str_length(text),
-        .size.h    = 1,
+        .size.h    = 1 + PADDING,
         .focusable = false,
         .render    = &tui_widget_label_render,
     };
