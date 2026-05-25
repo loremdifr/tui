@@ -15,18 +15,17 @@ uint8_t *name;
 
 private void show_example_popup(void){
 	show_popup = true;
-	name = utf8_str_concat(name, u8"Another Name!");
+	// name = utf8_str_concat(name, u8"Another Name!");
 }
 
 private void close_example_popup(void){
 	show_popup = false;
-	memset(name, '\0', name_length_max * sizeof(uint8_t));
+	// memset(name, '\0', name_length_max * sizeof(uint8_t));
 }
 
 private void page_example_init(void){
-	// sprintf(&name, "César Joshua Jones Romualdo");
 	name = (uint8_t *)calloc(name_length_max, sizeof(uint8_t));
-	name = utf8_str_concat(name, u8"Mr. Smith");
+	// name = utf8_str_concat(name, u8"Mr. Smith");
 }
 
 private bool page_example_input(InputEvent input_event){
@@ -54,11 +53,12 @@ private void page_example_process(float delta_time){
 	assert(delta_time > -1);
 	//register hotkeys
 	tui_register_key(KEY_Q, KEY_MOD_NONE, &tui_quit);
-	if(show_popup){
-		tui_register_key(KEY_W, KEY_MOD_NONE, &close_example_popup);
-	}else{
-		tui_register_key(KEY_W, KEY_MOD_NONE, &show_example_popup);
-	}
+	tui_register_key_hint(u8"[Q]", u8"Salir");
+	// if(show_popup){
+	// 	tui_register_key(KEY_W, KEY_MOD_NONE, &close_example_popup);
+	// }else{
+	// 	tui_register_key(KEY_W, KEY_MOD_NONE, &show_example_popup);
+	// }
 	// printf("DELTA TIME: %.2f", delta_time);
 }
 
@@ -69,10 +69,15 @@ private void page_example_render(void){
 		}else{
 			tui_widget_label("show_popup: false");
 		}
-		tui_widget_label_utf8(u8"Hello World! 🌎");
+		tui_widget_label(u8"Hello World! 🌎");
 		tui_widget_label("Press [Q] to quit");
 
-		tui_widget_input_text("INPUT_NAME", "Name:", "Placeholder text", name, name_length_max);
+		tui_widget_input_text("INPUT_TEXT_1", //WIDGET_ID, do not repeat!
+			.label=u8"Nombre: ",
+			.placeholder=u8"Emmanuel Etcheber",
+			.storage=name,
+			.capacity=name_length_max
+		);
 		// tui_widget_input_textarea();
 		// tui_widget_input_numbers();
 		// tui_widget_input_select();
@@ -80,9 +85,11 @@ private void page_example_render(void){
 		// tui_widget_input_select_radio();
 		// tui_widget_input_select_checkbox();
 
-		tui_widget_button("BUTTON_1", "Mostrar Popup", &show_example_popup);
-		tui_widget_button("BUTTON_3", "Mostrar Popup 2", &show_example_popup);
-		tui_widget_button("BUTTON_2", "Salir", &tui_quit);
+		tui_widget_button("BUTTON_1", //WIDGET_ID, do not repeat!
+			.label=u8"Mostrar Popup",
+			.on_click=&show_example_popup
+		);
+		tui_widget_button("BUTTON_2", .label=u8"Salir", .on_click=&tui_quit);
 	tui_panel_end();
 
 	if(!show_popup) return;

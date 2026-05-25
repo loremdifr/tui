@@ -41,17 +41,17 @@ typedef struct {
 } Cell;
 
 typedef struct{
-	vec2  size;
+	vec2i  size;
 	Cell *cells;
 } Screen;
 
-Screen    screen_create(vec2 size);
+Screen    screen_create(vec2i size);
 void      screen_clear(Screen *screen);
 void      screen_format(TextFormat text_format, Color fg_color, Color bg_color);
 Cell     *screen_get(Screen *screen, int x, int y);
 void      screen_set(Screen *screen, int x, int y, Cell cell);
 void      screen_set_char(Screen *screen, int x, int y, char chr);
-void      screen_fill_rect(vec2 pos, vec2 size, char c); //TODO: impl
+void      screen_fill_rect(vec2i pos, vec2i size, char c); //TODO: impl
 void      screen_set_str(Screen *screen, int x, int y, const char *str);
 void      screen_set_strf(Screen *screen, int x, int y, const char *format, ...);
 void      screen_set_utf8(Screen *screen, int x, int y, const uint8_t *utf8);
@@ -60,7 +60,7 @@ void      screen_free(Screen *screen);
 
 #ifdef TUI_SCREEN_IMPL
 
-Screen screen_create(vec2 size){
+Screen screen_create(vec2i size){
 	Screen screen = { .size = size };
 	screen.cells = calloc(size.w * size.h, sizeof(Cell));
 	return screen;

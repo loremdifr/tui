@@ -5,15 +5,24 @@
 // #include <stdlib.h>
 
 typedef struct {
-	const char *text;
-	FunctionPointer on_click;
-} WidgetButtonData;
+    bool            is_inline; //base widget param
+    const uint8_t  *label;
+    FunctionPointer on_click;
+} WidgetButtonParams;
 
-void tui_widget_button(const char *widget_id, const char *text, FunctionPointer on_click);
+#define tui_widget_button(widget_id, ...) \
+        tui_widget_button_((widget_id), &(WidgetButtonParams){__VA_ARGS__})
+
+void tui_widget_button_(const char *widget_id, WidgetButtonParams *params);
 
 #ifdef TUI_WIDGET_BUTTON_IMPL
 
-private void tui_widget_button_render(Widget *widget, Screen *screen, vec2 position){
+typedef struct {
+	const uint8_t  *label;
+	FunctionPointer on_click;
+} WidgetButtonData;
+
+private void tui_widget_button_render(Widget *widget, Screen *screen, vec2i position){
 	WidgetButtonData *widget_data = widget->data;
 
 	//any processing would be done here if needed
@@ -21,15 +30,15 @@ private void tui_widget_button_render(Widget *widget, Screen *screen, vec2 posit
 	if(widget->focused){
 		screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
 	}
-	tui_draw_box(screen, (rect){
+	tui_draw_box(screen, (rect2i){
         .position = position,
         .size     = widget->size,
     });
-    screen_set_str(
+    screen_set_utf8_str(
         screen,
         position.x + BORDER + PADDING,
         position.y + BORDER,
-        widget_data->text
+        widget_data->label
     );
 }
 
@@ -56,18 +65,21 @@ private bool tui_widget_button_input(Widget *widget, InputEvent input_event){
 
 
 //public
-void tui_widget_button(const char *widget_id, const char *text, FunctionPointer on_click){
+void tui_widget_button_(const char *widget_id, WidgetButtonParams *params){
 	WidgetButtonData *widget_data = (WidgetButtonData *)arena_alloc(
 		LAYOUT_STATE.arena_frame, sizeof(WidgetButtonData)
 	);
-    widget_data->text     = text;
-    widget_data->on_click = on_click;
+    widget_data->label    = params->label;
+    widget_data->on_click = params->on_click;
     Widget new_widget      = {
 	    .id        = widget_id,
 	    .data      = widget_data,
-	    .size.w    = (int)strlen(text) + BORDER * 2 + PADDING * 2,
+	    .size.w    = utf8_str_length(params->label)
+    				+ BORDER * 2
+    				+ PADDING * 2,
 	    .size.h    = 1 + BORDER * 2,
 	    .focusable = true,
+	    .is_inline = params->is_inline,
 	    .input     = &tui_widget_button_input,
 	    .render    = &tui_widget_button_render,
     };

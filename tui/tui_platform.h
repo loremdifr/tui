@@ -131,7 +131,7 @@ typedef struct {
 } InputEventKey;
 
 typedef struct {
-	vec2 pos;
+	vec2i pos;
 	MouseButton button_index;
 	bool ctrl;
 	bool alt;
@@ -164,7 +164,7 @@ typedef bool (*ProcessInputEventFunction)(InputEvent);
 //public API
 void tui_init(void);
 void tui_close(void);
-vec2 tui_size(void);
+vec2i tui_size(void);
 void tui_write(const char *str);
 void tui_write_format(const char *format, ...);
 void tui_write_bytes(const uint8_t *bytes, uint8_t total_bytes);
@@ -253,8 +253,8 @@ private void tui_parse_input(void){
     // https://learn.microsoft.com/en-us/windows/console/input-record-str
 }
 
-vec2 tui_size(void){
-	vec2 size = {.x = 80, .y = 24}; //default
+vec2i tui_size(void){
+	vec2i size = {.x = 80, .y = 24}; //default
 
 	CONSOLE_SCREEN_BUFFER_INFO screen_info;
     auto success = GetConsoleScreenBufferInfo(
@@ -331,8 +331,8 @@ private bool tui_poll_input(int timeout_ms){
 }
 
 
-vec2 tui_size(void){
-	vec2 size = {.x = 80, .y = 24}; //default
+vec2i tui_size(void){
+	vec2i size = {.x = 80, .y = 24}; //default
 	struct winsize ws;
 	auto success = ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
 

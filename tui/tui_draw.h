@@ -7,13 +7,13 @@
 #include "tui_utils.h"
 #include "tui_screen.h"
 
-void tui_draw_box(Screen *screen, rect rect);
-void tui_draw_box_connected(Screen *screen, rect rect);
+void tui_draw_box(Screen *screen, rect2i rect);
+void tui_draw_box_connected(Screen *screen, rect2i rect);
 void tui_draw_box_connected_cell(Screen *screen, int x, int y);
-void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to);
-void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to);
-void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect rect); //TODO:
-void tui_draw_circ(Screen *screen, uint8_t *utf8_char, rect rect); //TODO:
+void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
+void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
+void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect2i rect); //TODO:
+void tui_draw_circ(Screen *screen, uint8_t *utf8_char, rect2i rect); //TODO:
 
 #ifdef TUI_DRAW_IMPL
 
@@ -30,7 +30,7 @@ constexpr uint8_t BOX_HB[] = u8"┬";
 constexpr uint8_t BOX_HT[] = u8"┴";
 constexpr uint8_t BOX_HV[] = u8"┼";
 
-void tui_draw_box(Screen *screen, rect rect){
+void tui_draw_box(Screen *screen, rect2i rect){
     //this function only draws the border given, without looking at any neighbors
     //therefore, it doesnt "connect it"
 
@@ -60,7 +60,7 @@ void tui_draw_box(Screen *screen, rect rect){
     screen_set_utf8(screen, rect.pos.x + rect.size.w-1, rect.pos.y + rect.size.h-1, BOX_BR);
 }
 
-void tui_draw_box_connected(Screen *screen, rect rect){
+void tui_draw_box_connected(Screen *screen, rect2i rect){
     //this function evaluates each neighbor cell before placing the new one,
     //therefore, ensuring it connects with whats already in the grid
     for(int x = 0; x < rect.size.width; x++){
@@ -137,7 +137,7 @@ void tui_draw_box_connected_cell(Screen *screen, int x, int y){
     }
 }
 
-void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to){
+void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to){
     if(screen == NULL || utf8_char == NULL) return;
 
     from.x = clamp(from.x, 0, screen->size.x - 1);
@@ -177,13 +177,13 @@ void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to){
 
 //TODO: actually test this!
 //source: https://github.com/godotengine/godot/blob/fa09dd17a68a5741cb2361f1d07af271c7a40c4f/core/math/geometry_2d.h#L464
-void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to){
+void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to){
     //give me operator overloading  PLEASE
-    vec2 diff     = {.x = to.x - from.x,  .y = to.y - from.y};
-    vec2 diff_abs = {.x = abs(diff.x),    .y = abs(diff.y)};
-    vec2 delta    = {.x = diff_abs.x * 2, .y = diff_abs.y * 2};
-    vec2 step     = {.x = sign(diff.x),   .y = sign(diff.y)};
-    vec2 current  = from;
+    vec2i diff     = {.x = to.x - from.x,  .y = to.y - from.y};
+    vec2i diff_abs = {.x = abs(diff.x),    .y = abs(diff.y)};
+    vec2i delta    = {.x = diff_abs.x * 2, .y = diff_abs.y * 2};
+    vec2i step     = {.x = sign(diff.x),   .y = sign(diff.y)};
+    vec2i current  = from;
 
     if(delta.x > delta.y){
         int err = delta.x / 2;
@@ -209,11 +209,11 @@ void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2 from, vec2
     screen_set_utf8(screen, current.x, current.y, utf8_char);
 }
 
-void tui_draw_rect(Screen */*screen*/, uint8_t */*utf8_char*/, rect /*rect*/){
+void tui_draw_rect(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
     //TODO: implement
 }
 
-void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect /*rect*/){
+void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
     //TODO: implement
 }
 

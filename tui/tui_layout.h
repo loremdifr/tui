@@ -34,11 +34,11 @@ typedef enum {
 
 typedef struct Widget Widget;
 typedef bool (*WidgetInputFunction  )(Widget *widget, InputEvent input_event);
-typedef void (*WidgetRenderFunction )(Widget *widget, Screen *screen, vec2 position);
+typedef void (*WidgetRenderFunction )(Widget *widget, Screen *screen, vec2i position);
 
 struct Widget {
     const char           *id;
-    vec2                  size;
+    vec2i                  size;
     void                 *data;
     void                 *state; //data that survives frames
     bool                  focusable;
@@ -54,8 +54,8 @@ typedef struct {
     bool      focused;
     Widget    widgets[TUI_WIDGETS_IN_PANEL_MAX];
     uint8_t   widget_count;
-    rect      outer_rect;    //cached
-    rect      widgets_rect;  //total accumulated rect around the widgets
+    rect2i    outer_rect;    //cached
+    rect2i    widgets_rect;  //total accumulated rect around the widgets
 } Panel;
 
 //api to defin the panels and widgets on the page
@@ -100,7 +100,7 @@ typedef struct {
 private WidgetStateRegistry WIDGET_REGISTRY = {.arena  = nullptr};
 
 typedef struct {
-    vec2                 base_size;
+    vec2i                 base_size;
     Panel                panels[TUI_PANELS_MAX];
     uint8_t              panel_count;
     int8_t               panel_curr; // -1 = no panel selected
@@ -126,7 +126,7 @@ private inline int center_in_container(int base, int length, int container_lengt
     return base;
 }
 
-private void tui_render_widget(Panel *panel, Widget *widget, vec2 position){
+private void tui_render_widget(Panel *panel, Widget *widget, vec2i position){
     //center widget horizontally
     position.x = center_in_container(
         position.x,
@@ -139,7 +139,7 @@ private void tui_render_widget(Panel *panel, Widget *widget, vec2 position){
 }
 
 private void tui_render_panel(Panel *panel){
-    vec2 cursor_pos = {
+    vec2i cursor_pos = {
         .x = panel->outer_rect.pos.x + BORDER + PADDING,
         .y = panel->outer_rect.pos.y + BORDER + PADDING
     };
@@ -193,13 +193,13 @@ private Widget *tui_get_widget_focused(){
     return nullptr;
 }
 
-rect tui_panel_rect(PanelSlot slot){
+private rect2i tui_panel_rect(PanelSlot slot){
     //panel size is based on the slot it occuppies in the type of layout
 
     switch(LAYOUT_STATE.layout){
     case LAYOUT_SINGLE_PANEL:
         switch(slot){
-        case SLOT_MAIN: return (rect){ .size = LAYOUT_STATE.base_size };
+        case SLOT_MAIN: return (rect2i){ .size = LAYOUT_STATE.base_size };
         default: assert(false); //using an invalid slot for this layout
         }
     case LAYOUT_SPLIT_VERTICAL:
@@ -333,7 +333,7 @@ void tui_layout_render(){
     //box surrounding app screen first
     tui_draw_box_connected(
         LAYOUT_STATE.screen,
-        (rect){ .size = LAYOUT_STATE.base_size }
+        (rect2i){ .size = LAYOUT_STATE.base_size }
     );
     //render panels
     for (int i = 0; i < LAYOUT_STATE.panel_count; i++){

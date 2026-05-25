@@ -6,27 +6,27 @@
 #include <string.h>
 // #include <stdlib.h>
 
-void tui_widget_input_text_utf8(
-    const char *widget_id,
-    const uint8_t *label,
-    const uint8_t *placeholder,
-    uint8_t *storage,
-    size_t capacity
-);
-void tui_widget_input_text(
-    const char *widget_id,
-    const char *label,
-    const char *placeholder,
-    uint8_t *storage,
-    size_t capacity
-);
+typedef struct {
+    //base widget params
+    bool           is_inline;
+    // ---
+    const uint8_t *label;
+    const uint8_t *placeholder;
+    uint8_t       *storage;
+    size_t         capacity;
+} WidgetInputTextParams;
+
+#define tui_widget_input_text(widget_id, ...) \
+        tui_widget_input_text_((widget_id), &(WidgetInputTextParams){__VA_ARGS__})
+
+void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params);
 
 #ifdef TUI_WIDGET_INPUT_TEXT_IMPL
 
 typedef struct {
     const uint8_t *label;
     size_t         label_width;
-	uint8_t       *storage;
+    uint8_t       *storage;
     const uint8_t *placeholder;
     size_t         length;
     size_t         capacity;
@@ -37,7 +37,7 @@ typedef struct {
     bool   editing;
 } WidgetInputTextState;
 
-private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2 position){
+private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputTextData  *data     = widget->data;
     WidgetInputTextState *state    = widget->state;
     screen_set_utf8_str(
@@ -66,7 +66,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2 p
         );
     }
 
-    if(widget->focused){
+    if(widget->focused && !state->editing){
         screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
         screen_set_utf8(
             screen,
@@ -93,11 +93,11 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2 p
     }
 
     tui_draw_line(screen, u8"‾",
-        (vec2){
+        (vec2i){
             .x = position.x + data->label_width,
             .y = position.y + 1
         },
-        (vec2){
+        (vec2i){
             .x = position.x + widget->size.w - 1,
             .y = position.y + 1
         }
@@ -178,30 +178,27 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
 }
 
 //public
-void tui_widget_input_text_utf8(
-    const char *widget_id,
-    const uint8_t *label,
-    const uint8_t *placeholder,
-    uint8_t *storage,
-    size_t capacity
-){
+void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params){
 
     //widget data
 	WidgetInputTextData *widget_data = (WidgetInputTextData *)arena_alloc(
 		LAYOUT_STATE.arena_frame, sizeof(WidgetInputTextData)
 	);
-    widget_data->label       = label;
-    widget_data->label_width = utf8_str_length(label);
-    widget_data->storage     = storage;
-    widget_data->capacity    = capacity;
-    widget_data->placeholder = placeholder;
-    widget_data->length      = utf8_str_length(storage);
+    widget_data->label       = params->label;
+    widget_data->label_width = utf8_str_length(params->label);
+    widget_data->storage     = params->storage;
+    widget_data->capacity    = params->capacity;
+    widget_data->placeholder = params->placeholder;
+    widget_data->length      = utf8_str_length(params->storage);
 
     //widget state persist across frames
     auto widget_state = (WidgetInputTextState *)tui_widget_state(
         widget_id,
         sizeof(WidgetInputTextState)
     );
+
+    //TODO: length should be based on: a default width, or the placeholder if longer,
+    //      and then shrunk to fit into the panel... that might be rendering?
 
     Widget new_widget  = {
         .id        = widget_id,
@@ -210,26 +207,11 @@ void tui_widget_input_text_utf8(
         .size.w    = widget_data->label_width + 16,
         .size.h    = 2,
         .focusable = true,
+        .is_inline = params->is_inline,
         .input     = &tui_widget_input_text_input,
         .render    = &tui_widget_input_text_render,
     };
     tui_widget_push(new_widget);
-}
-
-void tui_widget_input_text(
-    const char *widget_id,
-    const char *label,
-    const char *placeholder,
-    uint8_t *storage,
-    size_t capacity
-){
-    tui_widget_input_text_utf8(
-        widget_id,
-        (const uint8_t*)label,
-        (const uint8_t*)placeholder,
-        storage,
-        capacity
-    );
 }
 
 #endif //TUI_WIDGET_INPUT_TEXT_IMPL

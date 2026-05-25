@@ -22,15 +22,15 @@ typedef struct {
         int row;
         int height;
     };
-} vec2;
+} vec2i;
 
 typedef struct {
     union{
-        vec2 position;
-        vec2 pos;
+        vec2i position;
+        vec2i pos;
     };
-    vec2 size;
-} rect;
+    vec2i size;
+} rect2i;
 
 typedef void(*FunctionPointer)(void);
 

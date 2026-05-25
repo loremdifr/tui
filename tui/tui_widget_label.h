@@ -9,13 +9,13 @@ typedef struct {
 	const uint8_t *text;
 } WidgetLabelData;
 
-void tui_widget_label_utf8(const uint8_t *text);
-void tui_widget_label(const char *text);
+#define tui_widget_label(text) tui_widget_label_((const uint8_t*)(text))
+void tui_widget_label_(const uint8_t *text);
 
 #ifdef TUI_WIDGET_LABEL_IMPL
 
 
-private void tui_widget_label_render(Widget *widget, Screen *screen, vec2 position){
+private void tui_widget_label_render(Widget *widget, Screen *screen, vec2i position){
 	WidgetLabelData *widget_data = widget->data;
     screen_set_utf8_str(
         screen,
@@ -26,7 +26,7 @@ private void tui_widget_label_render(Widget *widget, Screen *screen, vec2 positi
 }
 
 //public
-void tui_widget_label_utf8(const uint8_t *text){
+void tui_widget_label_(const uint8_t *text){
 	WidgetLabelData *widget_data = (WidgetLabelData *)arena_alloc(
 		LAYOUT_STATE.arena_frame, sizeof(WidgetLabelData)
 	);
@@ -40,10 +40,6 @@ void tui_widget_label_utf8(const uint8_t *text){
         .render    = &tui_widget_label_render,
     };
     tui_widget_push(new_widget);
-}
-
-void tui_widget_label(const char *text){
-    tui_widget_label_utf8((const uint8_t*)text);
 }
 
 #endif //TUI_WIDGET_LABEL_IMPL
