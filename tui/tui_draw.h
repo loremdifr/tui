@@ -11,6 +11,7 @@ void tui_draw_box(Screen *screen, rect rect);
 void tui_draw_box_connected(Screen *screen, rect rect);
 void tui_draw_box_connected_cell(Screen *screen, int x, int y);
 void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to);
+void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to);
 //TODO: we need lines and squares and all that too
 
 #ifdef TUI_DRAW_IMPL
@@ -141,48 +142,70 @@ void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to){
     from.x = clamp(from.x, 0, screen->size.x - 1);
     from.y = clamp(from.y, 0, screen->size.y - 1);
 
-    if(from.x == to.x){
-        int step = from.y <= to.y ? 1 : -1;
-        for(int y = from.y; ; y += step){
-            if(y < 0 || y >= screen->size.y) return;
-            screen_set_utf8(screen, from.x, y, utf8_char);
-            if(y == to.y) return;
+    bool is_horizontal = (from.x == to.x);
+    bool is_vertical   = (from.y == to.y);
+
+    if(is_horizontal){
+        int direction = from.y < to.y ? 1 : -1;
+        while(true){
+            if(from.y < 0) break;
+            if(from.y >= screen->size.y) break;
+            screen_set_utf8(screen, from.x, from.y, utf8_char);
+            if(from.y == to.y) break;
+            from.y += direction;
         }
+        return;
     }
 
-    if(from.y == to.y){
-        int step = from.x <= to.x ? 1 : -1;
-        for(int x = from.x; ; x += step){
-            if(x < 0 || x >= screen->size.x) return;
-            screen_set_utf8(screen, x, from.y, utf8_char);
-            if(x == to.x) return;
+    if(is_vertical){
+        int direction = from.x < to.x ? 1 : -1;
+        while(true){
+            if(from.x < 0) break;
+            if(from.x >= screen->size.x) break;
+            screen_set_utf8(screen, from.x, from.y, utf8_char);
+            if(from.x == to.x) break;
+            from.x += direction;
         }
+        return;
     }
 
-    int x = from.x;
-    int y = from.y;
-    int dx = abs(to.x - from.x);
-    int dy = abs(to.y - from.y);
-    int sx = from.x < to.x ? 1 : -1;
-    int sy = from.y < to.y ? 1 : -1;
-    int err = dx - dy;
+    //bresenham
+    tui_draw_line_bresenham(screen, utf8_char, from, to);
+}
 
-    while(true){
-        if(x < 0 || x >= screen->size.x || y < 0 || y >= screen->size.y) return;
 
-        screen_set_utf8(screen, x, y, utf8_char);
-        if(x == to.x && y == to.y) return;
+//TODO: actually test this!
+//source: https://github.com/godotengine/godot/blob/fa09dd17a68a5741cb2361f1d07af271c7a40c4f/core/math/geometry_2d.h#L464
+void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to){
+    //give me operator overloading  PLEASE
+    vec2 diff     = {.x = to.x - from.x,  .y = to.y - from.y};
+    vec2 diff_abs = {.x = abs(diff.x),    .y = abs(diff.y)};
+    vec2 delta    = {.x = diff_abs.x * 2, .y = diff_abs.y * 2};
+    vec2 step     = {.x = sign(diff.x),   .y = sign(diff.y)};
+    vec2 current  = from;
 
-        int twice_err = err * 2;
-        if(twice_err > -dy){
-            err -= dy;
-            x += sx;
+    if(delta.x > delta.y){
+        int err = delta.x / 2;
+        for(; current.x != to.x; current.x += step.x){
+            screen_set_utf8(screen, current.x, current.y, utf8_char);
+            err -= delta.y;
+            if(err < 0){
+                current.y += step.y;
+                err += delta.x;
+            }
         }
-        if(twice_err < dx){
-            err += dx;
-            y += sy;
+    }else{
+        int err = delta.y / 2;
+        for(; current.y != to.y; current.y += step.y){
+            screen_set_utf8(screen, current.x, current.y, utf8_char);
+            err -= delta.x;
+            if(err < 0){
+                current.x += step.x;
+                err += delta.y;
+            }
         }
     }
+    screen_set_utf8(screen, current.x, current.y, utf8_char);
 }
 
 #endif //TUI_DRAW_IMPL

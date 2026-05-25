@@ -7,14 +7,14 @@
 typedef struct {
 	const char *text;
 	FunctionPointer on_click;
-} WidgetButtonState;
+} WidgetButtonData;
 
 void tui_widget_button(const char *widget_id, const char *text, FunctionPointer on_click);
 
 #ifdef TUI_WIDGET_BUTTON_IMPL
 
 private void tui_widget_button_render(Widget *widget, Screen *screen, vec2 position){
-	WidgetButtonState *widget_state = widget->state;
+	WidgetButtonData *widget_data = widget->data;
 
 	//any processing would be done here if needed
 
@@ -29,18 +29,18 @@ private void tui_widget_button_render(Widget *widget, Screen *screen, vec2 posit
         screen,
         position.x + BORDER + PADDING,
         position.y + BORDER,
-        widget_state->text
+        widget_data->text
     );
 }
 
 private void tui_widget_button_input(Widget *widget, InputEvent input_event){
-	WidgetButtonState *widget_state = widget->state;
+	WidgetButtonData *widget_data = widget->data;
 	switch (input_event.input_type) {
     case INPUT_KEY:
         switch (input_event.key_event.key) {
     	case KEY_SPACE:
         case KEY_ENTER:
-            widget_state->on_click();
+            widget_data->on_click();
             break;
 		case KEY_NONE:
         default:
@@ -56,14 +56,14 @@ private void tui_widget_button_input(Widget *widget, InputEvent input_event){
 
 //public
 void tui_widget_button(const char *widget_id, const char *text, FunctionPointer on_click){
-	WidgetButtonState *widget_state = (WidgetButtonState *)arena_alloc(
-		LAYOUT_STATE.arena_frame, sizeof(WidgetButtonState)
+	WidgetButtonData *widget_data = (WidgetButtonData *)arena_alloc(
+		LAYOUT_STATE.arena_frame, sizeof(WidgetButtonData)
 	);
-    widget_state->text     = text;
-    widget_state->on_click = on_click;
+    widget_data->text     = text;
+    widget_data->on_click = on_click;
     Widget new_widget      = {
 	    .id        = widget_id,
-	    .state     = widget_state,
+	    .data      = widget_data,
 	    .size.w    = (int)strlen(text) + BORDER * 2 + PADDING * 2,
 	    .size.h    = 1 + BORDER * 2,
 	    .focusable = true,

@@ -39,8 +39,8 @@ typedef void (*WidgetRenderFunction )(Widget *widget, Screen *screen, vec2 posit
 struct Widget {
     const char           *id;
     vec2                  size;
-    void                 *state;
-    void                 *internals; //state that survives frames
+    void                 *data;
+    void                 *state; //data that survives frames
     bool                  focusable;
     bool                  focused;
     bool                  is_inline;
@@ -64,8 +64,8 @@ void tui_panel_end(void);
 
 //widgets
 char *tui_create_widget_id();
-void tui_widget_push(Widget widget);
-void *tui_widget_internals_get(const char *widget_id, size_t size);
+void  tui_widget_push(Widget widget);
+void *tui_widget_state(const char *widget_id, size_t data_size);
 
 //used in the actual rendering process by tui.h
 void tui_layout_prepare(Screen *screen, PageLayout layout);
@@ -83,13 +83,21 @@ void tui_cursor_prev_panel(void);
 private constexpr int PADDING = 1;
 private constexpr int BORDER = 1;
 private constexpr int TUI_PANELS_MAX = 12;
-private constexpr int TUI_WIDGETS_INTERNALS_MAX = TUI_PANELS_MAX * TUI_WIDGETS_IN_PANEL_MAX;
+private constexpr int TUI_WIDGET_STATES_MAX = TUI_PANELS_MAX * TUI_WIDGETS_IN_PANEL_MAX;
 
 typedef struct {
     const char *widget_id;
-    void       *data;
-    size_t      size;
-} WidgetInternalState;
+    void       *state_data;
+    size_t      state_size;
+} WidgetState;
+
+typedef struct {
+    WidgetState states[TUI_WIDGET_STATES_MAX]; //survives through frames!
+    size_t      states_count;
+    Arena       *arena;
+} WidgetStateRegistry;
+
+private WidgetStateRegistry WIDGET_REGISTRY = {.arena  = nullptr};
 
 typedef struct {
     vec2                 base_size;
@@ -99,17 +107,14 @@ typedef struct {
     uint8_t              panel_focused; //at least one panel always focused
     uint8_t              widget_auto_id;
     const char          *widget_focused[TUI_PANELS_MAX]; //one id per panel
-    WidgetInternalState  widget_internals[TUI_WIDGETS_INTERNALS_MAX]; //survives through frames
-    size_t               widget_internals_count;
     PageLayout           layout;
     Screen              *screen;
     Arena               *arena_frame;
-    Arena               *arena_page;
 } LayoutState;
+
 private LayoutState LAYOUT_STATE = {
     .panel_curr  = -1,
     .arena_frame = nullptr,
-    .arena_page  = nullptr
 };
 
 private inline int center_in_container(int base, int length, int container_length){
@@ -238,30 +243,36 @@ private inline Widget *get_new_widget(char const *widget_id){
     return new_widget;
 }
 
-void *tui_widget_internals_get(const char *widget_id, size_t size){
+void *tui_widget_state(const char *widget_id, size_t data_size){
     assert(widget_id != NULL);
-    assert(size > 0);
+    assert(data_size > 0);
 
-    //find the internal for the ID and return if found
-    for(size_t i = 0; i < LAYOUT_STATE.widget_internals_count; i++){
-        WidgetInternalState *internal = &LAYOUT_STATE.widget_internals[i];
-        if(strcmp(widget_id, internal->widget_id) == 0){
-            assert(internal->size == size);
-            return internal->data;
+    //find the state for the ID and return if found
+    for(size_t i = 0; i < WIDGET_REGISTRY.states_count; i++){
+        WidgetState *state = &WIDGET_REGISTRY.states[i];
+        if(strcmp(widget_id, state->widget_id) == 0){
+            //reallocate if bigger than expected
+            if(data_size >= state->state_size){
+                state->state_data = (void *)arena_realloc(
+                    WIDGET_REGISTRY.arena,
+                    state->state_data,
+                    state->state_size,
+                    data_size
+                );
+                state->state_size = data_size;
+            }
+            return state->state_data;
         }
     }
 
-    //create new internal for the id
-    assert(LAYOUT_STATE.widget_internals_count < TUI_WIDGETS_INTERNALS_MAX);
-    WidgetInternalState *internal = &LAYOUT_STATE.widget_internals[
-        LAYOUT_STATE.widget_internals_count++
-    ];
-    internal->widget_id = widget_id;
-    internal->size      = size;
+    //create new state for the id
+    assert(WIDGET_REGISTRY.states_count < TUI_WIDGET_STATES_MAX);
+    WidgetState *state = &WIDGET_REGISTRY.states[WIDGET_REGISTRY.states_count++];
+    state->widget_id  = widget_id;
+    state->state_size = data_size;
 
-    //TODO: probably not ideal but how do I get the type here..?
-    internal->data      = (void *)arena_alloc(LAYOUT_STATE.arena_page, size);
-    return internal->data;
+    state->state_data = (void *)arena_alloc(WIDGET_REGISTRY.arena, data_size);
+    return state->state_data;
 }
 
 void tui_widget_push(Widget widget){
@@ -287,15 +298,15 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
         LAYOUT_STATE.arena_frame = arena_init(1024 * 1024 * 5); //5mb
     }
 
-    if(LAYOUT_STATE.arena_page == nullptr){
-        LAYOUT_STATE.arena_page = arena_init(1024 * 1024 * 5); //5mb
+    if(WIDGET_REGISTRY.arena == nullptr){
+        WIDGET_REGISTRY.arena = arena_init(1024 * 1024 * 5); //5mb
     }
 
-    //if layout changes we reset the arena_page
+    //if layout changes we reset the widget registry
     if(layout != LAYOUT_STATE.layout){
         LAYOUT_STATE.layout = layout;
-        arena_reset(LAYOUT_STATE.arena_page);
-        LAYOUT_STATE.widget_internals_count = 0;
+        arena_reset(WIDGET_REGISTRY.arena);
+        WIDGET_REGISTRY.states_count = 0;
     }
 
     //clear panels and widgets

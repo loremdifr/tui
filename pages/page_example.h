@@ -70,7 +70,7 @@ private void page_example_render(void){
 		tui_widget_label_utf8(u8"Hello World! 🌎");
 		tui_widget_label("Press [Q] to quit");
 
-		tui_widget_input_text("INPUT_NAME", "Name:", name, name_length_max);
+		tui_widget_input_text("INPUT_NAME", "Name:", "Placeholder text", name, name_length_max);
 		// tui_widget_input_textarea();
 		// tui_widget_input_numbers();
 		// tui_widget_input_select();

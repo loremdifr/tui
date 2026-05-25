@@ -36,6 +36,7 @@ typedef struct {
 
 typedef void(*FunctionPointer)(void);
 
+int sign(int val);
 int clamp(int val, int min, int max);
 int clamp_overflow(int val, int min, int max);
 double get_curr_time(void);
@@ -53,6 +54,12 @@ double get_curr_time(void){
     struct timespec now;
     clock_gettime(CLOCK_REALTIME, &now);
     return (double) now.tv_sec + (double) now.tv_nsec / 1e9;
+}
+
+int sign(int val){
+    if (val < 0) return -1;
+    if (val > 0) return 1;
+    return 0;
 }
 
 int clamp(int val, int min, int max){
