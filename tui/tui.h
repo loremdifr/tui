@@ -54,7 +54,7 @@
 // Pages and nav ---------------------------------------------------------------
 
 typedef void (*InitFunction   )(void);
-typedef void (*InputFunction  )(InputEvent input_event);
+typedef bool (*InputFunction  )(InputEvent input_event);
 typedef void (*ProcessFunction)(float delta_time);
 typedef void (*RenderFunction )(void);
 
@@ -336,17 +336,9 @@ private void tui_render_hotkeys(Screen *screen){
 	screen_set_utf8_str(screen, 0, screen->size.h, utf8_str);
 }
 
-//TODO: this feels hacky!
-private void tui_process_hotkeys_and_input(InputEvent input_event){
-	//process input per page
-	auto active_page = tui_get_curr_page();
-	active_page->input(input_event);
-
-	//process active widget input
-	tui_widget_focused_input(input_event);
-
+private bool tui_process_input_hotkeys(InputEvent input_event){
 	//process hotkeys
-	if(input_event.input_type != INPUT_KEY) return;
+	if(input_event.input_type != INPUT_KEY) return false;
 	//check if key is registered and execute its action
 	//NOTE: we check in reverse order so that if there are
 	//      any duplicate keys, we only execute the last one
@@ -356,8 +348,9 @@ private void tui_process_hotkeys_and_input(InputEvent input_event){
 		//TODO: check modifiers
 		// if(input_event.key_event.shift != hkey.key) continue;
 		hkey.action();
-		return;
+		return true;
 	}
+	return false;
 }
 
 
@@ -406,10 +399,12 @@ void tui_run_loop(void){
 		tui_layout_prepare(&APP_STATE.next_screen, active_page->layout);
 		active_page->render(); // <- this actually creates the widgets
 
-		//NOTE: this is not ideal. we should ideally separate these things
-		//      atm they're like this because tui_input_process consumes input events
-		//      and we need both the hotkeys and the input callback to receive them
-		tui_input_process(tui_process_hotkeys_and_input);
+		//NOTE: The order is important! it is from deeper control upwards.
+		//      Any of those functions returning true will consume the event
+		//      And it won't be passed to the next "layer"
+		tui_input_process(&tui_widget_focused_input);
+		tui_input_process(active_page->input);
+		tui_input_process(&tui_process_input_hotkeys);
 
 		screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK); //reset format
 

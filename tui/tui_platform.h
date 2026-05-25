@@ -123,11 +123,11 @@ typedef enum {
 } InputType;
 
 typedef struct {
-	Key  key;     //"a" == "A"
-	char unicode; //"a" != "A"
-	bool ctrl;
-	bool alt;
-	bool shift;
+	Key      key;     //"a" == "A" use KEY_A here!
+	uint32_t unicode; //"a" != "A" this is for typing
+	bool     ctrl;
+	bool     alt;
+	bool     shift;
 } InputEventKey;
 
 typedef struct {
@@ -145,23 +145,21 @@ typedef struct {
 		InputEventMouseButton mouse_button_event;
 		// InputEventMouseMotion mouse_motion_event;
 	};
+	bool consumed;
 } InputEvent;
 
 private constexpr int EVENT_QUEUE_MAX = 64;
 typedef struct {
 	InputEvent events[EVENT_QUEUE_MAX];
-	int head;
-	int tail;
 	int count;
 } InputEventQueue;
 
 extern InputEventQueue EVENT_QUEUE;
 private void input_event_queue_push(InputEvent input_event);
-private InputEvent input_event_queue_pop();
 private bool tui_poll_input(int timeout_ms);
 private void tui_parse_input(void);
 
-typedef void (*ProcessInputEventFunction)(InputEvent);
+typedef bool (*ProcessInputEventFunction)(InputEvent);
 
 //public API
 void tui_init(void);
@@ -178,22 +176,21 @@ void tui_input_process(ProcessInputEventFunction input_processor);
 
 InputEventQueue EVENT_QUEUE = {};
 
+private inline void input_event_queue_clear(){
+	EVENT_QUEUE.count = 0;
+}
+
 private void input_event_queue_push(InputEvent input_event){
 	if(EVENT_QUEUE.count >= EVENT_QUEUE_MAX){
 		 return; //event queue full
 	}
-	EVENT_QUEUE.events[EVENT_QUEUE.tail] = input_event;
-	EVENT_QUEUE.tail = (EVENT_QUEUE.tail + 1) % EVENT_QUEUE_MAX;
-	EVENT_QUEUE.count++;
+	EVENT_QUEUE.events[EVENT_QUEUE.count++] = input_event;
 }
 
-private InputEvent input_event_queue_pop(){
-	if(EVENT_QUEUE.count <= 0){
-		 return (InputEvent){ .input_type = INPUT_NONE };
-	}
-	auto next_event = EVENT_QUEUE.events[EVENT_QUEUE.head];
-	EVENT_QUEUE.head = (EVENT_QUEUE.head + 1) % EVENT_QUEUE_MAX;
-	EVENT_QUEUE.count--;
+private InputEvent *input_event_queue_at(int index){
+	assert(EVENT_QUEUE.count > 0);
+    index                  = clamp(index, 0, EVENT_QUEUE.count);
+    InputEvent *next_event = &(EVENT_QUEUE.events[index]);
 	return next_event;
 }
 
@@ -363,7 +360,6 @@ typedef enum {
 private InputParseState input_state = PARSE_START;
 private double          escape_time = 0.0; //timeout para ESC
 
-//TODO: move to impl ?
 private void emit_special_key(Key key){
 	InputEvent input_event = {
         .input_type    = INPUT_KEY,
@@ -372,7 +368,7 @@ private void emit_special_key(Key key){
 	input_event_queue_push(input_event);
 }
 
-private void emit_key(unsigned char byte, bool alt){
+private void emit_key(uint8_t byte, bool alt){
     bool ctrl  = (byte < 32);
     bool shift = (byte != tolower(byte));
     Key key    = (Key)(
@@ -390,7 +386,7 @@ private void emit_key(unsigned char byte, bool alt){
 	input_event_queue_push(input_event);
 }
 
-private void emit_escape_sequence(const char *params, unsigned char final_byte){
+private void emit_escape_sequence(const char *params, uint8_t final_byte){
 	switch(final_byte){
 	//arrow keys
 	case 'A': emit_special_key(KEY_UP);    break;
@@ -419,7 +415,8 @@ private void emit_escape_sequence(const char *params, unsigned char final_byte){
 	}
 }
 
-private void parse_next_byte(unsigned char byte){
+private void parse_next_byte(uint8_t byte){
+	//state machine for parsing ze bytten
     constexpr int  params_max         = 32;
     static    char params[params_max] = {};
     static    int  params_length      = 0;
@@ -503,6 +500,7 @@ void tui_write_format(const char *format, ...){
 }
 
 void tui_input_read(double timeout_s){
+	input_event_queue_clear();
 	if(input_state == PARSE_ESCAPE
 	&& get_curr_time() - escape_time > 0.05){
 		emit_special_key(KEY_ESCAPE);
@@ -513,9 +511,14 @@ void tui_input_read(double timeout_s){
 }
 
 void tui_input_process(ProcessInputEventFunction input_processor){
+	// if the input processing function retuns false,
+	// we do not consume the event, so it "bubbles up"
+	// returning true from any of those functions is
+	// effectively like calling stopPropagation() in JS.
 	for(int i = 0; i < EVENT_QUEUE.count; i++){
-		auto input_event = input_event_queue_pop();
-		input_processor(input_event);
+		auto input_event = input_event_queue_at(i);
+		if(input_event->consumed) continue;
+		input_event->consumed = input_processor(*input_event);
 	}
 }
 

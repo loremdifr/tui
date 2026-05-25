@@ -12,7 +12,8 @@ void tui_draw_box_connected(Screen *screen, rect rect);
 void tui_draw_box_connected_cell(Screen *screen, int x, int y);
 void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to);
 void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2 from, vec2 to);
-//TODO: we need lines and squares and all that too
+void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect rect); //TODO:
+void tui_draw_circ(Screen *screen, uint8_t *utf8_char, rect rect); //TODO:
 
 #ifdef TUI_DRAW_IMPL
 
@@ -206,6 +207,14 @@ void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2 from, vec2
         }
     }
     screen_set_utf8(screen, current.x, current.y, utf8_char);
+}
+
+void tui_draw_rect(Screen */*screen*/, uint8_t */*utf8_char*/, rect /*rect*/){
+    //TODO: implement
+}
+
+void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect /*rect*/){
+    //TODO: implement
 }
 
 #endif //TUI_DRAW_IMPL

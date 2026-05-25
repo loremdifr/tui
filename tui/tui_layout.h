@@ -33,7 +33,7 @@ typedef enum {
 } PanelSlot;
 
 typedef struct Widget Widget;
-typedef void (*WidgetInputFunction  )(Widget *widget, InputEvent input_event);
+typedef bool (*WidgetInputFunction  )(Widget *widget, InputEvent input_event);
 typedef void (*WidgetRenderFunction )(Widget *widget, Screen *screen, vec2 position);
 
 struct Widget {
@@ -69,7 +69,7 @@ void *tui_widget_state(const char *widget_id, size_t data_size);
 
 //used in the actual rendering process by tui.h
 void tui_layout_prepare(Screen *screen, PageLayout layout);
-void tui_widget_focused_input(InputEvent input_event);
+bool tui_widget_focused_input(InputEvent input_event);
 void tui_layout_render(void); //actually rendering to the screen
 
 //focus navigation
@@ -322,11 +322,11 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
     LAYOUT_STATE.screen = screen;
 }
 
-void tui_widget_focused_input(InputEvent input_event){
+bool tui_widget_focused_input(InputEvent input_event){
     Widget *widget = tui_get_widget_focused();
-    if(widget == nullptr) return;
-    if(widget->input == nullptr) return;
-    widget->input(widget, input_event);
+    if(widget == nullptr) return false;
+    if(widget->input == nullptr) return false;
+    return widget->input(widget, input_event);
 }
 
 void tui_layout_render(){

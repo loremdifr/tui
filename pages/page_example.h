@@ -29,7 +29,7 @@ private void page_example_init(void){
 	name = utf8_str_concat(name, u8"Mr. Smith");
 }
 
-private void page_example_input(InputEvent input_event){
+private bool page_example_input(InputEvent input_event){
 	//we don't need this for now, but we can have access
 	//to direct user input if needed
 
@@ -46,6 +46,8 @@ private void page_example_input(InputEvent input_event){
     case INPUT_NONE:
     default:
     }
+
+    return false; //<- does not capture input
 }
 
 private void page_example_process(float delta_time){

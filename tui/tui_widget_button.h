@@ -33,8 +33,8 @@ private void tui_widget_button_render(Widget *widget, Screen *screen, vec2 posit
     );
 }
 
-private void tui_widget_button_input(Widget *widget, InputEvent input_event){
-	WidgetButtonData *widget_data = widget->data;
+private bool tui_widget_button_input(Widget *widget, InputEvent input_event){
+	WidgetButtonData  *widget_data  = widget->data;
 	switch (input_event.input_type) {
     case INPUT_KEY:
         switch (input_event.key_event.key) {
@@ -51,6 +51,7 @@ private void tui_widget_button_input(Widget *widget, InputEvent input_event){
     }
 
     //TODO: mouse
+    return false; //<- does not capture input
 }
 
 

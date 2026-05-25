@@ -104,22 +104,67 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2 p
     );
 }
 
-private void tui_widget_input_text_input(Widget *widget, InputEvent input_event){
-    // WidgetButtonState *widget_data = widget->data;
+private inline void tui_widget_input_text_move_cursor(Widget *widget, int move){
+    if(move == 0) return;
+    WidgetInputTextData  *widget_data  = widget->data;
+    WidgetInputTextState *widget_state = widget->state;
+    widget_state->cursor = clamp(
+        widget_state->cursor + move,
+        0,
+        widget_data->length
+    );
+}
+
+private void tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
+    WidgetInputTextData  *widget_data  = widget->data;
+    WidgetInputTextState *widget_state = widget->state;
+
+    // we split the string in two at the cursor,
+    // move the right side 1 over, and then insert the char
+    auto right_side        = widget_data->storage + widget_state->cursor;
+    auto right_side_length = strlen((const char *)right_side);
+    memcpy(right_side + 1, right_side, right_side_length);
+    widget_data->storage[widget_state->cursor] = unicode;
+
+    //also move cursor by 1!
+    tui_widget_input_text_move_cursor(widget, +1);
+}
+
+private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event){
+    WidgetInputTextData  *widget_data  = widget->data;
     WidgetInputTextState *widget_state = widget->state;
     switch (input_event.input_type) {
     case INPUT_KEY:
+        auto key = input_event.key_event;
         switch (input_event.key_event.key) {
+        case KEY_LEFT:
+            tui_widget_input_text_move_cursor(widget, -1);
+            break;
+        case KEY_RIGHT:
+            tui_widget_input_text_move_cursor(widget, +1);
+            break;
         case KEY_SPACE:
         case KEY_ENTER:
             widget_state->editing = !widget_state->editing;
+            return true; //important! otherwise it bubbles up!
             break;
         case KEY_ESCAPE:
-            //TODO: we need to somehow make the widget consume this input!
             widget_state->editing = false;
+            return true; //important! otherwise it bubbles up!
             break;
+        //any way to differentiate key from special key?
         case KEY_NONE:
         default:
+            if(!widget_state->editing) break;
+            if(key.unicode == 0) break;
+            //check if there's space to insert the new character
+            if(widget_data->length >= widget_data->capacity){
+                //TODO: maybe check length + key length?
+                //TODO: might wanna do some sort of error flash or something here
+                break;
+            }
+            //at this point, we're dealing with a printable key!
+            tui_widget_input_text_insert(widget, key.unicode);
         break;
         }
     case INPUT_NONE:
@@ -127,6 +172,9 @@ private void tui_widget_input_text_input(Widget *widget, InputEvent input_event)
     }
 
     //TODO: mouse
+
+    //captures input only when editing
+    return widget_state->editing;
 }
 
 //public
@@ -150,15 +198,15 @@ void tui_widget_input_text_utf8(
     widget_data->length      = utf8_str_length(storage);
 
     //widget state persist across frames
-    auto state = (WidgetInputTextState *)tui_widget_state(
+    auto widget_state = (WidgetInputTextState *)tui_widget_state(
         widget_id,
         sizeof(WidgetInputTextState)
     );
 
     Widget new_widget  = {
         .id        = widget_id,
-        .data     = widget_data,
-        .state = state,
+        .data      = widget_data,
+        .state     = widget_state,
         .size.w    = widget_data->label_width + 16,
         .size.h    = 2,
         .focusable = true,
