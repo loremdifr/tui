@@ -23,11 +23,11 @@ typedef struct {
 typedef struct {
     size_t cursor;
     bool   editing;
-} WidgetInputTextInternals;
+} WidgetInputTextStateI;
 
 private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2 position){
-    WidgetInputTextState     *state     = widget->state;
-    WidgetInputTextInternals *internals = widget->internals;
+    WidgetInputTextState  *state     = widget->state;
+    WidgetInputTextStateI *internals = widget->internals;
     screen_set_utf8_str(
         screen,
         position.x,
@@ -94,7 +94,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2 p
 
 private void tui_widget_input_text_input(Widget *widget, InputEvent input_event){
     // WidgetButtonState *widget_state = widget->state;
-    WidgetInputTextInternals *widget_internals = widget->internals;
+    WidgetInputTextStateI *widget_internals = widget->internals;
     switch (input_event.input_type) {
     case INPUT_KEY:
         switch (input_event.key_event.key) {
@@ -131,16 +131,16 @@ void tui_widget_input_text_utf8(const char *widget_id, const uint8_t *label, uin
     widget_state->placeholder = u8"qwe";
     widget_state->length      = utf8_str_length(storage);
 
-    //widget internals
-    WidgetInputTextInternals *widget_internals = (WidgetInputTextInternals *)arena_alloc(
-        LAYOUT_STATE.arena_page, sizeof(WidgetInputTextInternals)
+    //widget internals persist across frames
+    auto internals = (WidgetInputTextStateI *)tui_widget_internals_get(
+        widget_id,
+        sizeof(WidgetInputTextStateI)
     );
-    widget_internals->cursor = 0; //default value ??
 
     Widget new_widget  = {
         .id        = widget_id,
         .state     = widget_state,
-        .internals = widget_internals,
+        .internals = internals,
         .size.w    = widget_state->label_width + 16,
         .size.h    = 2,
         .focusable = true,
