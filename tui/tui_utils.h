@@ -40,11 +40,13 @@ int clamp(int val, int min, int max);
 int clamp_overflow(int val, int min, int max);
 double get_curr_time(void);
 
-//utf8 garbage
-uint8_t utf8_char_length(uint8_t byte);
+//utf8 stuff
+uint8_t        utf8_char_length(uint8_t byte);
+int            utf8_str_length(const uint8_t *str);
 const uint8_t *utf8_str_next_char(const uint8_t *curr_char);
-int utf8_str_length(const uint8_t *str);
-uint8_t *utf8_str_concat(uint8_t *dest, const uint8_t *src);
+uint8_t       *utf8_str_concat(uint8_t *dest, const uint8_t *src);
+uint32_t       utf8_pack(const uint8_t bytes[]);
+void           utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes);
 
 #ifdef TUI_UTILS_IMPL
 
@@ -135,45 +137,38 @@ uint8_t *utf8_str_concat(uint8_t *dest, const uint8_t *src){
     return dest;
 }
 
-// private uint32_t utf8_char_to_uint32(const uint8_t *utf8_leading_byte){
-//     // inspect the first byte to know how many bytes there
-//     // are in total, and put them in order in a uint32
-//     auto total_bytes = utf8_char_length(utf8_leading_byte[0]);
-//     switch(total_bytes){
-//     case 1: return (uint32_t)utf8_leading_byte[0];
-//     case 2: return (uint32_t)utf8_leading_byte[0]
-//                  | (uint32_t)utf8_leading_byte[1] << 8;
-//     case 3: return (uint32_t)utf8_leading_byte[0]
-//                  | (uint32_t)utf8_leading_byte[1] << 8
-//                  | (uint32_t)utf8_leading_byte[2] << 8*2;
-//     case 4: return (uint32_t)utf8_leading_byte[0]
-//                  | (uint32_t)utf8_leading_byte[1] << 8
-//                  | (uint32_t)utf8_leading_byte[2] << 8*2
-//                  | (uint32_t)utf8_leading_byte[3] << 8*3;
-//     case 0: //utf8_leading_byte was NOT a leading byte
-//     default: //in theory we don't need default because
-//              //utf8_char_length should only return 0-4
-//         return 0;
-//     }
-//     //TODO: possible optimization, using out param since the caller
-//     //      will always need the total_bytes and we would be calling
-//     //      it twice in each loop
-// }
+uint32_t utf8_pack(const uint8_t bytes[]){
+    // inspect the first byte to know how many bytes there
+    // are in total, and put them in order in a uint32
+    auto total_bytes = utf8_char_length(bytes[0]);
+    switch(total_bytes){
+    case 1: return (uint32_t)bytes[0];
+    case 2: return (uint32_t)bytes[0]
+                 | (uint32_t)bytes[1] << 8;
+    case 3: return (uint32_t)bytes[0]
+                 | (uint32_t)bytes[1] << 8
+                 | (uint32_t)bytes[2] << 8*2;
+    case 4: return (uint32_t)bytes[0]
+                 | (uint32_t)bytes[1] << 8
+                 | (uint32_t)bytes[2] << 8*2
+                 | (uint32_t)bytes[3] << 8*3;
+    case 0: //utf8_leading_byte was NOT a leading byte
+    default: //in theory we don't need default because
+             //utf8_char_length should only return 0-4
+        return 0;
+    }
+    //TODO: possible optimization, using out param since the caller
+    //      will always need the total_bytes and we would be calling
+    //      it twice in each loop
+}
 
-// typedef struct {
-//     uint8_t bytes[4];
-// } UTF8Bytes;
-// private UTF8Bytes utf8_uint32_to_char(uint32_t packed_utf8_char){
-//     //ugh maybe we dont need any of this lets just save uint8[4] to the Cell instead
-//     constexpr uint8_t byte_mask = 0b11111111;
-//     UTF8Bytes utf8 = {};
-//     utf8.bytes[0] = (packed_utf8_char       ) & byte_mask;
-//     utf8.bytes[1] = (packed_utf8_char >> 8  ) & byte_mask;
-//     utf8.bytes[2] = (packed_utf8_char >> 8*2) & byte_mask;
-//     utf8.bytes[3] = (packed_utf8_char >> 8*3) & byte_mask;
-//     return utf8;
-// }
-
+void utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes){
+    constexpr uint8_t byte_mask = 0b11111111;
+    unpacked_bytes[0] = (packed_bytes       ) & byte_mask;
+    unpacked_bytes[1] = (packed_bytes >> 8  ) & byte_mask;
+    unpacked_bytes[2] = (packed_bytes >> 8*2) & byte_mask;
+    unpacked_bytes[3] = (packed_bytes >> 8*3) & byte_mask;
+}
 
 #endif //TUI_UTILS_IMPL
 #endif //TUI_UTILS

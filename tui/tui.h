@@ -15,6 +15,11 @@
 #endif //TUI_UTILS_IMPL
 #include "tui_utils.h"
 
+#ifndef TUI_STRING_IMPL
+#define TUI_STRING_IMPL
+#endif //TUI_STRING_IMPL
+#include "tui_string.h"
+
 #ifndef TUI_ARENA_IMPL
 #define TUI_ARENA_IMPL
 #endif //TUI_ARENA_IMPL

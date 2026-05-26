@@ -356,9 +356,10 @@ typedef enum {
 	PARSE_START,
 	PARSE_ESCAPE,
 	PARSE_CONTROL_SEQUENCE,
+	PARSE_UTF8,
 } InputParseState;
 private InputParseState input_state = PARSE_START;
-private double          escape_time = 0.0; //timeout para ESC
+private double          last_input_time = 0.0; //timeout para ESC y utf8
 
 private void emit_special_key(Key key){
 	InputEvent input_event = {
@@ -368,12 +369,13 @@ private void emit_special_key(Key key){
 	input_event_queue_push(input_event);
 }
 
-private void emit_key(uint8_t byte, bool alt){
-    bool ctrl  = (byte < 32);
-    bool shift = (byte != tolower(byte));
+private void emit_key(uint32_t unicode, bool alt){
+    //for single byte ascii
+    bool ctrl  = (unicode < 32);
+    bool shift = (unicode < 128 && unicode != (uint32_t)tolower(unicode));
     Key key    = (Key)(
 		//ctrl key removes "@" from the byte
-		 tolower(ctrl ? '@' + byte : byte)
+		 tolower(ctrl ? '@' + unicode : unicode)
 	);
 	InputEvent input_event = {
         .input_type        = INPUT_KEY,
@@ -381,7 +383,7 @@ private void emit_key(uint8_t byte, bool alt){
         .key_event.ctrl    = ctrl,
         .key_event.alt     = alt,
         .key_event.shift   = shift,
-        .key_event.unicode = byte,
+        .key_event.unicode = unicode,
 	};
 	input_event_queue_push(input_event);
 }
@@ -435,21 +437,39 @@ private void parse_next_byte(uint8_t byte){
     static    char params[params_max] = {};
     static    int  params_length      = 0;
 
+    //utf8
+    //TODO: could we somehow split the state machine and put the utf8 outside?
+    static uint8_t utf8_bytes[4] = {};
+    static uint8_t utf8_length_current = 0;
+    static uint8_t utf8_length_expected = 0;
+
 	switch(input_state){
 	case PARSE_START:
 		switch(byte){
 		case '\033':
 			input_state = PARSE_ESCAPE;
-			escape_time = get_curr_time();
+			last_input_time = get_curr_time();
 			return;
 		case '\r':
 		case '\n':   emit_special_key(KEY_ENTER);     goto reset_state;
 		//TODO: backspace is not working properly, getting detected as KEY_DELETE
 		case 127:
 		case '\b':   emit_special_key(KEY_BACKSPACE); goto reset_state;
-		case '\t':   emit_special_key(KEY_ENTER);     goto reset_state;
+		case '\t':   emit_special_key(KEY_TAB);       goto reset_state;
 		//TODO: more keys..?
-		default:     emit_key(byte, false);           goto reset_state;
+		default:
+            uint8_t length = utf8_char_length(byte);
+            if(length <= 1){ //ascii or empty
+                emit_key(byte, false);
+                goto reset_state;
+            }
+            //utf8 string!
+            input_state          = PARSE_UTF8;
+            last_input_time      = get_curr_time();
+            utf8_bytes[0]        = byte;
+            utf8_length_current  = 1; //accumulates
+            utf8_length_expected = length;
+            return;
 		}
 		break;
 
@@ -473,11 +493,21 @@ private void parse_next_byte(uint8_t byte){
 			emit_escape_sequence(params, byte);
 			goto reset_state;
 		}
+
+    case PARSE_UTF8:
+    	//add next byte
+        utf8_bytes[utf8_length_current++] = byte;
+        if(utf8_length_current < utf8_length_expected) return;
+    	//utf8 completed!
+        emit_key(utf8_pack(utf8_bytes), false);
+        goto reset_state;
 	}
 
 	reset_state:
-	input_state = PARSE_START;
-	params_length = 0;
+	input_state          = PARSE_START;
+	params_length        = 0;
+	utf8_length_current  = 0;
+	utf8_length_expected = 0;
 }
 
 private void tui_parse_input(void){
@@ -516,10 +546,14 @@ void tui_write_format(const char *format, ...){
 }
 
 void tui_input_read(double timeout_s){
+	//TODO: a bit hacky now...
 	input_event_queue_clear();
-	if(input_state == PARSE_ESCAPE
-	&& get_curr_time() - escape_time > 0.05){
-		emit_special_key(KEY_ESCAPE);
+	auto now = get_curr_time();
+	if(input_state != PARSE_START && (now - last_input_time) > 0.05){
+		//if we were waiting for escape to continue and it didnt, emit escape
+        if(input_state == PARSE_ESCAPE) emit_special_key(KEY_ESCAPE);
+        //otherwise it probably means we got an unfinished utf8, which should never
+        //realistically happen, so we just ignore it for now.
 		input_state = PARSE_START;
 	}
 	if (!tui_poll_input(timeout_s * 1000)) return;
