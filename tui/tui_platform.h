@@ -391,10 +391,13 @@ private void emit_key(uint32_t unicode, bool alt){
 private void emit_escape_sequence(const char *params, uint8_t final_byte){
 	switch(final_byte){
 	//arrow keys
-	case 'A': emit_special_key(KEY_UP);    break;
-	case 'B': emit_special_key(KEY_DOWN);  break;
-	case 'C': emit_special_key(KEY_RIGHT); break;
-	case 'D': emit_special_key(KEY_LEFT);  break;
+	case 'A': emit_special_key(KEY_UP);      break;
+	case 'B': emit_special_key(KEY_DOWN);    break;
+	case 'C': emit_special_key(KEY_RIGHT);   break;
+	case 'D': emit_special_key(KEY_LEFT);    break;
+	case 'H': emit_special_key(KEY_HOME);    break;
+	case 'F': emit_special_key(KEY_END);     break;
+	case 'Z': emit_special_key(KEY_BACKTAB); break;
 
 	//FKEYS
 	case '~': {
@@ -432,6 +435,7 @@ private void emit_escape_sequence(const char *params, uint8_t final_byte){
 }
 
 private void parse_next_byte(uint8_t byte){
+    last_input_time = get_curr_time();
 	//state machine for parsing ze bytten
     constexpr int  params_max         = 32;
     static    char params[params_max] = {};

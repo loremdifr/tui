@@ -6,6 +6,7 @@
 #include "tui_screen.h"
 #include <string.h>
 // #include <stdlib.h>
+#include "tui_string.h"
 
 typedef struct {
     //base widget params
@@ -27,14 +28,12 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
 typedef struct {
     const uint8_t *label;
     size_t         label_width;
-    uint8_t       *storage;
     const uint8_t *placeholder;
-    size_t         length;
-    size_t         capacity;
+    String         string;
 } WidgetInputTextData;
 
 typedef struct {
-    size_t cursor;
+    size_t cursor; // char index
     bool   editing;
     bool   caret_show;
     double caret_interval;
@@ -59,7 +58,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         position.y,
         data->label
     );
-    if(data->length == 0){
+    if(data->string.length == 0){
         //show placeholder
         //TODO: truncate to length
         screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
@@ -77,7 +76,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
             screen,
             position.x + data->label_width,
             position.y,
-            data->storage
+            data->string.data
         );
     }
 
@@ -123,10 +122,10 @@ private inline void tui_widget_input_text_move_cursor(Widget *widget, int move){
     if(move == 0) return;
     WidgetInputTextData  *widget_data  = widget->data;
     WidgetInputTextState *widget_state = widget->state;
-    widget_state->cursor = clamp(
-        widget_state->cursor + move,
+    widget_state->cursor = (size_t)clamp(
+        (int)widget_state->cursor + move,
         0,
-        widget_data->length + 1
+        (int)widget_data->string.length
     );
 }
 
@@ -134,28 +133,14 @@ private void tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
     WidgetInputTextData  *widget_data  = widget->data;
     WidgetInputTextState *widget_state = widget->state;
 
-    // we split the string in two at the cursor,
-    // move the right side 1 over, and then insert the char
-    auto right_side        = widget_data->storage + widget_state->cursor;
-    auto right_side_length = strlen((const char *)right_side) + 1; //+1 for null
-    memmove(right_side + 1, right_side, right_side_length);
-    widget_data->storage[widget_state->cursor] = unicode;
-    widget_data->length++;
-    //also move cursor by 1!
+    string_insert_at(&widget_data->string, widget_state->cursor, unicode);
     tui_widget_input_text_move_cursor(widget, +1);
 }
 
 private void tui_widget_input_text_delete(Widget *widget){
     WidgetInputTextData  *widget_data  = widget->data;
     WidgetInputTextState *widget_state = widget->state;
-
-    if(widget_state->cursor >= widget_data->length - 1) return;
-
-    // we split the string in two at the cursor,
-    // move the right side 1 to the left
-    auto right_side        = widget_data->storage + widget_state->cursor;
-    auto right_side_length = strlen((const char *)right_side) + 1; //+1 for null
-    memmove(right_side, right_side + 1, right_side_length - 1);
+    string_delete_at(&widget_data->string, widget_state->cursor);
 }
 
 private void tui_widget_input_text_backspace(Widget *widget){
@@ -172,21 +157,31 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
     case INPUT_KEY:
         auto key = input_event.key_event;
         switch (input_event.key_event.key) {
-        case KEY_HOME://TODO:
-        case KEY_END: //TODO:
-        // case KEY_PAGEUP:
-        // case KEY_PAGEDOWN:
+        case KEY_F1:
+        case KEY_HOME:
+            if(!widget_state->editing) break;
+            widget_state->cursor = 0;
+            break;
+        case KEY_F2:
+        case KEY_END:
+            if(!widget_state->editing) break;
+            widget_state->cursor = widget_data->string.length;
+            break;
         case KEY_LEFT:
             //TODO: ctrl move 
+            if(!widget_state->editing) break;
             tui_widget_input_text_move_cursor(widget, -1);
             break;
         case KEY_RIGHT:
+            if(!widget_state->editing) break;
             tui_widget_input_text_move_cursor(widget, +1);
             break;
         case KEY_BACKSPACE:
+            if(!widget_state->editing) break;
             tui_widget_input_text_backspace(widget);
             break;
         case KEY_DELETE:
+            if(!widget_state->editing) break;
             tui_widget_input_text_delete(widget);
             break;
         case KEY_ENTER:
@@ -207,8 +202,7 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
             if(!widget_state->editing) break;
             if(key.unicode == 0) break;
             //check if there's space to insert the new character
-            if(widget_data->length >= widget_data->capacity){
-                //TODO: maybe check length + key length?
+            if(widget_data->string.bytes + utf8_char_length((uint8_t)key.unicode) >= widget_data->string.capacity){
                 //TODO: might wanna do some sort of error flash or something here
                 break;
             }
@@ -235,10 +229,8 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
 	);
     widget_data->label       = params->label;
     widget_data->label_width = utf8_str_length(params->label);
-    widget_data->storage     = params->storage;
-    widget_data->capacity    = params->capacity;
     widget_data->placeholder = params->placeholder;
-    widget_data->length      = utf8_str_length(params->storage);
+    widget_data->string      = string_from(params->storage, params->capacity);
 
     //widget state persist across frames
     auto widget_state = (WidgetInputTextState *)tui_widget_state(
@@ -247,7 +239,11 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
     );
     if(widget_state->caret_interval == 0.0){
         widget_state->caret_interval = 0.5;
+        widget_state->cursor = widget_data->string.length; // start at the end
     }
+    // in case the data has changed from outside inbetween frames we need to make sure
+    // that the cursor is not pointing "outside" the string
+    widget_state->cursor = clamp(widget_state->cursor, 0, widget_data->string.length);
 
     //TODO: length should be based on: a default width, or the placeholder if longer,
     //      and then shrunk to fit into the panel... that might be rendering?
