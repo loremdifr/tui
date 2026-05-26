@@ -399,11 +399,25 @@ private void emit_escape_sequence(const char *params, uint8_t final_byte){
 		int code;
 		sscanf(params, "%d", &code);
 		switch(code){
-		case 15: emit_special_key(KEY_F5); break;
-		case 17: emit_special_key(KEY_F6); break;
-		case 18: emit_special_key(KEY_F7); break;
-		case 19: emit_special_key(KEY_F8); break;
-		//TODO: agregar mas
+		case 1:  emit_special_key(KEY_HOME);     break;
+		//case 2:  emit_special_key(KEY_INSERT); break; //is this correct?
+		case 3:  emit_special_key(KEY_DELETE);   break;
+		case 4:  emit_special_key(KEY_END);      break;
+		case 5:  emit_special_key(KEY_PAGEUP);   break;
+		case 6:  emit_special_key(KEY_PAGEDOWN); break;
+		case 11: emit_special_key(KEY_F1);       break;
+		case 12: emit_special_key(KEY_F2);       break;
+		case 13: emit_special_key(KEY_F3);       break;
+		case 14: emit_special_key(KEY_F4);       break;
+		case 15: emit_special_key(KEY_F5);       break;
+		case 17: emit_special_key(KEY_F6);       break;
+		case 18: emit_special_key(KEY_F7);       break;
+		case 19: emit_special_key(KEY_F8);       break;
+		case 20: emit_special_key(KEY_F9);       break;
+		case 21: emit_special_key(KEY_F10);      break;
+		case 23: emit_special_key(KEY_F11);      break;
+		case 24: emit_special_key(KEY_F12);      break;
+		//TODO: agregar mas...?
 		}
 		break;
 	}
@@ -430,7 +444,9 @@ private void parse_next_byte(uint8_t byte){
 			return;
 		case '\r':
 		case '\n':   emit_special_key(KEY_ENTER);     goto reset_state;
-		case 127:    emit_special_key(KEY_BACKSPACE); goto reset_state;
+		//TODO: backspace is not working properly, getting detected as KEY_DELETE
+		case 127:
+		case '\b':   emit_special_key(KEY_BACKSPACE); goto reset_state;
 		case '\t':   emit_special_key(KEY_ENTER);     goto reset_state;
 		//TODO: more keys..?
 		default:     emit_key(byte, false);           goto reset_state;

@@ -38,7 +38,7 @@ typedef void (*WidgetRenderFunction )(Widget *widget, Screen *screen, vec2i posi
 
 struct Widget {
     const char           *id;
-    vec2i                  size;
+    vec2i                 size;
     void                 *data;
     void                 *state; //data that survives frames
     bool                  focusable;

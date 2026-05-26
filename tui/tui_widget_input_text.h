@@ -2,6 +2,7 @@
 #define TUI_WIDGET_INPUT_TEXT
 
 #include "tui_layout.h"
+#include "tui_platform.h"
 #include "tui_screen.h"
 #include <string.h>
 // #include <stdlib.h>
@@ -35,11 +36,23 @@ typedef struct {
 typedef struct {
     size_t cursor;
     bool   editing;
+    bool   caret_show;
+    double caret_interval;
+    double caret_last_shown;
 } WidgetInputTextState;
+
 
 private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputTextData  *data     = widget->data;
     WidgetInputTextState *state    = widget->state;
+
+    //caret logic
+    double now = get_curr_time();
+    if(now - state->caret_last_shown > state->caret_interval){
+        state->caret_show = !state->caret_show;
+        state->caret_last_shown = now;
+    }
+
     screen_set_utf8_str(
         screen,
         position.x,
@@ -48,6 +61,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     );
     if(data->length == 0){
         //show placeholder
+        //TODO: truncate to length
         screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
         screen_set_utf8_str(
             screen,
@@ -57,6 +71,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         );
     }else{
         //show text
+        //TODO: truncate to length, and scroll with cursor
         screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
         screen_set_utf8_str(
             screen,
@@ -76,7 +91,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         );
     }
 
-    if(widget->focused && state->editing){
+    if(widget->focused && state->editing && state->caret_show){
         screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
         screen_set_utf8(
             screen,
@@ -111,7 +126,7 @@ private inline void tui_widget_input_text_move_cursor(Widget *widget, int move){
     widget_state->cursor = clamp(
         widget_state->cursor + move,
         0,
-        widget_data->length
+        widget_data->length + 1
     );
 }
 
@@ -122,12 +137,32 @@ private void tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
     // we split the string in two at the cursor,
     // move the right side 1 over, and then insert the char
     auto right_side        = widget_data->storage + widget_state->cursor;
-    auto right_side_length = strlen((const char *)right_side);
-    memcpy(right_side + 1, right_side, right_side_length);
+    auto right_side_length = strlen((const char *)right_side) + 1; //+1 for null
+    memmove(right_side + 1, right_side, right_side_length);
     widget_data->storage[widget_state->cursor] = unicode;
-
+    widget_data->length++;
     //also move cursor by 1!
     tui_widget_input_text_move_cursor(widget, +1);
+}
+
+private void tui_widget_input_text_delete(Widget *widget){
+    WidgetInputTextData  *widget_data  = widget->data;
+    WidgetInputTextState *widget_state = widget->state;
+
+    if(widget_state->cursor >= widget_data->length - 1) return;
+
+    // we split the string in two at the cursor,
+    // move the right side 1 to the left
+    auto right_side        = widget_data->storage + widget_state->cursor;
+    auto right_side_length = strlen((const char *)right_side) + 1; //+1 for null
+    memmove(right_side, right_side + 1, right_side_length - 1);
+}
+
+private void tui_widget_input_text_backspace(Widget *widget){
+    WidgetInputTextState *widget_state = widget->state;
+    if(widget_state->cursor == 0) return;
+    tui_widget_input_text_move_cursor(widget, -1);
+    tui_widget_input_text_delete(widget);
 }
 
 private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event){
@@ -137,15 +172,29 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
     case INPUT_KEY:
         auto key = input_event.key_event;
         switch (input_event.key_event.key) {
+        case KEY_HOME://TODO:
+        case KEY_END: //TODO:
+        // case KEY_PAGEUP:
+        // case KEY_PAGEDOWN:
         case KEY_LEFT:
+            //TODO: ctrl move 
             tui_widget_input_text_move_cursor(widget, -1);
             break;
         case KEY_RIGHT:
             tui_widget_input_text_move_cursor(widget, +1);
             break;
-        case KEY_SPACE:
+        case KEY_BACKSPACE:
+            tui_widget_input_text_backspace(widget);
+            break;
+        case KEY_DELETE:
+            tui_widget_input_text_delete(widget);
+            break;
         case KEY_ENTER:
             widget_state->editing = !widget_state->editing;
+            if(widget_state->editing){
+                widget_state->caret_show = true;
+                widget_state->caret_last_shown = get_curr_time();
+            }
             return true; //important! otherwise it bubbles up!
             break;
         case KEY_ESCAPE:
@@ -196,6 +245,9 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
         widget_id,
         sizeof(WidgetInputTextState)
     );
+    if(widget_state->caret_interval == 0.0){
+        widget_state->caret_interval = 0.5;
+    }
 
     //TODO: length should be based on: a default width, or the placeholder if longer,
     //      and then shrunk to fit into the panel... that might be rendering?
