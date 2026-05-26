@@ -41,10 +41,10 @@ String string_from(uint8_t *storage, size_t capacity) {
     String str = {
         .data     = storage,
         .capacity = capacity,
-        .bytes = (storage == nullptr)
+        .bytes = (storage != nullptr)
             ? strlen((const char*)storage)
             : 0,
-        .length = (storage == nullptr)
+        .length = (storage != nullptr)
             ? utf8_str_length(storage)
             : 0
     };
@@ -54,13 +54,13 @@ String string_from(uint8_t *storage, size_t capacity) {
 void string_insert_at(String *str, size_t index, uint32_t new_char){
     assert(str != NULL);
     assert(str->data != NULL);
-    auto byte_pos       = string_byte_pos_from_index(str, index);
-    uint8_t char_length = utf8_char_length(str->data[byte_pos]);
+    auto byte_pos = string_byte_pos_from_index(str, index);
 
     //unpack the uin32 that could come from keyboard
     //TODO: maybe this function should receive this unpacked?
     uint8_t bytes[4];
     utf8_unpack(new_char, bytes);
+    uint8_t char_length = utf8_char_length(bytes[0]);
 
     if(char_length == 0) return; // invalid character?
     if(str->bytes + char_length >= str->capacity){
@@ -101,7 +101,7 @@ void string_delete_at(String *str, size_t index) {
     // move the right side 1 to the left
 
     auto right_side        = str->data + byte_pos;
-    auto right_side_length = strlen((const char *)right_side) + 1; //+1 for null
+    auto right_side_length = strlen((const char *)(right_side + char_length)) + 1; //+1 for null
     memmove(right_side, right_side + char_length, right_side_length);
 
     str->bytes -= char_length;
