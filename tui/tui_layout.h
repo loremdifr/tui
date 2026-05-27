@@ -56,6 +56,7 @@ typedef struct {
     uint8_t   widget_count;
     rect2i    outer_rect;    //cached
     rect2i    widgets_rect;  //total accumulated rect around the widgets
+    vec2i     curr_row_size;
 } Panel;
 
 //api to defin the panels and widgets on the page
@@ -117,6 +118,10 @@ private LayoutState LAYOUT_STATE = {
     .arena_frame = nullptr,
 };
 
+private void tui_widget_row_begin(Panel *panel);
+private void tui_widget_row_push(Panel *panel, Widget *widget);
+private void tui_widget_row_end(Panel *panel);
+
 private inline int center_in_container(int base, int length, int container_length){
     base += container_length / 2 - length / 2;
     //cant do -1 on h above because it's an int and it doesnt accumulate the 0.5 after division
@@ -137,6 +142,9 @@ private void tui_render_panel(Panel *panel){
     const int BASE_Y = panel->outer_rect.pos.y + BORDER + PADDING;
     vec2i cursor_pos = {.x = BASE_X, .y = BASE_Y};
 
+    //in case there was still an open inline row
+    tui_widget_row_end(panel);
+
     //panels always render their content centered vertically
     //widget heights are precomputed
     cursor_pos.y = center_in_container(
@@ -145,35 +153,62 @@ private void tui_render_panel(Panel *panel){
         panel->outer_rect.size.h
     );
 
+    bool inline_row = false;
+    int inline_row_width = 0;
+    int inline_row_total = 0;
+    int inline_row_index = 0;
+
     for (int i = 0; i < panel->widget_count; i++){
         //NOTE: we dont use clamp on the cursor because we might have scrollable content here
         if(cursor_pos.y < 0
         || cursor_pos.y > panel->outer_rect.pos.y + panel->outer_rect.size.h - 1){
             break;
         }
-        //render current widget
+
         Widget *widget = &panel->widgets[i];
+
+        //if we have encountered a new inline widget,
+        //we collect the width of all subsequent inline widgets
+        if(!widget->is_inline && !inline_row){
+            inline_row = true;
+            inline_row_index = 0;
+            for(int j = i; j < panel->widget_count; j++){
+                Widget *next_panel = &panel->widgets[j];
+                if(!next_panel->is_inline) break;
+                inline_row_total++;
+                inline_row_width += next_panel->size.x;
+            }
+
+        }
+
+        //not an inline widget, reset the row
+        if(!widget->is_inline){
+            inline_row = false;
+            inline_row_width = 0;
+            inline_row_total = 0;
+            inline_row_index = 0;
+        }
+
+
+        //render current widget
         tui_render_widget(widget, cursor_pos);
 
         if (i >= panel->widget_count - 1) break; //no more panels, break early
 
         //determine cursor movement
-        Widget *next_widget = &panel->widgets[i+1];
-        if(widget->is_inline && next_widget->is_inline){
-            //if two widgets are inline, they go next to each other
-            //so we move cursor to the right of the widget we just rendered
+        if(widget->is_inline){
             cursor_pos.x += widget->size.x;
         }else{
             //move cursror below the widget we just rendered
             cursor_pos.x = BASE_X;
             cursor_pos.y += widget->size.y;
 
-            //center widget horizontally
-            // cursor_pos.x = center_in_container(
-            //     cursor_pos.x,
-            //     widget->size.w,
-            //     panel->outer_rect.size.w - PADDING - BORDER
-            // );
+            // center widget horizontally
+            cursor_pos.x = center_in_container(
+                cursor_pos.x,
+                widget->size.w,
+                panel->outer_rect.size.w - PADDING - BORDER
+            );
         }
 
     }
@@ -245,6 +280,12 @@ char *tui_create_widget_id(){
     return new_id;
 }
 
+private inline Widget *get_latest_widget(){
+    Panel *panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
+    if(panel->widget_count == 0) return nullptr;
+    return &panel->widgets[panel->widget_count - 1];
+}
+
 private inline Widget *get_new_widget(char const *widget_id){
     assert(LAYOUT_STATE.panel_curr != -1); //must be used inside a tui_panel_begin!
     Panel *panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
@@ -288,20 +329,66 @@ void *tui_widget_state(const char *widget_id, size_t data_size){
     return state->state_data;
 }
 
+private void tui_widget_row_begin(Panel *panel){
+    //reset row
+    panel->curr_row_size = (vec2i){.w = 0, .h = 0};
+}
+
+private void tui_widget_row_push(Panel *panel, Widget *widget){
+    //pushes widget to row
+    //should NOT modify the widgets_rect !
+
+    //HEIGHT: biggest widget height remains
+    panel->curr_row_size.h += widget->size.h;
+
+    //WIDTH:  widget width is always added to row width
+    if(widget->size.w > panel->curr_row_size.w){
+        panel->curr_row_size.w = widget->size.w;
+    }
+}
+
+private void tui_widget_row_end(Panel *panel){
+    //push row if exists to widget rect
+    if(panel->curr_row_size.w == 0 && panel->curr_row_size.h){
+        //nothing to commit
+        return;
+    }
+    //HEIGHT: row height is always added to panel height
+    panel->widgets_rect.size.h += panel->curr_row_size.h;
+    //WIDTH:  biggest row width remains
+    if(panel->curr_row_size.w > panel->widgets_rect.size.w){
+        panel->widgets_rect.size.w = panel->curr_row_size.w;
+    }
+    //reset row size
+    panel->curr_row_size = (vec2i){.w = 0, .h = 0};
+}
+
 void tui_widget_push(Widget widget){
     assert(LAYOUT_STATE.panel_curr != -1); //must be used inside a tui_panel_begin!
-    Widget *new_widget = get_new_widget(widget.id);
+    Widget *last_widget = get_latest_widget();
+    Widget *new_widget  = get_new_widget(widget.id);
     memcpy(new_widget, &widget, sizeof(Widget));
 
     //widget focus
     auto panel_focused_widget = LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_curr];
     new_widget->focused = panel_focused_widget != NULL && strcmp(new_widget->id, panel_focused_widget) == 0;
 
-    //increase widget rect in panel
+    //panel row, increases widget rect in panel
     Panel *panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
-    panel->widgets_rect.size.h += new_widget->size.h;
-    if(new_widget->size.w > panel->widgets_rect.size.w){
-        panel->widgets_rect.size.w = new_widget->size.w;
+    bool inside_row = (last_widget == nullptr || last_widget->is_inline);
+    if(new_widget->is_inline && !inside_row){
+        //comienza nueva row inline
+        tui_widget_row_begin(panel);
+        tui_widget_row_push(panel, new_widget);
+    }else if(new_widget->is_inline && inside_row){
+        //ya estaba en una row inline y la continuo
+        tui_widget_row_push(panel, new_widget);
+    }else{ //widget not inline
+        tui_widget_row_end(panel); //ten case de que haya habido una row abierta
+        //widgets not inline have their own row
+        tui_widget_row_begin(panel);
+        tui_widget_row_push(panel, new_widget);
+        tui_widget_row_end(panel);
     }
 }
 
