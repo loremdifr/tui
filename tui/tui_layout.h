@@ -142,7 +142,7 @@ private void tui_render_panel(Panel *panel){
     const int BASE_Y = panel->outer_rect.pos.y + BORDER + PADDING;
     vec2i cursor_pos = {.x = BASE_X, .y = BASE_Y};
 
-    //in case there was still an open inline row
+    //in case there was still an open inline row from the definition pass
     tui_widget_row_end(panel);
 
     //panels always render their content centered vertically
@@ -178,7 +178,6 @@ private void tui_render_panel(Panel *panel){
                 inline_row_total++;
                 inline_row_width += next_panel->size.x;
             }
-
         }
 
         //not an inline widget, reset the row
@@ -187,6 +186,7 @@ private void tui_render_panel(Panel *panel){
             inline_row_width = 0;
             inline_row_total = 0;
             inline_row_index = 0;
+            //immediately move cursor down
         }
 
 
