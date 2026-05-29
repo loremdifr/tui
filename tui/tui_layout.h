@@ -169,7 +169,7 @@ private void tui_render_panel(Panel *panel){
 
         //if we have encountered a new inline widget,
         //we collect the width of all subsequent inline widgets
-        if(!widget->is_inline && !inline_row){
+        if(widget->is_inline && !inline_row){
             inline_row = true;
             inline_row_index = 0;
             for(int j = i; j < panel->widget_count; j++){
@@ -178,6 +178,14 @@ private void tui_render_panel(Panel *panel){
                 inline_row_total++;
                 inline_row_width += next_panel->size.x;
             }
+
+            //centrar row horizontally
+            auto centered_row = center_in_container(
+                cursor_pos.x,
+                inline_row_width,
+                panel->outer_rect.size.w - PADDING - BORDER
+            );
+            cursor_pos.x += centered_row;
         }
 
         //not an inline widget, reset the row
@@ -187,28 +195,35 @@ private void tui_render_panel(Panel *panel){
             inline_row_total = 0;
             inline_row_index = 0;
             //immediately move cursor down
-        }
 
-
-        //render current widget
-        tui_render_widget(widget, cursor_pos);
-
-        if (i >= panel->widget_count - 1) break; //no more panels, break early
-
-        //determine cursor movement
-        if(widget->is_inline){
-            cursor_pos.x += widget->size.x;
-        }else{
-            //move cursror below the widget we just rendered
-            cursor_pos.x = BASE_X;
-            cursor_pos.y += widget->size.y;
-
-            // center widget horizontally
+            // center next widget horizontally
             cursor_pos.x = center_in_container(
                 cursor_pos.x,
                 widget->size.w,
                 panel->outer_rect.size.w - PADDING - BORDER
             );
+        }
+
+        //render current widget
+        tui_render_widget(widget, cursor_pos);
+        // cursor_pos.x += widget->size.w;
+
+        if (i >= panel->widget_count - 1) break; //no more panels, break early
+
+        //hay siguiente?
+        Widget *next_widget = (i < panel->widget_count - 2)
+            ? &panel->widgets[i + 1]
+            : nullptr;
+
+        //determine cursor movement
+        if(widget->is_inline
+        && next_widget != nullptr
+        && next_widget->is_inline){
+            cursor_pos.x += widget->size.x;
+        }else{
+            //move cursror below the widget we just rendered
+            cursor_pos.x = BASE_X;
+            cursor_pos.y += widget->size.y;
         }
 
     }
