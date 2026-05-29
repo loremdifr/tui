@@ -155,8 +155,8 @@ private void tui_render_panel(Panel *panel){
 
     bool inline_row = false;
     int inline_row_width = 0;
-    int inline_row_total = 0;
-    int inline_row_index = 0;
+    // int inline_row_total = 0;
+    // int inline_row_index = 0;
 
     for (int i = 0; i < panel->widget_count; i++){
         //NOTE: we dont use clamp on the cursor because we might have scrollable content here
@@ -171,11 +171,11 @@ private void tui_render_panel(Panel *panel){
         //we collect the width of all subsequent inline widgets
         if(widget->is_inline && !inline_row){
             inline_row = true;
-            inline_row_index = 0;
+            // inline_row_index = 0;
             for(int j = i; j < panel->widget_count; j++){
                 Widget *next_panel = &panel->widgets[j];
                 if(!next_panel->is_inline) break;
-                inline_row_total++;
+                // inline_row_total++;
                 inline_row_width += next_panel->size.x;
             }
 
@@ -192,8 +192,8 @@ private void tui_render_panel(Panel *panel){
         if(!widget->is_inline){
             inline_row = false;
             inline_row_width = 0;
-            inline_row_total = 0;
-            inline_row_index = 0;
+            // inline_row_total = 0;
+            // inline_row_index = 0;
             //immediately move cursor down
 
             // center next widget horizontally
