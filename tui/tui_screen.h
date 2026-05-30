@@ -27,7 +27,9 @@ typedef enum {
     COLOR_YELLOW,
     COLOR_MAGENTA,
     COLOR_GRAY,
-    //TODO: ...
+    COLOR_GRAY_DARK,
+    COLOR_MAGENTA_DARK,
+    //TODO: add more colors...
 } Color;
 
 typedef struct {

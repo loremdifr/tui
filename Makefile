@@ -1,4 +1,4 @@
-CC = zig cc
+CC = clang
 
 EXEC_NAME = build/main
 SRC_NAME  = main.c
@@ -24,10 +24,17 @@ run:
 	$(CC) $(CFLAGS) $(SRC_NAME) -o $(EXEC_NAME) $(LD_LIBS)
 	./$(EXEC_NAME) $(ARGS)
 
+check:
+	$(CC) -fsyntax-only $(CFLAGS) $(SRC_NAME)
+
 gf2:
 	rm -f $(EXEC_NAME)
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SRC_NAME) -o $(EXEC_NAME) $(LD_LIBS)
 	gf2 --args ./$(EXEC_NAME) $(ARGS)
 
-.PHONY: run valgrind gf2
+# phony is so that it skips checking the commands as if they
+# were files to avoid recompilation. none of those commands are files
+# and since we're using a unity build we don't really need separate translation
+# units
+.PHONY: run valgrind gf2 check

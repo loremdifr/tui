@@ -42,8 +42,8 @@ typedef struct {
 
 
 private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetInputTextData  *data     = widget->data;
-    WidgetInputTextState *state    = widget->state;
+    WidgetInputTextData  *data  = widget->data;
+    WidgetInputTextState *state = widget->state;
 
     //caret logic
     double now = get_curr_time();
@@ -168,7 +168,7 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
             widget_state->cursor = widget_data->string.length;
             break;
         case KEY_LEFT:
-            //TODO: ctrl move 
+            //TODO: ctrl move
             if(!widget_state->editing) break;
             tui_widget_input_text_move_cursor(widget, -1);
             break;

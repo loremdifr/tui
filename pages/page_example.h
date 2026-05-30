@@ -71,6 +71,11 @@ private void page_example_render(void){
 		}
 		tui_widget_label(u8"Hello World! 🌎");
 		
+		tui_widget_switch("SWITCH_1",
+			.label=u8"Mostrar Popup ",
+			.storage=&show_popup,
+			.on_toggle=nullptr
+		);
 
 		tui_widget_input_text("INPUT_TEXT_1", //WIDGET_ID, do not repeat!
 			.label=u8"Nombre: ",

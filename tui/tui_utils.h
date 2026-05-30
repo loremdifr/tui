@@ -9,6 +9,7 @@
 #include <time.h>
 
 #define private static
+#define arr_size(arr) (sizeof(arr) / sizeof(arr[0]))
 
 typedef struct {
     union{

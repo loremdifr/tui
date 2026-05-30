@@ -51,6 +51,11 @@
 #endif //TUI_WIDGET_LABEL_IMPL
 #include "tui_widget_label.h"
 
+#ifndef TUI_WIDGET_SWITCH_IMPL
+#define TUI_WIDGET_SWITCH_IMPL
+#endif //TUI_WIDGET_SWITCH_IMPL
+#include "tui_widget_switch.h"
+
 #ifndef TUI_WIDGET_INPUT_TEXT_IMPL
 #define TUI_WIDGET_INPUT_TEXT_IMPL
 #endif //TUI_WIDGET_INPUT_TEXT_IMPL
