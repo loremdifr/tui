@@ -17,8 +17,6 @@
 typedef enum {
     LAYOUT_SINGLE_PANEL,
     LAYOUT_SIDEBAR_LEFT,
-    // LAYOUT_SIDEBAR_LEFT_NARROW,
-    // LAYOUT_SIDEBAR_LEFT_WIDE,
     LAYOUT_SIDEBAR_RIGHT,
     LAYOUT_SPLIT_VERTICAL,
     LAYOUT_SIDEBAR_LEFT_SPLIT_RIGHT,
@@ -58,6 +56,12 @@ typedef struct {
     rect2i    widgets_rect;  //total accumulated rect around the widgets
     vec2i     curr_row_size;
 } Panel;
+
+typedef struct {
+    const uint8_t *text;
+    Color fg_color;
+    Color bg_color;
+} AnimationFrame;
 
 //api to defin the panels and widgets on the page
 void tui_panel_begin(PanelSlot slot);
@@ -263,8 +267,14 @@ private rect2i tui_panel_rect(PanelSlot slot){
     case LAYOUT_SINGLE_PANEL:
         switch(slot){
         case SLOT_MAIN: return (rect2i){ .size = LAYOUT_STATE.base_size };
+        case SLOT_TOP:
+        case SLOT_SIDEBAR:
+        case SLOT_BOTTOM:
         default: assert(false); //using an invalid slot for this layout
         }
+    case LAYOUT_SIDEBAR_LEFT:
+    case LAYOUT_SIDEBAR_RIGHT:
+    case LAYOUT_SIDEBAR_LEFT_SPLIT_RIGHT:
     case LAYOUT_SPLIT_VERTICAL:
     default: assert(false); //TODO: layout not implemented yet
     //TODO: add more panel layout definitions

@@ -26,6 +26,7 @@ typedef enum {
     COLOR_BLUE,
     COLOR_YELLOW,
     COLOR_MAGENTA,
+    COLOR_CYAN,
     COLOR_GRAY,
     COLOR_GRAY_DARK,
     COLOR_MAGENTA_DARK,

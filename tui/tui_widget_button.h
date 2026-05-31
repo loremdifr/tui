@@ -55,6 +55,7 @@ private bool tui_widget_button_input(Widget *widget, InputEvent input_event){
         default:
         break;
         }
+    case INPUT_MOUSE_BUTTON:
     case INPUT_NONE:
     default:
     }

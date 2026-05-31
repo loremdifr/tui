@@ -33,12 +33,6 @@ typedef struct {
     int8_t  frame_step;
 } WidgetSwitchState;
 
-typedef struct {
-    const uint8_t *text;
-    Color fg_color;
-    Color bg_color;
-} AnimationFrame;
-
 private void tui_widget_switch_render(Widget *widget, Screen *screen, vec2i position){
     WidgetSwitchState *widget_state = widget->state;
     WidgetSwitchData *widget_data   = widget->data;

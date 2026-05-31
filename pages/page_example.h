@@ -64,13 +64,16 @@ private void page_example_process(float delta_time){
 
 private void page_example_render(void){
 	tui_panel_begin(SLOT_MAIN);
+
+		tui_widget_spinner("Cargando...");
+
 		if(show_popup){
 			tui_widget_label("show_popup!");
 		}else{
 			tui_widget_label("show_popup: false");
 		}
 		tui_widget_label(u8"Hello World! 🌎");
-		
+
 		tui_widget_switch("SWITCH_1",
 			.label=u8"Mostrar Popup ",
 			.storage=&show_popup,

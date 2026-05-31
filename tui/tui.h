@@ -61,6 +61,11 @@
 #endif //TUI_WIDGET_INPUT_TEXT_IMPL
 #include "tui_widget_input_text.h"
 
+#ifndef TUI_WIDGET_SPINNER_IMPL
+#define TUI_WIDGET_SPINNER_IMPL
+#endif //TUI_WIDGET_SPINNER_IMPL
+#include "tui_widget_spinner.h"
+
 // Pages and nav ---------------------------------------------------------------
 
 typedef void (*InitFunction   )(void);
@@ -225,7 +230,6 @@ private inline void tui_write_color(TextFormat text_format, Color fg_color, Colo
 
     //color frente
     switch (fg_color) {
-        default:
     	case COLOR_DEFAULT:
         case COLOR_WHITE:   format_params_push(39); break;
         case COLOR_BLACK:   format_params_push(30); break;
@@ -235,12 +239,14 @@ private inline void tui_write_color(TextFormat text_format, Color fg_color, Colo
         case COLOR_YELLOW:  format_params_push(33); break;
         case COLOR_MAGENTA: format_params_push(95); break;
         case COLOR_GRAY:    format_params_push(90); break;
+        case COLOR_CYAN:    format_params_push(36); break;
+        default: assert(false);
+
     }
 
     //color fondo
     switch(bg_color){
         case COLOR_WHITE:   format_params_push(47);  break;
-        default:
     	case COLOR_DEFAULT:
         case COLOR_BLACK:   format_params_push(49);  break;
         case COLOR_RED:     format_params_push(41);  break;
@@ -249,6 +255,8 @@ private inline void tui_write_color(TextFormat text_format, Color fg_color, Colo
         case COLOR_YELLOW:  format_params_push(33);  break;
         case COLOR_MAGENTA: format_params_push(105); break;
         case COLOR_GRAY:    format_params_push(100); break;
+        case COLOR_CYAN:    format_params_push(46); break;
+        default: assert(false);
     }
 
     //concatenar formato
