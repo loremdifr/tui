@@ -10,60 +10,38 @@
 #include <assert.h>
 #include <stdarg.h>
 
-#ifndef TUI_UTILS_IMPL
 #define TUI_UTILS_IMPL
-#endif //TUI_UTILS_IMPL
 #include "tui_utils.h"
 
-#ifndef TUI_STRING_IMPL
 #define TUI_STRING_IMPL
-#endif //TUI_STRING_IMPL
 #include "tui_string.h"
 
-#ifndef TUI_ARENA_IMPL
 #define TUI_ARENA_IMPL
-#endif //TUI_ARENA_IMPL
 #include "tui_arena.h"
 
-#ifndef TUI_PLATFORM_IMPL
 #define TUI_PLATFORM_IMPL
-#endif //TUI_PLATFORM_IMPL
 #include "tui_platform.h"
 
-#ifndef TUI_SCREEN_IMPL
 #define TUI_SCREEN_IMPL
-#endif //TUI_SCREEN_IMPL
 #include "tui_screen.h"
 
-#ifndef TUI_LAYOUT_IMPL
 #define TUI_LAYOUT_IMPL
-#endif //TUI_LAYOUT_IMPL
 #include "tui_layout.h"
 
 //widgets
-#ifndef TUI_WIDGET_BUTTON_IMPL
 #define TUI_WIDGET_BUTTON_IMPL
-#endif //TUI_WIDGET_BUTTON_IMPL
 #include "tui_widget_button.h"
 
-#ifndef TUI_WIDGET_LABEL_IMPL
 #define TUI_WIDGET_LABEL_IMPL
-#endif //TUI_WIDGET_LABEL_IMPL
 #include "tui_widget_label.h"
 
-#ifndef TUI_WIDGET_SWITCH_IMPL
 #define TUI_WIDGET_SWITCH_IMPL
-#endif //TUI_WIDGET_SWITCH_IMPL
 #include "tui_widget_switch.h"
 
-#ifndef TUI_WIDGET_INPUT_TEXT_IMPL
 #define TUI_WIDGET_INPUT_TEXT_IMPL
-#endif //TUI_WIDGET_INPUT_TEXT_IMPL
 #include "tui_widget_input_text.h"
 
-#ifndef TUI_WIDGET_SPINNER_IMPL
 #define TUI_WIDGET_SPINNER_IMPL
-#endif //TUI_WIDGET_SPINNER_IMPL
 #include "tui_widget_spinner.h"
 
 // Pages and nav ---------------------------------------------------------------

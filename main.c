@@ -1,19 +1,13 @@
-#ifndef _GNU_SOURCE
-	#define _GNU_SOURCE //required here for the clock_gettime in tui_utils.h
-#endif
+#define _GNU_SOURCE //required here for the clock_gettime in tui_utils.h
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
 
-#ifndef TUI_IMPL
 #define TUI_IMPL
-#endif //TUI_IMPL
 #include "tui/tui.h"
 
-#ifndef PAGE_EXAMPLE_IMPL
 #define PAGE_EXAMPLE_IMPL
-#endif //PAGE_EXAMPLE_IMPL
 #include "pages/page_example.h"
 
 int main(void)
