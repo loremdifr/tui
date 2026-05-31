@@ -4,7 +4,12 @@ MUST-HAVE:
 
 	[ ]	pages functionpointers must be optional
 	[ ]	probably all containers need scrolling
-	[ ]	resize aware and min size guards
+	[ ]	RESIZE
+		[x]	handle resize properly on linux @done (26-05-31 17:24)
+		[ ]	hnadle resize on windows
+		[ ]	size aware guards to never render the screen "ugly"
+			- these could be smart by using the size of panels.
+			- panels will be vertically scrollable but never horizontally scrollable, so width is far more important to guard against
 	[x]	margin between widgets is being accounted for twice @done (26-05-25 20:20)
 		- it's not, it's an illussion because of the empty space provided by the box characters
 		- might need to make it so MARGIN is defined inside the element somehow, and labels get 1 more than others.
@@ -23,16 +28,27 @@ MUST-HAVE:
 		[x]	label @done (26-05-22 01:11)
 		[x]	button @done (26-05-24 14:56)
 		[ ]	text input
+			[x]	basic input @done (26-05-30 21:20)
+			[x]	utf8 support @done (26-05-30 21:20)
+			[x]	deleting and backspacing @done (26-05-30 21:20)
+			[ ]	scrollable content and avoid overflow
+			[ ]	word by word movment
+			[ ]	selection
+			[ ]	expandable size to the placeholder or container max
 		[ ]	select
 		[ ]	select with autocomplete
 		[ ]	number input
 		[ ]	checkbox
+		[x]	switch toggle @done (26-05-30 21:18)
+		[x]	spinner @done (26-05-30 21:18)
 		[ ]	tabs
 		[ ]	radio
+			- you give them a storage and a value
+			- it shows if the storage is the value
+			- and entering, it applies
 		---
 		[ ]	table ?
-		[ ]	two or more elements side by side? two buttons... a label and soemthing else..?
-			[ ]	perhaps a widget that's a container?
+		[x]	two or more elements side by side? inline widgets!
 
 Extra stuff:
 	[ ]	mouse support

@@ -46,6 +46,7 @@ uint8_t        utf8_char_length(uint8_t byte);
 int            utf8_str_length(const uint8_t *str);
 const uint8_t *utf8_str_next_char(const uint8_t *curr_char);
 uint8_t       *utf8_str_concat(uint8_t *dest, const uint8_t *src);
+uint8_t       *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t limit);
 uint32_t       utf8_pack(const uint8_t bytes[]);
 void           utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes);
 
@@ -134,6 +135,23 @@ uint8_t *utf8_str_concat(uint8_t *dest, const uint8_t *src){
     for(size_t i = 0; i < src_length; i++){
         dest[dest_length + i] = src[i];
     }
+
+    return dest;
+}
+
+// this method truncates the resulting string to ensure it always stays within the limit
+uint8_t *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t limit){
+    if(dest == NULL) return NULL; //TODO: use nullptr instead?
+    if(src == NULL) return dest;
+
+    size_t dest_length = strlen((const char*)dest);
+    size_t src_length  = strlen((const char*)src);
+    size_t i = 0;
+    for(; i < src_length; i++){
+        if(i + dest_length > limit - 1) break;
+        dest[dest_length + i] = src[i];
+    }
+    dest[dest_length + i] = '\0'; //null terminator always!!
 
     return dest;
 }

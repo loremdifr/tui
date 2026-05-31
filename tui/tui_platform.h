@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <signal.h>
 
 typedef enum {
 	MOUSE_BUTTON_NONE       = 0,
@@ -120,6 +121,7 @@ typedef enum {
 	INPUT_KEY,
 	INPUT_MOUSE_BUTTON,
 	// INPUT_MOUSE_MOTION,
+	INPUT_WINDOW_RESIZE,
 } InputType;
 
 typedef struct {
@@ -162,6 +164,7 @@ private void tui_parse_input(void);
 typedef bool (*ProcessInputEventFunction)(InputEvent);
 
 //public API
+// void tui_set_resize_callback(FunctionPointer on_resize);
 void tui_init(void);
 void tui_close(void);
 vec2i tui_size(void);
@@ -175,7 +178,6 @@ void tui_input_process(ProcessInputEventFunction input_processor);
 #ifdef TUI_PLATFORM_IMPL
 
 InputEventQueue EVENT_QUEUE = {};
-
 private inline void input_event_queue_clear(){
 	EVENT_QUEUE.count = 0;
 }
@@ -192,6 +194,14 @@ private InputEvent *input_event_queue_at(int index){
     index                  = clamp(index, 0, EVENT_QUEUE.count);
     InputEvent *next_event = &(EVENT_QUEUE.events[index]);
 	return next_event;
+}
+
+private void emit_resize_event(void){
+	//TODO: throttle them...?
+	InputEvent resize_event = {
+        .input_type = INPUT_WINDOW_RESIZE,
+	};
+	input_event_queue_push(resize_event);
 }
 
 #ifdef TUI_WINDOWS
@@ -248,6 +258,7 @@ private void tui_parse_input(void){
     if(success && count > 0){
 
     }
+    //TODO: catch EventType == WINDOW_BUFFER_SIZE_EVENT and fire the resize event!
 
     //TODO: parse the record and push the event
     // https://learn.microsoft.com/en-us/windows/console/input-record-str
@@ -294,8 +305,27 @@ void tui_write_bytes(const uint8_t *bytes, uint8_t total_bytes){
 
 #else // LINUX
 
-static struct termios TERMIOS_ORIGINAL;
+#include <signal.h>
+#include <sys/signalfd.h>
 
+private int SIGNAL_FD_EVENT;
+private void tui_setup_sigwinch(void){
+	// NOTE: first we block Block the SIGWINCH signal
+	//       so the default async handler never triggers
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGWINCH);
+    auto result = sigprocmask(SIG_BLOCK, &mask, NULL);
+    assert(result >= 0); //error
+
+    // Create the signalfd to translate the signal into an FD event
+    // SFD_NONBLOCK: ensures we don't get stuck on the read() function later
+    // SFD_CLOEXEC:  stops FD from leaking
+    SIGNAL_FD_EVENT = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
+    assert(SIGNAL_FD_EVENT >= 0);
+}
+
+private struct termios TERMIOS_ORIGINAL;
 void tui_init(void){
 	tcgetattr(STDIN_FILENO, &TERMIOS_ORIGINAL);
 	struct termios raw = TERMIOS_ORIGINAL;
@@ -313,6 +343,8 @@ void tui_init(void){
 	tui_write("\033[?1000h"); //mouse suppo
     tui_write("\033[?1006h"); //SGR extended coords
     tui_write("\033[?25l");   //ocultar cursor
+
+    tui_setup_sigwinch();
 }
 
 void tui_close(void){
@@ -323,11 +355,28 @@ void tui_close(void){
 }
 
 private bool tui_poll_input(int timeout_ms){
-	struct pollfd pfd = {
-		.fd = STDIN_FILENO,
-		.events = POLLIN
+	struct pollfd polls[2] = {
+		[0] = { .fd = STDIN_FILENO,    .events = POLLIN }, //input
+		[1] = { .fd = SIGNAL_FD_EVENT, .events = POLLIN }, //signals
 	};
-    return poll(&pfd, 1, timeout_ms) > 0;
+	int events_count = poll(polls, 2, timeout_ms);
+
+	if (events_count <= 0) return false;
+
+	if(polls[1].revents & POLLIN){ //resize event
+		struct signalfd_siginfo fd_siginfo;
+		ssize_t signal_fd_info = read(
+			SIGNAL_FD_EVENT, &fd_siginfo, sizeof(struct signalfd_siginfo)
+		);
+		if(signal_fd_info == sizeof(struct signalfd_siginfo)){
+			if(fd_siginfo.ssi_signo == SIGWINCH){
+				emit_resize_event();
+			}
+		}
+	}
+
+	//other events
+	return (polls[0].revents & POLLIN);
 }
 
 

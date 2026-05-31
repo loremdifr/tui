@@ -255,7 +255,7 @@ private inline void tui_write_color(TextFormat text_format, Color fg_color, Colo
         case COLOR_YELLOW:  format_params_push(33);  break;
         case COLOR_MAGENTA: format_params_push(105); break;
         case COLOR_GRAY:    format_params_push(100); break;
-        case COLOR_CYAN:    format_params_push(46); break;
+        case COLOR_CYAN:    format_params_push(46);  break;
         default: assert(false);
     }
 
@@ -340,17 +340,28 @@ private void tui_render_hotkeys(Screen *screen){
 	//      truncate the last one and add a way to "see more"
 	screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
 
+	// como se si me pase?
+	// si al concatenar, es mas grande de lo esperado, me pasé.
+	// en cuyo caso:
+	// 	repetir
+	// 		vuelvo un paso atras.
+	// 		intento poner el texto de ayuda
+	// 		si puedo break
+
 	auto separator = u8" ● ";
-	uint8_t utf8_str[screen->size.w] = {};
+	const auto max_width = screen->size.w;
+	uint8_t utf8_str[max_width] = {};
 
 	for(int i = 0; i < HOTKEY_HINTS.total; i++){
 		HotkeyHint hkey = HOTKEY_HINTS.hints[i];
-		utf8_str_concat(utf8_str, hkey.key);
-		utf8_str_concat(utf8_str, u8" ");
-		utf8_str_concat(utf8_str, hkey.hint);
+		//TODO: max_width here is characters whereas expected
+		//      limit in utf8_str_concat_max is in "bytes"!
+		utf8_str_concat_max(utf8_str, hkey.key,  max_width);
+		utf8_str_concat_max(utf8_str, u8" ",     max_width);
+		utf8_str_concat_max(utf8_str, hkey.hint, max_width);
 
 		if(i != HOTKEY_HINTS.total - 1){
-			utf8_str_concat(utf8_str, separator);
+			utf8_str_concat_max(utf8_str, separator, max_width);
 		}
 	}
 	screen_set_utf8_str(screen, 0, screen->size.h, utf8_str);
@@ -373,6 +384,19 @@ private bool tui_process_input_hotkeys(InputEvent input_event){
 	return false;
 }
 
+private bool tui_process_input_resize(InputEvent input_event){
+	if(input_event.input_type != INPUT_WINDOW_RESIZE) return false;
+
+	auto terminal_size = tui_size();
+
+	screen_free(&APP_STATE.curr_screen);
+	screen_free(&APP_STATE.next_screen);
+	APP_STATE.curr_screen = screen_create(terminal_size);
+	APP_STATE.next_screen = screen_create(terminal_size);
+
+	tui_clear();
+	return true;
+}
 
 void tui_run_loop(void){
 	//App State Init
@@ -384,6 +408,7 @@ void tui_run_loop(void){
 	APP_STATE.curr_frame_time = get_curr_time();
 	const double frame_time = 1.0 / APP_STATE.fps;
 
+	// tui_set_resize_callback(tui_resize);
 	tui_init(); //platform init
 	tui_clear();
 
@@ -434,6 +459,9 @@ void tui_run_loop(void){
 
 		//render the TUI diff to the screen
 		tui_render();
+
+		//NOTE: we handle this at the end because it can destroy the screens!
+		tui_input_process(&tui_process_input_resize);
 	}
 	screen_free(&APP_STATE.curr_screen);
 	screen_free(&APP_STATE.next_screen);
