@@ -16,6 +16,8 @@ typedef struct {
 
 // api
 String string_from(uint8_t *storage, size_t capacity);
+String string_substr(String *str, size_t start_index, size_t end_index);
+String string_from_substr(const uint8_t *storage, size_t start_index, size_t end_index);
 void   string_insert_at(String *str, size_t index, uint32_t new_char);
 void   string_delete_at(String *str, size_t index);
 
@@ -49,6 +51,24 @@ String string_from(uint8_t *storage, size_t capacity) {
             : 0
     };
     return str;
+}
+
+String string_from_substr(const uint8_t *storage, size_t start_index, size_t end_index){
+    String str = string_from((uint8_t *)storage, strlen((char *)storage));
+    return string_substr(&str, start_index, end_index);
+}
+
+String string_substr(String *str, size_t start_index, size_t end_index){
+    auto start = string_byte_pos_from_index(str, start_index);
+    auto end   = string_byte_pos_from_index(str, end_index);
+
+    String substr = {
+        .data     = str->data + start,
+        .capacity = end,
+        .bytes    = end - start,
+        .length   = end_index - start_index
+    };
+    return substr;
 }
 
 void string_insert_at(String *str, size_t index, uint32_t new_char){

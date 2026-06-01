@@ -4,6 +4,8 @@ MUST-HAVE:
 
 	[ ]	pages functionpointers must be optional
 	[ ]	probably all containers need scrolling
+		-	because all panels have a border, we can render the scrollbar inside the border!
+		- scrolling requires knowing the entire widgets_rect and we DO have it!
 	[ ]	RESIZE
 		[x]	handle resize properly on linux @done (26-05-31 17:24)
 		[ ]	hnadle resize on windows

@@ -28,12 +28,14 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
 typedef struct {
     const uint8_t *label;
     size_t         label_width;
+    size_t         input_width;
     const uint8_t *placeholder;
     String         string;
 } WidgetInputTextData;
 
 typedef struct {
     size_t cursor; // char index
+    size_t scroll; // char index
     bool   editing;
     bool   caret_show;
     double caret_interval;
@@ -44,6 +46,11 @@ typedef struct {
 private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputTextData  *data  = widget->data;
     WidgetInputTextState *state = widget->state;
+
+    //scroll based on cursor location and cursor
+    if(state->cursor > data->input_width){
+        state->scroll = state->cursor - data->input_width;
+    }
 
     //caret logic
     double now = get_curr_time();
@@ -60,23 +67,27 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     );
     if(data->string.length == 0){
         //show placeholder
-        //TODO: truncate to length
         screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
-        screen_set_utf8_str(
+        auto placeholder_substr = string_from_substr(data->placeholder, 0, data->input_width);
+        screen_set_string(
             screen,
             position.x + data->label_width,
             position.y,
-            data->placeholder
+            &placeholder_substr
         );
     }else{
         //show text
-        //TODO: truncate to length, and scroll with cursor
         screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
-        screen_set_utf8_str(
+        auto text_substr = string_substr(
+            &data->string,
+            state->scroll,
+            clamp(data->string.length, 0, data->input_width) + state->scroll
+        );
+        screen_set_string(
             screen,
             position.x + data->label_width,
             position.y,
-            data->string.data
+            &text_substr
         );
     }
 
@@ -94,7 +105,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
         screen_set_utf8(
             screen,
-            position.x + data->label_width + state->cursor,
+            position.x + data->label_width + state->cursor - state->scroll,
             position.y,
             u8"█"
         );
@@ -229,6 +240,7 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
 	);
     widget_data->label       = params->label;
     widget_data->label_width = utf8_str_length(params->label);
+    widget_data->input_width = 16; // TODO: do something about this
     widget_data->placeholder = params->placeholder;
     widget_data->string      = string_from(params->storage, params->capacity);
 
@@ -252,7 +264,7 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
         .id        = widget_id,
         .data      = widget_data,
         .state     = widget_state,
-        .size.w    = widget_data->label_width + 16,
+        .size.w    = widget_data->label_width + widget_data->input_width,
         .size.h    = 2,
         .focusable = true,
         .is_inline = params->is_inline,
