@@ -33,7 +33,7 @@ MUST-HAVE:
 			[x]	basic input @done (26-05-30 21:20)
 			[x]	utf8 support @done (26-05-30 21:20)
 			[x]	deleting and backspacing @done (26-05-30 21:20)
-			[ ]	scrollable content and avoid overflow
+			[x]	scrollable content and avoid overflow @done (26-06-01 03:15)
 			[ ]	word by word movment
 			[ ]	selection
 			[ ]	expandable size to the placeholder or container max

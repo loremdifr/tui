@@ -14,6 +14,7 @@ void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
 void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
 void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect2i rect); //TODO:
 void tui_draw_circ(Screen *screen, uint8_t *utf8_char, rect2i rect); //TODO:
+void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to);
 
 #ifdef TUI_DRAW_IMPL
 
@@ -215,6 +216,44 @@ void tui_draw_rect(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
 
 void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
     //TODO: implement
+}
+
+void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
+    //TODO: move these to top level?
+    static uint8_t *SCROLL_CAP_TOP    = u8"┴";
+    static uint8_t *SCROLL_CAP_BOTTOM = u8"┬";
+    static uint8_t *SCROLL_BG         = u8"┆";
+    static uint8_t *SCROLL_KNOB       = u8"█";
+
+    //draw end caps
+    screen_set_utf8(screen, from.x, from.y, SCROLL_CAP_TOP);
+    screen_set_utf8(screen, to.x, to.y, SCROLL_CAP_BOTTOM);
+
+    from.y += 1;
+    to.y -= 1;
+
+    //draw scroll background
+    screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+    tui_draw_line(screen, SCROLL_BG, from, to);
+
+    //size of the knob
+    auto scrollbar_size = to.x - from.x;
+    auto shown_size     = shown_to - shown_from;
+    float shown_prt     = (float)shown_size / (float)total_size;
+    int knob_size       = (int)(scrollbar_size * shown_prt);
+    knob_size           = clamp(knob_size, 1, scrollbar_size - 1);
+    auto knob_to        = (vec2i){.x = from.x, .y = from.y + knob_size};
+
+    //pos of the knob
+    //TODO: calculate max "scrolled", and see percent based on how much we have scrolled
+    //      note that max scrolled is full height - the size of the shown view, since it
+    //      can't scroll past the end
+    auto knob_from = (vec2i){.x = from.x, .y = from.y};
+
+
+    //draw the knob
+    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    tui_draw_line(screen, SCROLL_KNOB, knob_from, knob_to);
 }
 
 #endif //TUI_DRAW_IMPL

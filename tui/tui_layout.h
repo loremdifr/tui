@@ -232,11 +232,25 @@ private void tui_render_panel(Panel *panel){
 
     }
 
-    //draw panel border, connected to other panels
+    //draw panel border
     //TODO: set focused
-    //LAYOUT_STATE.panel_focused == ??
     //TODO: possible small optimization, same border to the app border if only single panel
-    tui_draw_box_connected(LAYOUT_STATE.screen, panel->outer_rect);
+    tui_draw_box(LAYOUT_STATE.screen, panel->outer_rect);
+
+    //panel scroll
+    constexpr int scrollbar_padding = 2;
+    auto from = (vec2i){
+        .x = panel->outer_rect.pos.x + panel->outer_rect.size.x,
+        .y = panel->outer_rect.pos.y + scrollbar_padding
+    };
+    auto to = (vec2i){
+        .x = from.x,
+        .y = panel->outer_rect.pos.y + panel->outer_rect.size.y - 1 - scrollbar_padding
+    };
+    int total_size = 234; //TODO
+    int shown_from = 21; //TODO
+    int shown_to   = 100; //TODO
+    tui_draw_scrollbar(LAYOUT_STATE.screen, from, to, total_size, shown_from, shown_to);
 }
 
 private Panel *tui_get_panel_focused(){
