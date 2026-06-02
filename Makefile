@@ -21,7 +21,7 @@ valgrind:
 run:
 	rm -f $(EXEC_NAME)
 	mkdir -p build
-	$(CC) $(CFLAGS) $(SRC_NAME) -o $(EXEC_NAME) $(LD_LIBS)
+	bear -- $(CC) $(CFLAGS) $(SRC_NAME) -o $(EXEC_NAME) $(LD_LIBS)
 	./$(EXEC_NAME) $(ARGS)
 
 check:
