@@ -37,6 +37,8 @@ typedef struct {
 typedef void(*FunctionPointer)(void);
 
 int sign(int val);
+int min(int a, int b);
+int max(int a, int b);
 int clamp(int val, int min, int max);
 int clamp_overflow(int val, int min, int max);
 double get_curr_time(void);
@@ -63,6 +65,13 @@ int sign(int val){
     if (val < 0) return -1;
     if (val > 0) return 1;
     return 0;
+}
+
+int min(int a, int b){
+    return a < b ? a : b;
+}
+int max(int a, int b){
+    return a > b ? a : b;
 }
 
 int clamp(int val, int min, int max){

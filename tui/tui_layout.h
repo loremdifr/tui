@@ -53,8 +53,10 @@ typedef struct {
     Widget    widgets[TUI_WIDGETS_IN_PANEL_MAX];
     uint8_t   widget_count;
     rect2i    outer_rect;    //cached
+    rect2i    inner_rect;    //cached
     rect2i    widgets_rect;  //total accumulated rect around the widgets
     vec2i     curr_row_size;
+    int       scroll_offset;
 } Panel;
 
 typedef struct {
@@ -66,6 +68,8 @@ typedef struct {
 //api to defin the panels and widgets on the page
 void tui_panel_begin(PanelSlot slot);
 void tui_panel_end(void);
+void tui_panel_scroll(Panel *panel, int offset);
+void tui_panel_scroll_to(Panel *panel, int widget_index); //TODO: widget index or widget pointer?
 
 //widgets
 char *tui_create_widget_id();
@@ -247,9 +251,9 @@ private void tui_render_panel(Panel *panel){
         .x = from.x,
         .y = panel->outer_rect.pos.y + panel->outer_rect.size.y - 1 - scrollbar_padding
     };
-    int total_size = 234; //TODO
-    int shown_from = 21; //TODO
-    int shown_to   = 100; //TODO
+    int total_size = panel->widgets_rect.size.h;
+    int shown_from = panel->scroll_offset;
+    int shown_to   = panel->scroll_offset + panel->inner_rect.size.h;
     tui_draw_scrollbar(LAYOUT_STATE.screen, from, to, total_size, shown_from, shown_to);
 }
 
@@ -303,6 +307,16 @@ void tui_panel_begin(PanelSlot slot){
     Panel new_panel = {
         .slot = slot,
         .outer_rect = panel_rect,
+        .inner_rect = (rect2i){
+            .pos  = (vec2i){
+                .x = panel_rect.pos.x + PADDING + BORDER,
+                .y = panel_rect.pos.y + PADDING + BORDER,
+            },
+            .size = (vec2i){
+                .w = panel_rect.size.w - (PADDING + BORDER) * 2,
+                .h = panel_rect.size.h - (PADDING + BORDER) * 2,
+            },
+        },
     };
     LAYOUT_STATE.panel_curr = LAYOUT_STATE.panel_count;
     LAYOUT_STATE.panels[LAYOUT_STATE.panel_count++] = new_panel;
@@ -311,6 +325,14 @@ void tui_panel_begin(PanelSlot slot){
 void tui_panel_end(void){
     assert(LAYOUT_STATE.panel_curr != -1); //no panel to close
     LAYOUT_STATE.panel_curr = -1;
+}
+
+void tui_panel_scroll(Panel *panel, int offset){
+    panel->scroll_offset = clamp(
+        panel->scroll_offset + offset,
+        0,
+        max(0, panel->widgets_rect.size.h - panel->inner_rect.size.h)
+    );
 }
 
 char *tui_create_widget_id(){

@@ -6,6 +6,12 @@ MUST-HAVE:
 	[ ]	probably all containers need scrolling
 		-	because all panels have a border, we can render the scrollbar inside the border!
 		- scrolling requires knowing the entire widgets_rect and we DO have it!
+		[ ]	add scroll offset support for panels, add to the panel state
+		[ ]	create functional scrollbars
+		[ ]	add scrolling hotkey
+		[ ]	add auto scrolling to focused element
+		[ ]	animate scrolling...?
+		[ ]	add mouse support
 	[ ]	RESIZE
 		[x]	handle resize properly on linux @done (26-05-31 17:24)
 		[ ]	hnadle resize on windows

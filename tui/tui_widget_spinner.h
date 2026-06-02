@@ -25,6 +25,7 @@ private void tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i pos
     WidgetSpinnerState *widget_state = widget->state;
     WidgetSpinnerData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {
+        // alternative: ⣾⣽⣻⢿⡿⣟⣯⣷
 
         {.text=u8"▘", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
         {.text=u8"▀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},

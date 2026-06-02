@@ -237,19 +237,21 @@ void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, in
     tui_draw_line(screen, SCROLL_BG, from, to);
 
     //size of the knob
-    auto scrollbar_size = to.x - from.x;
-    auto shown_size     = shown_to - shown_from;
-    float shown_prt     = (float)shown_size / (float)total_size;
-    int knob_size       = (int)(scrollbar_size * shown_prt);
-    knob_size           = clamp(knob_size, 1, scrollbar_size - 1);
-    auto knob_to        = (vec2i){.x = from.x, .y = from.y + knob_size};
+    auto  scrollbar_size = to.y - from.y;
+    auto  shown_size     = shown_to - shown_from;
+
+    float shown_prt      = (float)shown_size / (float)total_size;
+    int   knob_size      = (int)(scrollbar_size * shown_prt);
+    knob_size            = clamp(knob_size, 1, scrollbar_size);
 
     //pos of the knob
-    //TODO: calculate max "scrolled", and see percent based on how much we have scrolled
-    //      note that max scrolled is full height - the size of the shown view, since it
-    //      can't scroll past the end
-    auto knob_from = (vec2i){.x = from.x, .y = from.y};
+    float scrolled_prt = (float)shown_from / total_size;
+    auto  knob_from = (vec2i){
+        .x = from.x,
+        .y = from.y + scrolled_prt * scrollbar_size
+    };
 
+    auto knob_to = (vec2i){.x = from.x, .y = knob_from.y + knob_size};
 
     //draw the knob
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
