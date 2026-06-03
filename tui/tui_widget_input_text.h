@@ -47,9 +47,15 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     WidgetInputTextData  *data  = widget->data;
     WidgetInputTextState *state = widget->state;
 
+    assert(state->cursor >= 0);
+    assert(state->scroll >= 0);
+
     //scroll based on cursor location and cursor
     if(state->cursor > data->input_width){
         state->scroll = state->cursor - data->input_width;
+    }else{
+        //reset scroll!!!!
+        state->scroll = 0;
     }
 
     //caret logic
@@ -81,7 +87,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         auto text_substr = string_substr(
             &data->string,
             state->scroll,
-            clamp(data->string.length, 0, data->input_width) + state->scroll
+            clamp(data->string.length, 0, state->scroll + data->input_width) + state->scroll
         );
         screen_set_string(
             screen,
@@ -105,7 +111,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
         screen_set_utf8(
             screen,
-            position.x + data->label_width + state->cursor - state->scroll,
+            position.x + data->label_width + max(0, state->cursor - state->scroll),
             position.y,
             u8"█"
         );
