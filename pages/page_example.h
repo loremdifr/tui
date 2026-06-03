@@ -109,11 +109,29 @@ private void page_example_render(void){
 		tui_widget_label(
 			"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod"
 			"tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,"
+		);
+		tui_widget_label(
 			"quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo"
 			"consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse"
+		);
+		tui_widget_label(
 			"cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non"
 			"proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 		);
+		tui_widget_label(
+			"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod"
+			"tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,"
+		);
+		tui_widget_label(
+			"quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo"
+			"consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse"
+		);
+		tui_widget_label(
+			"cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non"
+			"proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+		);
+
+
 	tui_panel_end();
 
 	if(!show_popup) return;

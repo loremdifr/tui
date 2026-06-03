@@ -56,7 +56,6 @@ typedef struct {
     rect2i    inner_rect;    //cached
     rect2i    widgets_rect;  //total accumulated rect around the widgets
     vec2i     curr_row_size;
-    int       scroll_offset;
 } Panel;
 
 typedef struct {
@@ -68,8 +67,10 @@ typedef struct {
 //api to defin the panels and widgets on the page
 void tui_panel_begin(PanelSlot slot);
 void tui_panel_end(void);
-void tui_panel_scroll(Panel *panel, int offset);
-void tui_panel_scroll_to(Panel *panel, int widget_index); //TODO: widget index or widget pointer?
+void tui_panel_scroll(int offset);
+void tui_panel_scroll_to(int widget_index); //TODO: widget index or widget pointer?
+void tui_panel_scroll_up(void);
+void tui_panel_scroll_down(void);
 
 //widgets
 char *tui_create_widget_id();
@@ -109,16 +110,17 @@ typedef struct {
 private WidgetStateRegistry WIDGET_REGISTRY = {.arena  = nullptr};
 
 typedef struct {
-    vec2i                 base_size;
-    Panel                panels[TUI_PANELS_MAX];
-    uint8_t              panel_count;
-    int8_t               panel_curr; // -1 = no panel selected
-    uint8_t              panel_focused; //at least one panel always focused
-    uint8_t              widget_auto_id;
-    const char          *widget_focused[TUI_PANELS_MAX]; //one id per panel
-    PageLayout           layout;
-    Screen              *screen;
-    Arena               *arena_frame;
+    vec2i        base_size;
+    Panel        panels[TUI_PANELS_MAX];
+    uint8_t      panel_count;
+    int8_t       panel_curr; // -1 = no panel selected
+    uint8_t      panel_focused; //at least one panel always focused
+    uint8_t      widget_auto_id;
+    const char  *widget_focused[TUI_PANELS_MAX]; //one id per panel
+    int          panel_scroll_offset[TUI_PANELS_MAX]; //one per panel
+    PageLayout   layout;
+    Screen      *screen;
+    Arena       *arena_frame;
 } LayoutState;
 
 private LayoutState LAYOUT_STATE = {
@@ -145,7 +147,7 @@ private void tui_render_widget(Widget *widget, vec2i position){
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 }
 
-private void tui_render_panel(Panel *panel){
+private void tui_render_panel(Panel *panel, int scroll_offset){
     const int BASE_X = panel->outer_rect.pos.x + BORDER + PADDING;
     const int BASE_Y = panel->outer_rect.pos.y + BORDER + PADDING;
     vec2i cursor_pos = {.x = BASE_X, .y = BASE_Y};
@@ -156,7 +158,7 @@ private void tui_render_panel(Panel *panel){
     //panels always render their content centered vertically
     //widget heights are precomputed
     cursor_pos.y = center_in_container(
-        cursor_pos.y,
+        cursor_pos.y - scroll_offset,
         panel->widgets_rect.size.h,
         panel->outer_rect.size.h
     );
@@ -167,12 +169,6 @@ private void tui_render_panel(Panel *panel){
     // int inline_row_index = 0;
 
     for (int i = 0; i < panel->widget_count; i++){
-        //NOTE: we dont use clamp on the cursor because we might have scrollable content here
-        if(cursor_pos.y < 0
-        || cursor_pos.y > panel->outer_rect.pos.y + panel->outer_rect.size.h - 1){
-            break;
-        }
-
         Widget *widget = &panel->widgets[i];
 
         //if we have encountered a new inline widget,
@@ -181,10 +177,10 @@ private void tui_render_panel(Panel *panel){
             inline_row = true;
             // inline_row_index = 0;
             for(int j = i; j < panel->widget_count; j++){
-                Widget *next_panel = &panel->widgets[j];
-                if(!next_panel->is_inline) break;
+                Widget *next_widget = &panel->widgets[j];
+                if(!next_widget->is_inline) break;
                 // inline_row_total++;
-                inline_row_width += next_panel->size.x;
+                inline_row_width += next_widget->size.x;
             }
 
             //centrar row horizontally
@@ -212,9 +208,11 @@ private void tui_render_panel(Panel *panel){
             );
         }
 
-        //render current widget
-        tui_render_widget(widget, cursor_pos);
-        // cursor_pos.x += widget->size.w;
+        //render current widget INSIDE panel boundaires
+        if(cursor_pos.y >= 0
+        || cursor_pos.y < panel->outer_rect.pos.y + panel->outer_rect.size.h){
+            tui_render_widget(widget, cursor_pos);
+        }
 
         if (i >= panel->widget_count - 1) break; //no more panels, break early
 
@@ -252,8 +250,8 @@ private void tui_render_panel(Panel *panel){
         .y = panel->outer_rect.pos.y + panel->outer_rect.size.y - 1 - scrollbar_padding
     };
     int total_size = panel->widgets_rect.size.h;
-    int shown_from = panel->scroll_offset;
-    int shown_to   = panel->scroll_offset + panel->inner_rect.size.h;
+    int shown_from = scroll_offset;
+    int shown_to   = scroll_offset + panel->inner_rect.size.h;
     tui_draw_scrollbar(LAYOUT_STATE.screen, from, to, total_size, shown_from, shown_to);
 }
 
@@ -327,12 +325,25 @@ void tui_panel_end(void){
     LAYOUT_STATE.panel_curr = -1;
 }
 
-void tui_panel_scroll(Panel *panel, int offset){
-    panel->scroll_offset = clamp(
-        panel->scroll_offset + offset,
+void tui_panel_scroll(int offset){
+    Panel *panel      = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_focused];
+    int scroll_offset = LAYOUT_STATE.panel_scroll_offset[LAYOUT_STATE.panel_focused];
+
+    LAYOUT_STATE.panel_scroll_offset[LAYOUT_STATE.panel_focused] = clamp(
+        scroll_offset + offset,
         0,
         max(0, panel->widgets_rect.size.h - panel->inner_rect.size.h)
     );
+}
+
+void tui_panel_scroll_to(int widget_index); //TODO: widget index or widget pointer?
+
+void tui_panel_scroll_up(void){
+    tui_panel_scroll(-1);
+}
+
+void tui_panel_scroll_down(void){
+    tui_panel_scroll(+1);
 }
 
 char *tui_create_widget_id(){
@@ -498,7 +509,8 @@ void tui_layout_render(){
     );
     //render panels
     for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
-        tui_render_panel(&LAYOUT_STATE.panels[i]);
+        int scroll_offset = LAYOUT_STATE.panel_scroll_offset[i];
+        tui_render_panel(&LAYOUT_STATE.panels[i], scroll_offset);
     }
 
     //reset arena

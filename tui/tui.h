@@ -302,6 +302,9 @@ private void tui_reset_hotkeys(void){
 	tui_register_key_hint(u8"[ENTER]", u8"OK");
 	tui_register_key_hint(u8"[TAB] [SHIFT+TAB]", u8"Switch Panel");
 
+	tui_register_key(KEY_PAGEUP,    KEY_MOD_NONE,  &tui_panel_scroll_up);
+	tui_register_key(KEY_PAGEDOWN,  KEY_MOD_NONE,  &tui_panel_scroll_down);
+
 	//tab to select panels
 	//TODO: this should be contingent on there being more than 1 panel
 	tui_register_key(KEY_TAB,    KEY_MOD_NONE,  &tui_cursor_next_panel);
