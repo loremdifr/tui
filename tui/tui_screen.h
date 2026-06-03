@@ -134,32 +134,8 @@ void screen_set_char(Screen *screen, int x, int y, char chr){
 }
 
 void screen_set_utf8_str(Screen *screen, int x, int y, const uint8_t *str){
-    //TODO: probably need to assert that characters are actually 1 char wide somehow
-	assert(screen != NULL);
-    if(str == NULL) return;
-
-    int curr_x = x;
-    const uint8_t *curr_char = str;
-
-    //walk string char by char
-    while(*curr_char != '\0'){
-    	if (curr_x >= screen->size.x) break; //TODO: word wrap
-
-        auto char_bytes_used = utf8_char_length(curr_char[0]);
-        Cell cell = {
-            .bytes = {},
-            .bytes_used = char_bytes_used,
-        };
-        //walk char byte by byte
-        for (uint8_t i = 0; i < char_bytes_used; i++) {
-            cell.bytes[i] = curr_char[i];
-        }
-
-        screen_set(screen, curr_x, y, cell);
-        curr_x++;
-        curr_char = utf8_str_next_char(curr_char);
-    }
-
+    auto string = string_from((uint8_t *)str, strlen((char *)str));
+    screen_set_string(screen, x, y, &string);
 }
 
 void screen_set_string(Screen *screen, int x, int y, String *str){
@@ -174,7 +150,7 @@ void screen_set_string(Screen *screen, int x, int y, String *str){
 
     //walk string char by char
     while(curr_char < end_ptr){
-        if(curr_x >= screen->size.x) break; //TODO: word wrap
+        if(curr_x >= screen->size.x) break;
 
         auto char_bytes_used = utf8_char_length(curr_char[0]);
         if(char_bytes_used == 0){
