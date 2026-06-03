@@ -130,16 +130,17 @@ private void page_example_render(void){
 			"cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non"
 			"proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 		);
-
-
 	tui_panel_end();
 
 	if(!show_popup) return;
 
-	// tui_popup_begin();
-	// 	tui_widget_label("Hello from popup!");
-	// 	tui_widget_button("OK!", close_example_popup);
-	// tui_popup_end();
+	tui_panel_begin(SLOT_OVERLAY);
+		tui_widget_label("Hello from popup!");
+		tui_widget_button("BUTTON_POPUP",
+			.label=u8"OK!",
+			.on_click=&close_example_popup,
+		);
+	tui_panel_end();
 }
 
 Page PAGE_EXAMPLE = {

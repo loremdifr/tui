@@ -9,7 +9,7 @@ MUST-HAVE:
 		[x]	add scroll offset support for panels, add to the panel state @done (26-06-03 12:39)
 		[x]	create functional scrollbars @done (26-06-03 12:39)
 		[x]	add scrolling hotkey @done (26-06-03 12:39)
-		[ ]	scrolling hotkey hint
+		[x]	scrolling hotkey hint @done (26-06-03 13:22)
 		[ ]	add auto scrolling to focused element
 		[ ]	animate scrolling...?
 		[ ]	add mouse support
@@ -22,7 +22,7 @@ MUST-HAVE:
 	[x]	margin between widgets is being accounted for twice @done (26-05-25 20:20)
 		- it's not, it's an illussion because of the empty space provided by the box characters
 		- might need to make it so MARGIN is defined inside the element somehow, and labels get 1 more than others.
-	[ ]	some way of declaring widgets inline vs block
+	[x]	some way of declaring widgets inline vs block @done (26-06-03 13:22)
 	[x]	focused element + element navigation functionality provided by the framework @done (26-05-24 05:28)
 		who should hold this reference? because the existing widgets disappear every frame
 		so realistically the only way is that the user gives the framework an ID and the framework tracks that ID.
@@ -30,7 +30,7 @@ MUST-HAVE:
 		maps the ID to the current index in the frame and moves to that ID!
 		[x]	widgets are only being called by render, their init, process, and input is never called @done (26-05-24 13:11)
 		[x]	automatic "go back" navigation always enabled (ESC) @done (26-05-24 14:56)
-	[ ]	popup layer functionality
+	[x]	popup layer functionality @done (26-06-03 15:47)
 	[x]	bottom hotkeys declaration support @done (26-05-24 14:55)
 
 	Widgets:
@@ -66,6 +66,7 @@ Extra stuff:
 		[ ]	hover
 		[ ]	drag
 
-[ ]	scrollable content
+[x]	scrollable content @done (26-06-03 15:47)
+[ ]	Panel title?
 [ ]	top menu declaration support
 [ ]	tooltip layout functionality

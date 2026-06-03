@@ -28,6 +28,7 @@ typedef enum {
     SLOT_SIDEBAR,
     SLOT_TOP,
     SLOT_BOTTOM,
+    SLOT_OVERLAY,
 } PanelSlot;
 
 typedef struct Widget Widget;
@@ -64,13 +65,9 @@ typedef struct {
     Color bg_color;
 } AnimationFrame;
 
-//api to defin the panels and widgets on the page
+//API TO DEFIN THE PANELS AND WIDGETS ON THE PAGE
 void tui_panel_begin(PanelSlot slot);
 void tui_panel_end(void);
-void tui_panel_scroll(int offset);
-void tui_panel_scroll_to(int widget_index); //TODO: widget index or widget pointer?
-void tui_panel_scroll_up(void);
-void tui_panel_scroll_down(void);
 
 //widgets
 char *tui_create_widget_id();
@@ -82,11 +79,15 @@ void tui_layout_prepare(Screen *screen, PageLayout layout);
 bool tui_widget_focused_input(InputEvent input_event);
 void tui_layout_render(void); //actually rendering to the screen
 
-//focus navigation
+//focus/navigation
 void tui_cursor_next_widget(void);
 void tui_cursor_prev_widget(void);
 void tui_cursor_next_panel(void);
 void tui_cursor_prev_panel(void);
+void tui_panel_scroll(int offset);
+void tui_panel_scroll_to(int widget_index); //TODO: widget index or widget pointer?
+void tui_panel_scroll_up(void);
+void tui_panel_scroll_down(void);
 
 #ifdef TUI_LAYOUT_IMPL
 
@@ -115,6 +116,7 @@ typedef struct {
     uint8_t      panel_count;
     int8_t       panel_curr; // -1 = no panel selected
     uint8_t      panel_focused; //at least one panel always focused
+    int          panel_focused_prev;
     uint8_t      widget_auto_id;
     const char  *widget_focused[TUI_PANELS_MAX]; //one id per panel
     int          panel_scroll_offset[TUI_PANELS_MAX]; //one per panel
@@ -124,8 +126,9 @@ typedef struct {
 } LayoutState;
 
 private LayoutState LAYOUT_STATE = {
-    .panel_curr  = -1,
-    .arena_frame = nullptr,
+    .panel_curr         = -1,
+    .panel_focused_prev = -1,
+    .arena_frame        = nullptr,
 };
 
 private void tui_widget_row_begin(Panel *panel);
@@ -158,7 +161,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
     //panels always render their content centered vertically
     //widget heights are precomputed
     cursor_pos.y = center_in_container(
-        cursor_pos.y - scroll_offset,
+        panel->inner_rect.pos.y + cursor_pos.y - scroll_offset,
         panel->widgets_rect.size.h,
         panel->outer_rect.size.h
     );
@@ -235,14 +238,18 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
     }
 
     //draw panel border
-    //TODO: set focused
-    //TODO: possible small optimization, same border to the app border if only single panel
+    if(panel->focused){
+        screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    }else{
+        screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+    }
     tui_draw_box(LAYOUT_STATE.screen, panel->outer_rect);
 
     //panel scroll
+    if(!panel->focused) return;
     constexpr int scrollbar_padding = 2;
     auto from = (vec2i){
-        .x = panel->outer_rect.pos.x + panel->outer_rect.size.x,
+        .x = panel->outer_rect.pos.x + panel->outer_rect.size.x -1,
         .y = panel->outer_rect.pos.y + scrollbar_padding
     };
     auto to = (vec2i){
@@ -252,7 +259,9 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
     int total_size = panel->widgets_rect.size.h;
     int shown_from = scroll_offset;
     int shown_to   = scroll_offset + panel->inner_rect.size.h;
-    tui_draw_scrollbar(LAYOUT_STATE.screen, from, to, total_size, shown_from, shown_to);
+    if(shown_to - shown_from < total_size){ //dont show scrollbar if can't scroll
+        tui_draw_scrollbar(LAYOUT_STATE.screen, from, to, total_size, shown_from, shown_to);
+    }
 }
 
 private Panel *tui_get_panel_focused(){
@@ -278,6 +287,11 @@ private Widget *tui_get_widget_focused(){
 
 private rect2i tui_panel_rect(PanelSlot slot){
     //panel size is based on the slot it occuppies in the type of layout
+    if(slot == SLOT_OVERLAY){
+        //overlay slot is the same for all layouts, starts at max size,
+        //and will shrink before rendering up to the widgets boundaries
+        return (rect2i){ .size = LAYOUT_STATE.base_size };
+    }
 
     switch(LAYOUT_STATE.layout){
     case LAYOUT_SINGLE_PANEL:
@@ -421,7 +435,7 @@ private void tui_widget_row_push(Panel *panel, Widget *widget){
 
 private void tui_widget_row_end(Panel *panel){
     //push row if exists to widget rect
-    if(panel->curr_row_size.w == 0 && panel->curr_row_size.h){
+    if(panel->curr_row_size.w == 0 && panel->curr_row_size.h == 0){
         //nothing to commit
         return;
     }
@@ -501,17 +515,85 @@ bool tui_widget_focused_input(InputEvent input_event){
     return widget->input(widget, input_event);
 }
 
+private void tui_render_overlay(void) {
+    auto popup_size = (vec2i){
+        .w = LAYOUT_STATE.base_size.w * 0.5,
+        .h = LAYOUT_STATE.base_size.h * 0.3,
+    };
+    auto popup_pos = (vec2i){
+        .x = center_in_container(0, popup_size.w, LAYOUT_STATE.base_size.w),
+        .y = center_in_container(0, popup_size.h, LAYOUT_STATE.base_size.h),
+    };
+    auto popup_rect = (rect2i){
+        .pos  = popup_pos,
+        .size = popup_size,
+    };
+
+    //draw popup
+    tui_draw_rect(LAYOUT_STATE.screen, u8" ", popup_rect);
+    tui_draw_box(LAYOUT_STATE.screen, popup_rect);
+}
+
 void tui_layout_render(){
-    //box surrounding app screen first
-    tui_draw_box_connected(
-        LAYOUT_STATE.screen,
-        (rect2i){ .size = LAYOUT_STATE.base_size }
-    );
+    //if we find the overlay panel defined, we store it for later
+    Panel *overlay_panel = nullptr;
+    int overlay_panel_index = 0;
+
     //render panels
     for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
+        Panel *panel = &LAYOUT_STATE.panels[i];
+        panel->focused = (LAYOUT_STATE.panel_focused == i);
+
+        if(panel->slot == SLOT_OVERLAY){
+            overlay_panel_index = i;
+            overlay_panel = panel;
+            continue;
+        }
         int scroll_offset = LAYOUT_STATE.panel_scroll_offset[i];
-        tui_render_panel(&LAYOUT_STATE.panels[i], scroll_offset);
+        tui_render_panel(panel, scroll_offset);
     }
+
+    //render OVERLAY PANEL
+    if(overlay_panel && overlay_panel->widget_count > 0){
+        //si hay overlay, siempre es el focused
+        if(LAYOUT_STATE.panel_focused != overlay_panel_index){
+            //guardamos el anterior focused anterior para poder volver atras
+            LAYOUT_STATE.panel_focused_prev = LAYOUT_STATE.panel_focused;
+            LAYOUT_STATE.panel_focused      = overlay_panel_index;
+        }
+        //achicar panel al tamaño de los widgets
+        overlay_panel->inner_rect = overlay_panel->widgets_rect;
+        overlay_panel->outer_rect = overlay_panel->widgets_rect;
+        //agrandar
+        overlay_panel->outer_rect.size.w += PADDING * 2 + BORDER * 2;
+        overlay_panel->outer_rect.size.h += PADDING * 2 + BORDER * 2;
+
+        overlay_panel->outer_rect.size.w = max(32, overlay_panel->outer_rect.size.w);
+        //centrar
+        overlay_panel->outer_rect.pos.x = center_in_container(
+            overlay_panel->outer_rect.pos.x,
+            overlay_panel->outer_rect.size.w,
+            LAYOUT_STATE.base_size.w
+        );
+        overlay_panel->outer_rect.pos.y = center_in_container(
+            overlay_panel->outer_rect.pos.y,
+            overlay_panel->outer_rect.size.h,
+            LAYOUT_STATE.base_size.h
+        );
+        tui_draw_rect(LAYOUT_STATE.screen, u8" ", overlay_panel->outer_rect);
+        tui_render_panel(
+            overlay_panel,
+            LAYOUT_STATE.panel_scroll_offset[SLOT_OVERLAY]
+        );
+    }else if(LAYOUT_STATE.panel_focused_prev != -1){
+        //if overlay wont show but it was previously focused,
+        //we restore the focused panel to the one before showing the overlay
+        LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = 0;
+        LAYOUT_STATE.panel_focused = LAYOUT_STATE.panel_focused_prev;
+        LAYOUT_STATE.panel_focused_prev = -1;
+    }
+
+    //TODO: render overlay_2
 
     //reset arena
     arena_reset(LAYOUT_STATE.arena_frame);

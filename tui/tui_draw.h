@@ -211,8 +211,12 @@ void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2i from, vec
     screen_set_utf8(screen, current.x, current.y, utf8_char);
 }
 
-void tui_draw_rect(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
-    //TODO: implement
+void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect2i rect){
+    for(int x = rect.pos.x; x < rect.pos.x + rect.size.w; x++){
+        for(int y = rect.pos.y; y < rect.pos.y + rect.size.h; y++){
+            screen_set_utf8(screen, x, y, utf8_char);
+        }
+    }
 }
 
 void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){

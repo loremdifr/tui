@@ -300,13 +300,16 @@ private void tui_reset_hotkeys(void){
 	//TODO: if this is here--- shouldnt we have ENTER as an activate widget key??
 	//      and not in the widget itself?
 	tui_register_key_hint(u8"[ENTER]", u8"OK");
-	tui_register_key_hint(u8"[TAB] [SHIFT+TAB]", u8"Switch Panel");
 
+	//scroll
+	//TODO: this should somehow detect if the active panel is scrollable
 	tui_register_key(KEY_PAGEUP,    KEY_MOD_NONE,  &tui_panel_scroll_up);
 	tui_register_key(KEY_PAGEDOWN,  KEY_MOD_NONE,  &tui_panel_scroll_down);
+	tui_register_key_hint(u8"[PgUp] [PgDown]", u8"Scroll");
 
 	//tab to select panels
 	//TODO: this should be contingent on there being more than 1 panel
+	tui_register_key_hint(u8"[TAB] [SHIFT+TAB]", u8"Switch Panel");
 	tui_register_key(KEY_TAB,    KEY_MOD_NONE,  &tui_cursor_next_panel);
 	tui_register_key(KEY_TAB,    KEY_MOD_SHIFT, &tui_cursor_prev_panel);
 

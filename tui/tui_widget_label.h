@@ -18,6 +18,7 @@ void tui_widget_label_(const uint8_t *text);
 
 
 private void tui_widget_label_render(Widget *widget, Screen *screen, vec2i position){
+    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 	WidgetLabelData *widget_data = widget->data;
 
     for(size_t i = 0; i < widget_data->lines.count; i++){
