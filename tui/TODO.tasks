@@ -34,6 +34,7 @@ MUST-HAVE:
 
 	Widgets:
 		[x]	label @done (26-05-22 01:11)
+			[x]	word wrap @done (26-06-03 11:39)
 		[x]	button @done (26-05-24 14:56)
 		[ ]	text input
 			[x]	basic input @done (26-05-30 21:20)

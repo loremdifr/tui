@@ -14,18 +14,25 @@ typedef struct {
     size_t   capacity;
 } String;
 
+//used for word wrapping only for now, not sure if for anything else
+typedef struct {
+    String strings[64];
+    size_t count;
+} Lines;
+
 // api
 String string_from(uint8_t *storage, size_t capacity);
-String string_substr(String *str, size_t start_index, size_t end_index);
+String string_substr(const String *str, size_t start_index, size_t end_index);
 String string_from_substr(const uint8_t *storage, size_t start_index, size_t end_index);
 void   string_insert_at(String *str, size_t index, uint32_t new_char);
 void   string_delete_at(String *str, size_t index);
+Lines  string_split_into_lines(String *str, size_t max_width);
 
 // IMPLEMENTATION BELOW
 #ifdef TUI_STRING_IMPL
 
 //TODO: could this be utf8_pos_at() ?
-private size_t string_byte_pos_from_index(String *str, size_t index){
+private size_t string_byte_pos_from_index(const String *str, size_t index){
     // in utf8 strings the amount of bytes does not correspond to the amount
     // of characters. characters in utf8 are variable length.
     if (index == 0) return 0;
@@ -58,7 +65,7 @@ String string_from_substr(const uint8_t *storage, size_t start_index, size_t end
     return string_substr(&str, start_index, end_index);
 }
 
-String string_substr(String *str, size_t start_index, size_t end_index){
+String string_substr(const String *str, size_t start_index, size_t end_index){
     auto start = string_byte_pos_from_index(str, start_index);
     auto end   = string_byte_pos_from_index(str, end_index);
 
@@ -126,6 +133,40 @@ void string_delete_at(String *str, size_t index) {
 
     str->bytes -= char_length;
     str->length--;
+}
+
+Lines string_split_into_lines(String *str, [[maybe_unused]] size_t max_width){
+    assert(max_width != 0); // max width needs to be at least 1!
+    Lines lines = {};
+
+    if(str->length <= max_width){
+        lines.strings[lines.count++] = *str;
+        return lines;
+    }
+
+    size_t line_start = 0;
+
+    while(line_start < str->length){
+        size_t line_end = line_start + max_width;
+
+        //reccoremos hacia atras hasta el primer espacio
+        for(size_t i = line_end; i > line_start; i--){
+            size_t byte_pos = string_byte_pos_from_index(str, i);
+
+            //TODO: might want to check in a different way,
+            //      to account for different space types (break, tab ,etc)
+            if(str->data[byte_pos] != ' ') continue;
+
+            //line break found
+            line_end = i + 1; //TODO: +1 or -1?
+            break;
+        }
+
+        lines.strings[lines.count++] = string_substr(str, line_start, line_end);
+        line_start += line_end;
+        //TODO: skip spaces from next line
+    }
+    return lines;
 }
 
 #endif // TUI_STRING_IMPL
