@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 // #include "tui_platform.h"
 #include "tui_utils.h"
 #include "tui_screen.h"
@@ -248,7 +249,7 @@ void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, in
     float scrolled_prt = (float)shown_from / total_size;
     auto  knob_from = (vec2i){
         .x = from.x,
-        .y = from.y + scrolled_prt * scrollbar_size
+        .y = from.y + ceil(scrolled_prt * scrollbar_size)
     };
 
     auto knob_to = (vec2i){.x = from.x, .y = knob_from.y + knob_size};
