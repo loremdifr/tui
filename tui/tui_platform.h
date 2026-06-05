@@ -664,6 +664,12 @@ private void tui_parse_input(void){
 	}
 }
 
+double get_curr_time(void){
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (double) now.tv_sec + (double) now.tv_nsec / 1e9;
+}
+
 #endif // LINUX / WINDOWS
 
 
@@ -709,11 +715,6 @@ void tui_input_process(ProcessInputEventFunction input_processor){
 	}
 }
 
-double get_curr_time(void){
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    return (double) now.tv_sec + (double) now.tv_nsec / 1e9;
-}
 
 #endif //TUI_PLATFORM_IMPL
 #endif //TUI_PLATFORM
