@@ -4,11 +4,12 @@
 #include "../tui/tui.h"
 #include <string.h>
 
-#define PAGE_EXAMPLE_ID "page_example"
+#define PAGE_EXAMPLE_ID "PAGE_EXAMPLE_1"
 extern Page PAGE_EXAMPLE;
 
 #ifdef PAGE_EXAMPLE_IMPL
 
+//variables de la pagina
 bool show_popup = false;
 constexpr size_t name_length_max = 255;
 uint8_t *name;
@@ -144,6 +145,7 @@ private void page_example_render(void){
 }
 
 Page PAGE_EXAMPLE = {
+	.title   = u8"Page Example",
 	.layout  = LAYOUT_SINGLE_PANEL,
 	.init    = &page_example_init,
 	.input   = &page_example_input,

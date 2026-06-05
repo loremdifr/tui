@@ -2,6 +2,10 @@
 
 MUST-HAVE:
 
+	[ ]	Page Navigation
+		[ ]	test moving to different pages
+		[ ]	actually dont crash if there's no previous page when going back
+		[ ]	show the history at the top of the screen
 	[ ]	pages functionpointers must be optional
 	[ ]	probably all containers need scrolling
 		-	because all panels have a border, we can render the scrollbar inside the border!

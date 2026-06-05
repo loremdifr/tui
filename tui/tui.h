@@ -52,6 +52,7 @@ typedef void (*ProcessFunction)(float delta_time);
 typedef void (*RenderFunction )(void);
 
 typedef struct {
+	const uint8_t  *title;
     PageLayout      layout;
     InitFunction    init;
     InputFunction   input;
@@ -66,6 +67,7 @@ void tui_register_key(Key key, ModKeys mod_keys, FunctionPointer action);
 void tui_register_key_hint(const uint8_t *key, const uint8_t *hint);
 void tui_navigate_to(const char *page_id);
 void tui_navigate_back(void);
+String tui_navigation_string(void); //TODO:
 Page *tui_get_curr_page();
 void tui_quit(void);
 
@@ -319,6 +321,14 @@ private void tui_reset_hotkeys(void){
 	tui_register_key_hint(u8"[ESC]", u8"Back");
 }
 
+private void tui_render_page_title(Screen *screen){
+	auto page_index = NAV_HISTORY.stack[0];
+	Page *page = PAGE_ROUTES.routes[page_index].page;
+	//TODO: concat the navigation
+	screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+	screen_set_utf8_str(screen, 4, 0, page->title);
+}
+
 private void tui_render_hotkeys(Screen *screen){
 	//TODO: if we're going over the screen length,
 	//      truncate the last one and add a way to "see more"
@@ -439,7 +449,7 @@ void tui_run_loop(void){
 
 		tui_layout_render();
 		tui_render_hotkeys(&APP_STATE.next_screen);
-		//TODO: render window title, menu, etc..
+		tui_render_page_title(&APP_STATE.next_screen);
 
 		//render the TUI diff to the screen
 		tui_render();
