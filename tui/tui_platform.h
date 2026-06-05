@@ -16,12 +16,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdint.h>
-
- //TODO: is this portable?
-#include <poll.h>
-#include <unistd.h>
-#include <termios.h>
-#include <sys/ioctl.h>
 #include <signal.h>
 
 typedef enum {
@@ -174,6 +168,9 @@ void tui_write_bytes(const uint8_t *bytes, uint8_t total_bytes);
 void tui_input_read(double timeout_s); //NOTE: call this in the loop
 void tui_input_process(ProcessInputEventFunction input_processor);
 
+//platform specific utils
+double get_curr_time(void);
+
 // IMPL ----------------------
 #ifdef TUI_PLATFORM_IMPL
 
@@ -204,6 +201,23 @@ private void emit_resize_event(void){
 	input_event_queue_push(resize_event);
 }
 
+typedef enum {
+	PARSE_START,
+	PARSE_ESCAPE,
+	PARSE_CONTROL_SEQUENCE,
+	PARSE_UTF8,
+} InputParseState;
+private InputParseState input_state = PARSE_START;
+private double          last_input_time = 0.0;
+
+private void emit_special_key(Key key){
+	InputEvent input_event = {
+        .input_type    = INPUT_KEY,
+        .key_event.key = key,
+	};
+	input_event_queue_push(input_event);
+}
+
 #ifdef TUI_WINDOWS
 
 static HANDLE TUI_WIN_HANDLE_IN;
@@ -230,7 +244,6 @@ void tui_close(void){
 
 	tui_write("\033[?1000l"); //disabel mouse
     tui_write("\033[?1006l"); //disable SGR
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &TERMIOS_ORIGINAL);
 }
 
 private bool tui_poll_input(int timeout_ms){
@@ -250,18 +263,96 @@ private bool tui_poll_input(int timeout_ms){
     return (success && count > 0);
 }
 
+private Key tui_win_vk_to_key(WORD vk){
+	switch(vk){
+	case VK_UP:       return KEY_UP;
+	case VK_DOWN:     return KEY_DOWN;
+	case VK_LEFT:     return KEY_LEFT;
+	case VK_RIGHT:    return KEY_RIGHT;
+	case VK_ESCAPE:   return KEY_ESCAPE;
+	case VK_TAB:      return KEY_TAB;
+	case VK_BACK:     return KEY_BACKSPACE;
+	case VK_RETURN:   return KEY_ENTER;
+	case VK_DELETE:   return KEY_DELETE;
+	case VK_HOME:     return KEY_HOME;
+	case VK_END:      return KEY_END;
+	case VK_PRIOR:    return KEY_PAGEUP;
+	case VK_NEXT:     return KEY_PAGEDOWN;
+	case VK_F1:       return KEY_F1;
+	case VK_F2:       return KEY_F2;
+	case VK_F3:       return KEY_F3;
+	case VK_F4:       return KEY_F4;
+	case VK_F5:       return KEY_F5;
+	case VK_F6:       return KEY_F6;
+	case VK_F7:       return KEY_F7;
+	case VK_F8:       return KEY_F8;
+	case VK_F9:       return KEY_F9;
+	case VK_F10:      return KEY_F10;
+	case VK_F11:      return KEY_F11;
+	case VK_F12:      return KEY_F12;
+	case VK_SPACE:    return KEY_SPACE;
+	//fuck u windos
+	default:
+		if(vk >= '0' && vk <= '9') return (Key)(KEY_0 + (vk - '0'));
+		if(vk >= 'A' && vk <= 'Z') return (Key)(KEY_A + (vk - 'A'));
+		return KEY_NONE;
+	}
+}
+
 private void tui_parse_input(void){
-	INPUT_RECORD input_record;
-    DWORD count;
-    auto success = ReadConsoleInputW(tui__hin, &input_record, 1, &count);
+	INPUT_RECORD records[64];
+    DWORD count = 0;
+    auto success = ReadConsoleInputW(
+    	TUI_WIN_HANDLE_IN, records, arr_size(records), &count
+	);
 
-    if(success && count > 0){
+    if(!success || count == 0) return;
 
+    for(DWORD i = 0; i < count; i++){
+    	INPUT_RECORD *record = &records[i];
+
+    	switch(record->EventType){
+    	case KEY_EVENT:{
+    		if(!record->Event.KeyEvent.bKeyDown) continue;
+    		auto &key_event = record->Event.KeyEvent;
+    		Key key = tui_win_vk_to_key(key_event.wVirtualKeyCode);
+    		uint32_t unicode = key_event.uChar.UnicodeChar;
+
+    		bool ctrl  = (key_event.dwControlKeyState & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED)) != 0;
+    		bool alt   = (key_event.dwControlKeyState & (LEFT_ALT_PRESSED  | RIGHT_ALT_PRESSED )) != 0;
+    		bool shift = (key_event.dwControlKeyState & SHIFT_PRESSED) != 0;
+
+    		if(key == KEY_TAB && shift){
+    			InputEvent event = {
+    				.input_type    = INPUT_KEY,
+    				.key_event.key = KEY_BACKTAB,
+    			};
+    			input_event_queue_push(event);
+    			continue;
+    		}
+
+    		InputEvent event = {
+    			.input_type        = INPUT_KEY,
+    			.key_event.key     = key,
+    			.key_event.unicode = unicode,
+    			.key_event.ctrl    = ctrl,
+    			.key_event.alt     = alt,
+    			.key_event.shift   = shift,
+    		};
+    		input_event_queue_push(event);
+    		break;
+    	}
+
+    	case MOUSE_EVENT:
+    		//TODO: implement mouse events for windows
+    		break;
+    	}
+
+    	case WINDOW_BUFFER_SIZE_EVENT:
+    		emit_resize_event();
+    		break;
+    	}
     }
-    //TODO: catch EventType == WINDOW_BUFFER_SIZE_EVENT and fire the resize event!
-
-    //TODO: parse the record and push the event
-    // https://learn.microsoft.com/en-us/windows/console/input-record-str
 }
 
 vec2i tui_size(void){
@@ -272,10 +363,10 @@ vec2i tui_size(void){
     	TUI_WIN_HANDLE_OUT, &screen_info
 	);
 
-	if (success != 0) return size;
+	if (success == 0) return size;
 
-    size.x = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-    size.y = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    size.x = screen_info.srWindow.Right - screen_info.srWindow.Left + 1;
+    size.y = screen_info.srWindow.Bottom - screen_info.srWindow.Top + 1;
 
     return size;
 }
@@ -283,9 +374,9 @@ vec2i tui_size(void){
 void tui_write(const char *str){
     DWORD written;
     WriteConsoleA(
-    	tui_win_handle_out,
+    	TUI_WIN_HANDLE_OUT,
     	str,
-    	(DWORD)strlen(buf),
+    	(DWORD)strlen(str),
     	&written,
     	NULL
 	);
@@ -294,18 +385,28 @@ void tui_write(const char *str){
 void tui_write_bytes(const uint8_t *bytes, uint8_t total_bytes){
 	DWORD written;
 	WriteFile(
-		tui_win_handle_out,
+		TUI_WIN_HANDLE_OUT,
 		bytes,
 		(DWORD)total_bytes,
 		&written,
 		NULL
 	);
 }
-▔
+
+double get_curr_time(void){
+    LARGE_INTEGER freq, now;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&now);
+    return (double)now.QuadPart / (double)freq.QuadPart;
+}
 
 #else // LINUX
 
-#include <signal.h>
+#include <poll.h>
+#include <time.h>
+#include <unistd.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 #include <sys/signalfd.h>
 
 private int SIGNAL_FD_EVENT;
@@ -401,23 +502,6 @@ void tui_write_bytes(const uint8_t *bytes, uint8_t total_bytes){
 	write(STDOUT_FILENO, bytes, total_bytes);
 }
 
-typedef enum {
-	PARSE_START,
-	PARSE_ESCAPE,
-	PARSE_CONTROL_SEQUENCE,
-	PARSE_UTF8,
-} InputParseState;
-private InputParseState input_state = PARSE_START;
-private double          last_input_time = 0.0; //timeout para ESC y utf8
-
-private void emit_special_key(Key key){
-	InputEvent input_event = {
-        .input_type    = INPUT_KEY,
-        .key_event.key = key,
-	};
-	input_event_queue_push(input_event);
-}
-
 private void emit_key(uint32_t unicode, bool alt){
     //for single byte ascii
     bool ctrl  = (unicode < 32);
@@ -477,7 +561,7 @@ private void emit_escape_sequence(const char *params, uint8_t final_byte){
 	}
 
 	//mouse
-	//TODO:
+	//TODO: linux mouse support
 	case 'M':
 	case 'm':
 	}
@@ -625,6 +709,11 @@ void tui_input_process(ProcessInputEventFunction input_processor){
 	}
 }
 
+double get_curr_time(void){
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (double) now.tv_sec + (double) now.tv_nsec / 1e9;
+}
 
 #endif //TUI_PLATFORM_IMPL
 #endif //TUI_PLATFORM

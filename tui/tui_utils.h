@@ -1,12 +1,10 @@
 #ifndef TUI_UTILS
 #define TUI_UTILS
 
-#include <bits/time.h>
 #include <string.h>
 #include <assert.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include <time.h>
 
 #define private static
 #define arr_size(arr) (sizeof(arr) / sizeof(arr[0]))
@@ -41,7 +39,6 @@ int min(int a, int b);
 int max(int a, int b);
 int clamp(int val, int min, int max);
 int clamp_overflow(int val, int min, int max);
-double get_curr_time(void);
 
 //utf8 stuff
 uint8_t        utf8_char_length(uint8_t byte);
@@ -53,13 +50,6 @@ uint32_t       utf8_pack(const uint8_t bytes[]);
 void           utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes);
 
 #ifdef TUI_UTILS_IMPL
-
-//TODO: not portable
-double get_curr_time(void){
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    return (double) now.tv_sec + (double) now.tv_nsec / 1e9;
-}
 
 int sign(int val){
     if (val < 0) return -1;

@@ -1,8 +1,9 @@
+#ifndef _WIN32
 #define _GNU_SOURCE //required here for the clock_gettime in tui_utils.h
+#endif
 
 #include <stdio.h>
 #include <stdbool.h>
-#include <unistd.h>
 
 #define TUI_IMPL
 #include "tui/tui.h"

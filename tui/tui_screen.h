@@ -6,7 +6,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include "tui_utils.h"
 
 typedef enum {
