@@ -346,7 +346,6 @@ private void tui_parse_input(void){
     	case MOUSE_EVENT:
     		//TODO: implement mouse events for windows
     		break;
-    	}
 
     	case WINDOW_BUFFER_SIZE_EVENT:
     		emit_resize_event();
