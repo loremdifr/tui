@@ -1,5 +1,5 @@
 ifeq ($(OS),Windows_NT)
-    CC = mingw64\bin\gcc
+    CC = mingw64\bin\gcc 
     EXT := .exe
     RM := cmd /C del /Q /F
     DS := \\
@@ -16,7 +16,7 @@ SRC_NAME  = main.c
 
 LIBS_DIR = libs
 
-CFLAGS = -fdiagnostics-color=always -W -Werror -Wextra -pedantic -g -std=c23
+CFLAGS = -fdiagnostics-color=always -W -Werror -Wextra -pedantic -g -std=gnu23
 CFLAGS+= -I$(LIBS_DIR)
 
 LD_LIBS = -lm

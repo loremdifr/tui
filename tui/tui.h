@@ -241,7 +241,7 @@ private inline void tui_write_color(TextFormat text_format, Color fg_color, Colo
     //concatenar formato
     int terminator_pos = sprintf(FORMAT_PARAMS.str, "%s", start);
     char *next_str     = FORMAT_PARAMS.str + terminator_pos;
-    for(size_t i = 0; i < FORMAT_PARAMS.used; i++){
+    for(int i = 0; i < FORMAT_PARAMS.used; i++){
         //ultimo param no usa el separator
         if(i == FORMAT_PARAMS.used - 1){
             next_str += sprintf(next_str, "%d%s", FORMAT_PARAMS.params[i], end);
@@ -289,6 +289,9 @@ private void tui_render(void){
 private void tui_reset_hotkeys(void){
 	HOTKEYS.total = 0;
 	HOTKEY_HINTS.total = 0;
+
+	//test resize
+	// tui_register_key(KEY_R, KEY_MOD_NONE, &emit_resize_event);
 
 	//arrows to select widgets
 	tui_register_key(KEY_LEFT,   KEY_MOD_NONE,  &tui_cursor_prev_widget);
@@ -342,7 +345,7 @@ private void tui_render_hotkeys(Screen *screen){
 	// 		si puedo break
 
 	auto separator = u8" ● ";
-	const auto max_width = screen->size.w;
+	const int max_width = screen->size.w;
 	uint8_t utf8_str[max_width] = {};
 
 	for(int i = 0; i < HOTKEY_HINTS.total; i++){
@@ -410,6 +413,12 @@ void tui_run_loop(void){
 		//TODO: possible optimization, delay until first page visit
 		PAGE_ROUTES.routes[i].page->init();
 	}
+
+#ifdef TUI_WINDOWS
+	//windos is a naughty naught boy
+	Sleep(100);
+	emit_resize_event();
+#endif //TUI_WINDOWS
 
 	while(!APP_STATE.exit){
 		// RESET HOTKEYS:

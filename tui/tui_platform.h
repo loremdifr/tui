@@ -226,24 +226,34 @@ static DWORD  TUI_WIN_ORIGINAL_IN_MODE;
 static DWORD  TUI_WIN_ORIGINAL_OUT_MODE;
 
 void tui_init(void){
+	SetConsoleOutputCP(65001); //UTF8 support
+	SetConsoleCP(65001);
+
 	TUI_WIN_HANDLE_IN  = GetStdHandle(STD_INPUT_HANDLE);
     TUI_WIN_HANDLE_OUT = GetStdHandle(STD_OUTPUT_HANDLE);
 
     GetConsoleMode(TUI_WIN_HANDLE_IN,  &TUI_WIN_ORIGINAL_IN_MODE);
     GetConsoleMode(TUI_WIN_HANDLE_OUT, &TUI_WIN_ORIGINAL_OUT_MODE);
 
-    DWORD in_mode = ENABLE_WINDOW_INPUT | ENABLE_EXTENDED_FLAGS;
+    DWORD in_mode = TUI_WIN_ORIGINAL_IN_MODE;
+	// in_mode |= ENABLE_VIRTUAL_TERMINAL_INPUT;
+	// in_mode |= ENABLE_WINDOW_INPUT;
+	// in_mode |= ENABLE_EXTENDED_FLAGS;
     in_mode |= ENABLE_MOUSE_INPUT;
+	in_mode &= ~ENABLE_QUICK_EDIT_MODE;
+	in_mode &= ~ENABLE_VIRTUAL_TERMINAL_INPUT;
     SetConsoleMode(TUI_WIN_HANDLE_IN, in_mode);
     SetConsoleMode(TUI_WIN_HANDLE_OUT, TUI_WIN_ORIGINAL_OUT_MODE | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
+	tui_write("\033[?1000h"); // mouse
+    tui_write("\033[?1006h"); // SGR
+    tui_write("\033[?25l");   // hide cursor
 }
 
 void tui_close(void){
 	SetConsoleMode(TUI_WIN_HANDLE_IN,  TUI_WIN_ORIGINAL_IN_MODE);
     SetConsoleMode(TUI_WIN_HANDLE_OUT, TUI_WIN_ORIGINAL_OUT_MODE);
 
-	tui_write("\033[?1000l"); //disabel mouse
-    tui_write("\033[?1006l"); //disable SGR
 }
 
 private bool tui_poll_input(int timeout_ms){
@@ -314,7 +324,7 @@ private void tui_parse_input(void){
     	switch(record->EventType){
     	case KEY_EVENT:{
     		if(!record->Event.KeyEvent.bKeyDown) continue;
-    		auto &key_event = record->Event.KeyEvent;
+    		auto key_event = record->Event.KeyEvent;
     		Key key = tui_win_vk_to_key(key_event.wVirtualKeyCode);
     		uint32_t unicode = key_event.uChar.UnicodeChar;
 
@@ -355,17 +365,38 @@ private void tui_parse_input(void){
 }
 
 vec2i tui_size(void){
-	vec2i size = {.x = 80, .y = 24}; //default
+ 	vec2i size = {.x = 80, .y = 24}; // defaut
 
-	CONSOLE_SCREEN_BUFFER_INFO screen_info;
-    auto success = GetConsoleScreenBufferInfo(
-    	TUI_WIN_HANDLE_OUT, &screen_info
-	);
+    CONSOLE_SCREEN_BUFFER_INFOEX screen_info;
+    screen_info.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX);
 
-	if (success == 0) return size;
+	vec2i screen_size;
+    if (GetConsoleScreenBufferInfoEx(TUI_WIN_HANDLE_OUT, &screen_info)) {
+        screen_size = (vec2i){
+			.x = screen_info.srWindow.Right - screen_info.srWindow.Left + 1,
+			.y = screen_info.srWindow.Bottom - screen_info.srWindow.Top + 1
+		};
+    }
 
-    size.x = screen_info.srWindow.Right - screen_info.srWindow.Left + 1;
-    size.y = screen_info.srWindow.Bottom - screen_info.srWindow.Top + 1;
+    if (screen_size.x > 0) size.x = screen_size.x;
+    if (screen_size.y > 0) size.y = screen_size.y;
+
+    // DWORD written;
+    // WriteFile(TUI_WIN_HANDLE_OUT, "\033[18t", 5, &written, NULL);
+
+    // char buf[32];
+    // DWORD read = 0;
+    // HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
+
+    // if (ReadFile(hIn, buf, sizeof(buf) - 1, &read, NULL) && read > 0) {
+    //     buf[read] = '\0'; // null temrinitaor
+    //     int rows = 0;
+	// 	int cols = 0;
+    //     if (sscanf(buf, "\033[8;%d;%dt", &rows, &cols) == 2) {
+    //         size.x = cols;
+    //         size.y = rows;
+    //     }
+    // }
 
     return size;
 }

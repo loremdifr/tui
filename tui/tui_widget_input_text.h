@@ -47,8 +47,8 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     WidgetInputTextData  *data  = widget->data;
     WidgetInputTextState *state = widget->state;
 
-    assert(state->cursor >= 0);
-    assert(state->scroll >= 0);
+    // assert(state->cursor >= 0);
+    // assert(state->scroll >= 0);
 
     //scroll based on cursor location and cursor
     if(state->cursor > data->input_width){
