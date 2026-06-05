@@ -160,11 +160,16 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
 
     //panels always render their content centered vertically
     //widget heights are precomputed
-    cursor_pos.y = center_in_container(
-        panel->inner_rect.pos.y + cursor_pos.y - scroll_offset,
-        panel->widgets_rect.size.h,
-        panel->outer_rect.size.h
-    );
+
+
+    cursor_pos.y = panel->inner_rect.pos.y;
+    if (panel->widgets_rect.size.h <= panel->inner_rect.size.h) {
+        //content fits inside the panel, center it vertically
+        cursor_pos.y += (panel->inner_rect.size.h - panel->widgets_rect.size.h) / 2;
+    } else {
+        //content overflows, apply scroll offset from the top
+        cursor_pos.y -= scroll_offset;
+    }
 
     bool inline_row = false;
     int inline_row_width = 0;
@@ -212,8 +217,8 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
         }
 
         //render current widget INSIDE panel boundaires
-        if(cursor_pos.y >= 0
-        || cursor_pos.y < panel->outer_rect.pos.y + panel->outer_rect.size.h){
+        if(cursor_pos.y >= panel->inner_rect.pos.y
+        && cursor_pos.y < panel->inner_rect.pos.y + panel->inner_rect.size.h){
             tui_render_widget(widget, cursor_pos);
         }
 
