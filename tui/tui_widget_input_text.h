@@ -103,7 +103,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
             screen,
             position.x + widget->size.w - 1,
             position.y,
-            u8"󰏫"
+            u8"🖉"
         );
     }
 
