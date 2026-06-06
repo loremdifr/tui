@@ -1,7 +1,7 @@
 #ifndef PAGE_EXAMPLE_H
 #define PAGE_EXAMPLE_H
 
-#include "../tui/tui.h"
+#include "tui/tui.h"
 #include <string.h>
 
 #define PAGE_EXAMPLE_ID "PAGE_EXAMPLE_1"

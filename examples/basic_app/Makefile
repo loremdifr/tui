@@ -14,23 +14,25 @@ BUILD_DIR = build
 EXEC_NAME = $(BUILD_DIR)$(DS)main$(EXT)
 SRC_NAME  = main.c
 
-LIBS_DIR = libs
-
 CFLAGS = -fdiagnostics-color=always -W -Werror -Wextra -pedantic -g -std=gnu23
-CFLAGS+= -I$(LIBS_DIR)
+##### NOTE: change this if reusing this MakeFile in your project!
+#####       the include might need to point to the root instead:
+#####       CFLAGS+= -I.
+CFLAGS+= -I../..
+#####
 
 LD_LIBS = -lm
 
 clean:
 	-$(RM) "$(EXEC_NAME)"
 
-valgrind:
-	clean
-	#-O0 is for valgrind debugging, remove it later
+valgrind: clean
+	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -O0 $(SRC_NAME) -o $(EXEC_NAME) $(LD_LIBS)
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(EXEC_NAME) $(ARGS)
 
 run: clean
+	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(SRC_NAME) -o $(EXEC_NAME) $(LD_LIBS)
 ifeq ($(OS),Windows_NT)
 	@cmd /C "$(EXEC_NAME) $(ARGS)"
@@ -38,11 +40,12 @@ else
 	@./$(EXEC_NAME) $(ARGS)
 endif
 
+#used for syntax checking
 check:
 	$(CC) -fsyntax-only $(CFLAGS) $(SRC_NAME)
 
-gf2:
-	clean
+gf2: clean
+	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(SRC_NAME) -o $(EXEC_NAME) $(LD_LIBS)
 	gf2 --args ./$(EXEC_NAME) $(ARGS)
 

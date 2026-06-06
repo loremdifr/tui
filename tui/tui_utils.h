@@ -32,6 +32,29 @@ typedef struct {
     vec2i size;
 } rect2i;
 
+typedef struct {
+    union{
+        float x;
+        float w;
+        float col;
+        float width;
+    };
+    union {
+        float y;
+        float h;
+        float row;
+        float height;
+    };
+} vec2f;
+
+typedef struct {
+    union{
+        vec2f position;
+        vec2f pos;
+    };
+    vec2f size;
+} rect2f;
+
 typedef void(*FunctionPointer)(void);
 
 int sign(int val);
@@ -39,6 +62,10 @@ int min(int a, int b);
 int max(int a, int b);
 int clamp(int val, int min, int max);
 int clamp_overflow(int val, int min, int max);
+
+float lerp(float min, float max, float weight);
+float inverse_lerp(float min, float max, float value);
+float remap(float val, float start_min, float start_max, float end_min, float end_max);
 
 //utf8 stuff
 uint8_t        utf8_char_length(uint8_t byte);
@@ -74,6 +101,21 @@ int clamp_overflow(int val, int min, int max){
     if (val < min) return max;
     if (val >= max) return min;
     return val;
+}
+
+float lerp(float min, float max, float weight){
+    //returns value from weight
+    return min + (max - min) * weight;
+}
+
+float inverse_lerp(float min, float max, float value){
+    //returns weight from value
+    return (value - min) / (max - min);
+}
+
+float remap(float val, float start_min, float start_max, float end_min, float end_max){
+    //remaps a value from one range to another
+    return lerp(end_min, end_max, inverse_lerp(start_min, start_max, val));
 }
 
 

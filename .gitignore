@@ -1,5 +1,6 @@
 *.o
 *.d
 build/*
+examples/*/build/*
 .cache/*
 .idea/*
