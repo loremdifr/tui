@@ -4,8 +4,11 @@ split_branch="framework-only"
 
 while read local_ref local_oid remote_ref remote_oid; do
     if [ "$remote_ref" = "refs/heads/main" ]; then
-        git subtree split --prefix=tui -b "$split_branch" --force
-        git push origin "$split_branch" --force
-        echo " -> UPDATED $split_branch from tui/"
+        if [ -d tui ] && git ls-files --error-unmatch tui/ > /dev/null 2>&1; then
+            git branch -D "$split_branch" 2>/dev/null || true
+            git subtree split --prefix=tui -b "$split_branch"
+            git push origin "$split_branch" --force --no-verify
+            echo " -> updated $split_branch from tui/"
+        fi
     fi
 done

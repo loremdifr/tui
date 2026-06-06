@@ -4,7 +4,7 @@ ifeq ($(OS),Windows_NT)
     RM := cmd /C del /Q /F
     DS := \\
 else
-    CC = clang	
+    CC = clang
     EXT :=
     RM := rm -f
     DS := /
