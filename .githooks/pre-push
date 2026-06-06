@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+split_branch="framework-only"
+
+while read local_ref local_oid remote_ref remote_oid; do
+    if [ "$remote_ref" = "refs/heads/main" ]; then
+        git subtree split --prefix=tui -b "$split_branch" --force
+        git push origin "$split_branch" --force
+        echo " -> UPDATED $split_branch from tui/"
+    fi
+done
