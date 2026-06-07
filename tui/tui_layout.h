@@ -520,25 +520,6 @@ bool tui_widget_focused_input(InputEvent input_event){
     return widget->input(widget, input_event);
 }
 
-private void tui_render_overlay(void) {
-    auto popup_size = (vec2i){
-        .w = LAYOUT_STATE.base_size.w * 0.5,
-        .h = LAYOUT_STATE.base_size.h * 0.3,
-    };
-    auto popup_pos = (vec2i){
-        .x = center_in_container(0, popup_size.w, LAYOUT_STATE.base_size.w),
-        .y = center_in_container(0, popup_size.h, LAYOUT_STATE.base_size.h),
-    };
-    auto popup_rect = (rect2i){
-        .pos  = popup_pos,
-        .size = popup_size,
-    };
-
-    //draw popup
-    tui_draw_rect(LAYOUT_STATE.screen, u8" ", popup_rect);
-    tui_draw_box(LAYOUT_STATE.screen, popup_rect);
-}
-
 void tui_layout_render(){
     //if we find the overlay panel defined, we store it for later
     Panel *overlay_panel = nullptr;
@@ -569,11 +550,14 @@ void tui_layout_render(){
         //achicar panel al tamaño de los widgets
         overlay_panel->inner_rect = overlay_panel->widgets_rect;
         overlay_panel->outer_rect = overlay_panel->widgets_rect;
+
         //agrandar
         overlay_panel->outer_rect.size.w += PADDING * 2 + BORDER * 2;
         overlay_panel->outer_rect.size.h += PADDING * 2 + BORDER * 2;
 
         overlay_panel->outer_rect.size.w = max(32, overlay_panel->outer_rect.size.w);
+        overlay_panel->outer_rect.size.h = max(8,  overlay_panel->outer_rect.size.h);
+
         //centrar
         overlay_panel->outer_rect.pos.x = center_in_container(
             overlay_panel->outer_rect.pos.x,
@@ -585,6 +569,14 @@ void tui_layout_render(){
             overlay_panel->outer_rect.size.h,
             LAYOUT_STATE.base_size.h
         );
+
+        //compensar
+        overlay_panel->inner_rect.pos.x  = overlay_panel->outer_rect.pos.x  + BORDER;
+        overlay_panel->inner_rect.pos.y  = overlay_panel->outer_rect.pos.y  + BORDER;
+        overlay_panel->inner_rect.size.w = overlay_panel->outer_rect.size.w - BORDER * 2;
+        overlay_panel->inner_rect.size.h = overlay_panel->outer_rect.size.h - BORDER * 2;
+
+        //
         tui_draw_rect(LAYOUT_STATE.screen, u8" ", overlay_panel->outer_rect);
         tui_render_panel(
             overlay_panel,
