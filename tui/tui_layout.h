@@ -630,6 +630,7 @@ private bool tui_widget_overlay_close_input(InputEvent input_event){
     if(LAYOUT_STATE.panel_focused == LAYOUT_STATE.panel_count - 1){
         LAYOUT_STATE.panel_count--;
     }
+    LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = 0;
     LAYOUT_STATE.panel_focused = owner_panel_index;
     LAYOUT_STATE.widget_overlay_focused_prev = -1;
     LAYOUT_STATE.widget_overlay_owner_panel = -1;
