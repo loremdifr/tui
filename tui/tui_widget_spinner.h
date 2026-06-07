@@ -25,30 +25,22 @@ private void tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i pos
     WidgetSpinnerState *widget_state = widget->state;
     WidgetSpinnerData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {
-        // alternative: ⣾⣽⣻⢿⡿⣟⣯⣷
-
-        {.text=u8"▘", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▜", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▐", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▗", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-
-        {.text=u8"▄", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▙", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▌", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▛", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▝", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-
-        {.text=u8"▐", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▟", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▄", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▙", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▌", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"▘", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⣇⠀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⡏⠀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⠏⠁", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⠋⠉", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⠉⠙", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⠉⠙", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⠈⠹", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⠀⢹", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⠀⣸", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⢀⣰", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⣀⣠", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⣄⣀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⣆⡀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
     };
     static const size_t frames_count = arr_size(frames);
-    static const double animation_speed = 1.5;
+    static const double animation_speed = 1.;
     static const double frame_speed = animation_speed / frames_count;
 
     widget_state->frame_target = frames_count;
@@ -85,7 +77,7 @@ private void tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i pos
     screen_format(ITALIC, COLOR_WHITE, COLOR_BLACK);
     screen_set_utf8_str(
         screen,
-        position.x + PADDING + 2,
+        position.x + PADDING + 3,
         position.y,
         widget_data->label
     );
