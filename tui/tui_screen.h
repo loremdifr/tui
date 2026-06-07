@@ -18,19 +18,38 @@ typedef enum {
 } TextFormat;
 
 typedef enum {
-    COLOR_DEFAULT,
-    COLOR_WHITE,
-    COLOR_BLACK,
+    COLOR_BLACK = 0,
     COLOR_RED,
     COLOR_GREEN,
-    COLOR_BLUE,
     COLOR_YELLOW,
+    COLOR_BLUE,
     COLOR_MAGENTA,
     COLOR_CYAN,
-    COLOR_GRAY,
-    COLOR_GRAY_DARK,
-    COLOR_MAGENTA_DARK,
-    //TODO: add more colors...
+    COLOR_WHITE,
+    COLOR_BRIGHT_BLACK,
+    COLOR_BRIGHT_RED,
+    COLOR_BRIGHT_GREEN,
+    COLOR_BRIGHT_YELLOW,
+    COLOR_BRIGHT_BLUE,
+    COLOR_BRIGHT_MAGENTA,
+    COLOR_BRIGHT_CYAN,
+    COLOR_BRIGHT_WHITE,
+
+    COLOR_DARK_BLACK,
+    COLOR_DARK_RED,
+    COLOR_DARK_GREEN,
+    COLOR_DARK_YELLOW,
+    COLOR_DARK_BLUE,
+    COLOR_DARK_MAGENTA,
+    COLOR_DARK_CYAN,
+    COLOR_DARK_WHITE,
+
+    // Aliases
+    COLOR_GRAY         = 8,
+    COLOR_GRAY_DARK    = 0,
+    COLOR_MAGENTA_DARK = 5,
+
+    COLOR_DEFAULT      = 256,
 } Color;
 
 typedef struct {
@@ -207,6 +226,168 @@ void screen_free(Screen *screen){
     // free(screen); // no need because our screens are
                      // part of APP_STATE and are globals
 }
+
+
+// write color + text format -----------------------------
+
+constexpr uint8_t FORMAT_PARAMS_MAX = 8;
+typedef struct{
+    uint8_t params[FORMAT_PARAMS_MAX];
+    char    str[80];
+    uint8_t used;
+} FormatParams;
+private FormatParams FORMAT_PARAMS = {};
+private inline void format_params_push(uint8_t param){
+    FORMAT_PARAMS.params[FORMAT_PARAMS.used++] = param;
+}
+private inline void format_params_reset(){
+    FORMAT_PARAMS.str[0] = '\0';
+    FORMAT_PARAMS.used = 0;
+}
+
+private inline void tui_write_color(TextFormat text_format, Color fg_color, Color bg_color){
+    static const char start[]     = "\033[";
+    static const char separator[] = ";";
+    static const char end[]       = "m";
+
+    //formato
+    if(text_format == NORMAL){
+        format_params_push(0);
+    }else{
+        if(text_format & BOLD)      format_params_push(1);
+        if(text_format & ITALIC)    format_params_push(3);
+        if(text_format & UNDERLINE) format_params_push(4);
+        if(text_format & BLINKING)  format_params_push(5);
+    }
+
+    //color frente
+    switch (fg_color) {
+        case COLOR_DEFAULT:        format_params_push(39); break;
+        case COLOR_BLACK:          format_params_push(30); break;
+        case COLOR_RED:            format_params_push(31); break;
+        case COLOR_GREEN:          format_params_push(32); break;
+        case COLOR_YELLOW:         format_params_push(33); break;
+        case COLOR_BLUE:           format_params_push(34); break;
+        case COLOR_MAGENTA:        format_params_push(35); break;
+        case COLOR_CYAN:           format_params_push(36); break;
+        case COLOR_WHITE:          format_params_push(37); break;
+        case COLOR_BRIGHT_BLACK:   format_params_push(90); break;
+        case COLOR_BRIGHT_RED:     format_params_push(91); break;
+        case COLOR_BRIGHT_GREEN:   format_params_push(92); break;
+        case COLOR_BRIGHT_YELLOW:  format_params_push(93); break;
+        case COLOR_BRIGHT_BLUE:    format_params_push(94); break;
+        case COLOR_BRIGHT_MAGENTA: format_params_push(95); break;
+        case COLOR_BRIGHT_CYAN:    format_params_push(96); break;
+        case COLOR_BRIGHT_WHITE:   format_params_push(97); break;
+
+        case COLOR_DARK_BLACK:     format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(232);
+                                   break;
+        case COLOR_DARK_RED:       format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(88);
+                                    break;
+        case COLOR_DARK_GREEN:     format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(22);
+                                    break;
+        case COLOR_DARK_YELLOW:    format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(58);
+                                    break;
+        case COLOR_DARK_BLUE:      format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(18);
+                                    break;
+        case COLOR_DARK_MAGENTA:   format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(90);
+                                    break;
+        case COLOR_DARK_CYAN:      format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(23);
+                                    break;
+        case COLOR_DARK_WHITE:     format_params_push(38);
+                                   format_params_push(5);
+                                   format_params_push(244);
+                                   break;
+
+        default: assert(false);
+    }
+
+    //color fondo
+    switch (bg_color) {
+        case COLOR_DEFAULT:        format_params_push(49);  break;
+        case COLOR_BLACK:          format_params_push(40);  break;
+        case COLOR_RED:            format_params_push(41);  break;
+        case COLOR_GREEN:          format_params_push(42);  break;
+        case COLOR_YELLOW:         format_params_push(43);  break;
+        case COLOR_BLUE:           format_params_push(44);  break;
+        case COLOR_MAGENTA:        format_params_push(45);  break;
+        case COLOR_CYAN:           format_params_push(46);  break;
+        case COLOR_WHITE:          format_params_push(47);  break;
+        case COLOR_BRIGHT_BLACK:   format_params_push(100); break;
+        case COLOR_BRIGHT_RED:     format_params_push(101); break;
+        case COLOR_BRIGHT_GREEN:   format_params_push(102); break;
+        case COLOR_BRIGHT_YELLOW:  format_params_push(103); break;
+        case COLOR_BRIGHT_BLUE:    format_params_push(104); break;
+        case COLOR_BRIGHT_MAGENTA: format_params_push(105); break;
+        case COLOR_BRIGHT_CYAN:    format_params_push(106); break;
+        case COLOR_BRIGHT_WHITE:   format_params_push(107); break;
+
+        case COLOR_DARK_BLACK:     format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(232);
+                                   break;
+        case COLOR_DARK_RED:       format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(88);
+                                   break;
+        case COLOR_DARK_GREEN:     format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(22);
+                                   break;
+        case COLOR_DARK_YELLOW:    format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(58);
+                                   break;
+        case COLOR_DARK_BLUE:      format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(18);
+                                   break;
+        case COLOR_DARK_MAGENTA:   format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(90);
+                                   break;
+        case COLOR_DARK_CYAN:      format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(23);
+                                   break;
+        case COLOR_DARK_WHITE:     format_params_push(48);
+                                   format_params_push(5);
+                                   format_params_push(244);
+                                   break;
+
+        default: assert(false);
+    }
+
+    //concatenar formato
+    int terminator_pos = sprintf(FORMAT_PARAMS.str, "%s", start);
+    char *next_str     = FORMAT_PARAMS.str + terminator_pos;
+    for(int i = 0; i < FORMAT_PARAMS.used; i++){
+        //ultimo param no usa el separator
+        if(i == FORMAT_PARAMS.used - 1){
+            next_str += sprintf(next_str, "%d%s", FORMAT_PARAMS.params[i], end);
+        }else{
+            next_str += sprintf(next_str, "%d%s", FORMAT_PARAMS.params[i], separator);
+        }
+    }
+
+    tui_write(FORMAT_PARAMS.str);
+    format_params_reset();
+}
+
 
 #endif //TUI_SCREEN_IMPL
 #endif //TUI_SCREEN

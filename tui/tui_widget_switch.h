@@ -37,12 +37,12 @@ private void tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
     WidgetSwitchState *widget_state = widget->state;
     WidgetSwitchData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {
-        {.text=u8"██  ", .fg_color=COLOR_RED, .bg_color=COLOR_GRAY},
-        {.text=u8"▐█▌ ", .fg_color=COLOR_RED, .bg_color=COLOR_GRAY},
-        {.text=u8"▐██ ", .fg_color=COLOR_RED, .bg_color=COLOR_GRAY},
-        {.text=u8" ██▌", .fg_color=COLOR_RED, .bg_color=COLOR_GRAY},
-        {.text=u8" ▐██", .fg_color=COLOR_RED, .bg_color=COLOR_GRAY},
-        {.text=u8"  ██", .fg_color=COLOR_GREEN, .bg_color=COLOR_GRAY},
+        {.text=u8"██  ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
+        {.text=u8"▐█▌ ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
+        {.text=u8"▐██ ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
+        {.text=u8" ██▌", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_GREEN},
+        {.text=u8" ▐██", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_GREEN},
+        {.text=u8"  ██", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_GREEN},
     };
     static const size_t frames_count = arr_size(frames);
     static const double animation_speed = 0.15;
@@ -89,7 +89,7 @@ private void tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
 
     //render the animation FRAME
     const AnimationFrame *frame = &frames[widget_state->frame_curr];
-    screen_format(BOLD, frame->fg_color, frame->bg_color);
+    screen_format(BOLD, COLOR_WHITE, frame->bg_color);
     screen_set_utf8_str(
         screen,
         position.x + PADDING + utf8_str_length(widget_data->label),
