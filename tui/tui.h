@@ -293,12 +293,20 @@ private void tui_render(void){
 	screen_clear(&APP_STATE.next_screen);
 }
 
+// TUI HOTKEY KEYS PANEL
+//TODO: not sure if this merits its own file
+private bool HOTKEY_HELP_SHOW    = false;
+private bool HOTKEY_HELP_ENABLED = false;
+private void tui_toggle_help(void){
+	if(HOTKEY_HELP_ENABLED){
+    	HOTKEY_HELP_SHOW = !HOTKEY_HELP_SHOW;
+	}else {
+		HOTKEY_HELP_SHOW = false;
+	}
+}
 private void tui_reset_hotkeys(void){
 	HOTKEYS.total = 0;
 	HOTKEY_HINTS.total = 0;
-
-	//test resize
-	// tui_register_key(KEY_R, KEY_MOD_NONE, &emit_resize_event);
 
 	//arrows to select widgets
 	tui_register_key(KEY_LEFT,   KEY_MOD_NONE,  &tui_cursor_prev_widget);
@@ -328,6 +336,12 @@ private void tui_reset_hotkeys(void){
 	//TODO: this should be contingent on there even being a back in the nav
 	tui_register_key(KEY_ESCAPE, KEY_MOD_NONE,  &tui_navigate_back);
 	tui_register_key_hint(u8"[ESC]", u8"Back");
+
+	//? to toggle help overlay
+	//NOTE: registered here instead of tui_render_hotkeys because hotkeys
+	//      are reset every frame BEFORE input processing.
+	//      we register the hint conditionally later.
+	tui_register_key((Key)'?', KEY_MOD_NONE, &tui_toggle_help);
 }
 
 private void tui_render_page_title(Screen *screen){
@@ -339,35 +353,128 @@ private void tui_render_page_title(Screen *screen){
 }
 
 private void tui_render_hotkeys(Screen *screen){
-	//TODO: if we're going over the screen length,
-	//      truncate the last one and add a way to "see more"
-	screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+    screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+    auto separator = u8" ● ";
 
-	// como se si me pase?
-	// si al concatenar, es mas grande de lo esperado, me pasé.
-	// en cuyo caso:
-	// 	repetir
-	// 		vuelvo un paso atras.
-	// 		intento poner el texto de ayuda
-	// 		si puedo break
+    size_t max_width = screen->size.w; //in characters/cells
+    size_t max_size = max_width * 4 + 1; //4 bytes for u8 + terminator
+    size_t included_hints_count = 0;
+    size_t hint_widths[TUI_HOTKEYS_MAX] = {}; //stores TOTAL width at each hint
+    uint8_t display_str[max_size] = {};
 
-	auto separator = u8" ● ";
-	const int max_width = screen->size.w;
-	uint8_t utf8_str[max_width] = {};
+    //first try to fill with all the hotkey hints, and see if they fit
+    for(int i = 0; i < HOTKEY_HINTS.total; i++){
+        HotkeyHint hkey = HOTKEY_HINTS.hints[i];
+        hint_widths[included_hints_count] = strlen(
+        	(const char*)display_str
+    	);
 
-	for(int i = 0; i < HOTKEY_HINTS.total; i++){
-		HotkeyHint hkey = HOTKEY_HINTS.hints[i];
-		//TODO: max_width here is characters whereas expected
-		//      limit in utf8_str_concat_max is in "bytes"!
-		utf8_str_concat_max(utf8_str, hkey.key,  max_width);
-		utf8_str_concat_max(utf8_str, u8" ",     max_width);
-		utf8_str_concat_max(utf8_str, hkey.hint, max_width);
+        //create current hint text
+        uint8_t hint_text[max_size] = {};
+        utf8_str_concat(hint_text, hkey.key);
+        utf8_str_concat(hint_text, u8" ");
+        utf8_str_concat(hint_text, hkey.hint);
+        if(i != HOTKEY_HINTS.total - 1){
+        	//last hotkey doesnt have separator
+        	//TODO: use the max_width instead?
+            utf8_str_concat(hint_text, separator);
+        }
 
-		if(i != HOTKEY_HINTS.total - 1){
-			utf8_str_concat_max(utf8_str, separator, max_width);
-		}
-	}
-	screen_set_utf8_str(screen, 0, screen->size.h, utf8_str);
+        //add hint to the display_str
+        size_t prev_width = utf8_str_display_width(display_str);
+        utf8_str_concat_max(display_str, hint_text, max_width);
+
+        //check if the hint was added fully or if it couldn't add it entirely
+        size_t curr_size = utf8_str_display_width(display_str);
+        if(curr_size < prev_width + utf8_str_display_width(hint_text)){
+        	auto last_character = hint_widths[included_hints_count];
+            display_str[last_character] = '\0';
+            break;
+        }
+        included_hints_count++;
+    }
+
+    //check if we need more space
+    if(included_hints_count < HOTKEY_HINTS.total){
+    	//now we need to make room in the display_str for the help hint
+	    static const uint8_t help_text[] = u8"[?] Help";
+	    size_t help_width = utf8_str_display_width(help_text);
+
+	    while(included_hints_count > 0){
+	    	//remove hints until the help hint fits
+	        size_t left_width = utf8_str_display_width(display_str);
+	        if (left_width + help_width <= max_width){
+	        	//it fits!
+	        	break;
+	        }
+	        //remove one hint...
+	        included_hints_count--;
+	        auto last_character = hint_widths[included_hints_count];
+            display_str[last_character] = '\0';
+	    }
+
+	    //show hint if needed and align to the right
+	    size_t left_width = utf8_str_display_width(display_str);
+        screen_set_utf8_str(
+        	screen,
+        	max_width - help_width,
+        	screen->size.h, help_text
+    	);
+
+	    HOTKEY_HELP_ENABLED = true;
+    }else{
+    	HOTKEY_HELP_ENABLED = false;
+    	HOTKEY_HELP_SHOW = false;
+    }
+
+    //actually render the display_str
+    screen_set_utf8_str(screen, 0, screen->size.h, display_str);
+
+    // hint help box overlay
+    if(HOTKEY_HELP_SHOW){
+        int line_count = HOTKEY_HINTS.total;
+
+        //draw box
+        int box_height = line_count + BORDER * 2 + PADDING * 2;
+        int box_y      = max(0, screen->size.h - box_height);
+
+        tui_draw_rect(screen, u8" ", (rect2i){
+            .pos = {0, box_y},
+            .size = {max_width, box_height}
+        });
+        tui_draw_box(screen, (rect2i){
+            .pos = {0, box_y},
+            .size = {max_width, box_height}
+        });
+
+        // box title and footer
+        static uint8_t *help_title = u8"Hotkeys";
+        static uint8_t *help_footer = u8"[?] Hide Help Panel";
+        String help_title_str  = string_from(help_title, strlen((char *)help_title));
+        String help_footer_str = string_from(help_footer, strlen((char *)help_footer));
+        tui_draw_box_title(screen, (rect2i){
+            .pos = {0, box_y},
+            .size = {max_width, box_height}
+        }, &help_title_str, BOX_TITLE_TOP_LEFT);
+        tui_draw_box_title(screen, (rect2i){
+            .pos = {0, box_y},
+            .size = {max_width, box_height}
+        }, &help_footer_str, BOX_TITLE_BOTTOM_RIGHT);
+
+        // draw hints inside the box
+        for(int i = 0; i < line_count; i++){
+            uint8_t hint_text[max_size] = {};
+            utf8_str_concat(hint_text, HOTKEY_HINTS.hints[i].key);
+            utf8_str_concat(hint_text, u8" ");
+            utf8_str_concat(hint_text, HOTKEY_HINTS.hints[i].hint);
+            screen_set_utf8_str(
+            	screen,
+            	BORDER + PADDING,
+            	box_y + BORDER + PADDING + i,
+            	hint_text
+        	);
+        }
+    }
 }
 
 private bool tui_process_input_hotkeys(InputEvent input_event){

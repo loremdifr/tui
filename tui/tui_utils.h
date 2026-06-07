@@ -67,15 +67,19 @@ float lerp(float min, float max, float weight);
 float inverse_lerp(float min, float max, float value);
 float remap(float val, float start_min, float start_max, float end_min, float end_max);
 
-//utf8 stuff
+//utf8
+//TODO: move to its own file..?
 uint8_t        utf8_char_length(uint8_t byte);
-int            utf8_str_length(const uint8_t *str);
-const uint8_t *utf8_str_next_char(const uint8_t *curr_char);
-uint8_t       *utf8_str_concat(uint8_t *dest, const uint8_t *src);
-uint8_t       *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t limit);
+uint8_t        utf8_char_display_width(const uint8_t bytes[static 4]);
 uint32_t       utf8_pack(const uint8_t bytes[static 4]);
 void           utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes);
-uint8_t        utf8_char_display_width(const uint8_t bytes[static 4]);
+
+//utf8_str
+size_t         utf8_str_length(const uint8_t *str);
+size_t         utf8_str_display_width(const uint8_t *str);
+const uint8_t *utf8_str_next_char(const uint8_t *curr_char);
+uint8_t       *utf8_str_concat(uint8_t *dest, const uint8_t *src);
+uint8_t       *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t max_width);
 
 #ifdef TUI_UTILS_IMPL
 
@@ -152,7 +156,7 @@ const uint8_t *utf8_str_next_char(const uint8_t *curr_char){
     return curr_char + total_bytes;
 }
 
-int utf8_str_length(const uint8_t *str){
+size_t utf8_str_length(const uint8_t *str){
     if(str == NULL) return 0;
     assert(str != NULL);
 
@@ -168,6 +172,27 @@ int utf8_str_length(const uint8_t *str){
     return length;
 }
 
+size_t utf8_str_display_width(const uint8_t *str){
+    if(str == NULL) return 0;
+
+    size_t display_width = 0;
+    const uint8_t *char_pointer = str;
+
+    while(*char_pointer != '\0'){
+        //build the exact size the function expects
+        uint8_t char_bytes[4] = {
+            char_pointer[0],
+            char_pointer[1],
+            char_pointer[2],
+            char_pointer[3]
+        };
+        display_width += utf8_char_display_width(char_bytes);
+        char_pointer   = utf8_str_next_char(char_pointer);
+    }
+
+    return display_width;
+}
+
 uint8_t *utf8_str_concat(uint8_t *dest, const uint8_t *src){
     if(dest == NULL) return NULL; //TODO: use nullptr instead?
     if(src == NULL) return dest;
@@ -178,23 +203,45 @@ uint8_t *utf8_str_concat(uint8_t *dest, const uint8_t *src){
         dest[dest_length + i] = src[i];
     }
 
+    dest[dest_length + src_length] = '\0'; //null terminator!!!!!!!
+
     return dest;
 }
 
-// this method truncates the resulting string to ensure it always stays within the limit
-uint8_t *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t limit){
-    if(dest == NULL) return NULL; //TODO: use nullptr instead?
-    if(src == NULL) return dest;
+// truncates so total DISPLAY WIDTH stays within max_width
+uint8_t *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t max_width){
+    if(dest == NULL) return NULL;
+    if(src == NULL)  return dest;
 
-    size_t dest_length = strlen((const char*)dest);
-    size_t src_length  = strlen((const char*)src);
-    size_t i = 0;
-    for(; i < src_length; i++){
-        if(i + dest_length > limit - 1) break;
-        dest[dest_length + i] = src[i];
+    size_t dest_width    = utf8_str_display_width(dest);
+    size_t dest_bytes    = strlen((const char*)dest);
+    size_t bytes_written = 0;
+
+    while(*src != '\0'){
+        //build the exact size the function expects
+        uint8_t char_bytes[4] = {src[0], src[1], src[2], src[3]};
+        uint8_t display_width = utf8_char_display_width(char_bytes);
+
+        if (dest_width + display_width > max_width){
+            //next char will go over limit, so we break
+            break;
+        }
+
+        dest_width += display_width;
+
+        //copy bytes until char
+        //TODO: this should PROBABLY be its own function
+        uint8_t char_length = utf8_char_length(src[0]);
+        for(uint8_t i = 0; i < char_length; i++){
+            dest[dest_bytes + bytes_written + i] = src[i];
+        }
+        bytes_written += char_length;
+
+        //move pointer to next char
+        src = utf8_str_next_char(src);
     }
-    dest[dest_length + i] = '\0'; //null terminator always!!
 
+    dest[dest_bytes + bytes_written] = '\0'; //null terminator!
     return dest;
 }
 
@@ -272,7 +319,7 @@ uint8_t utf8_char_display_width(const uint8_t bytes[static 4]){
     if(codepoint >= 0x400  && codepoint <= 0x52F)  return 1; //cyrillic
     if(codepoint >= 0x2000 && codepoint <= 0x206F) return 1; //punctuation and other smybols
     if(codepoint >= 0x2190 && codepoint <= 0x21FF) return 1; //arrows
-    if(codepoint >= 0x2500 && codepoint <= 0x259F) return 1; //box drawing chars and blocks
+    if(codepoint >= 0x2500 && codepoint <= 0x25FF) return 1; //box drawing chars and blocks
     if(codepoint >= 0x2800 && codepoint <= 0x28FF) return 1; //braille
 
     // w i d e

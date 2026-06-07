@@ -19,7 +19,10 @@ typedef enum {
     LAYOUT_SIDEBAR_LEFT,
     LAYOUT_SIDEBAR_RIGHT,
     LAYOUT_SPLIT_VERTICAL,
-    LAYOUT_SIDEBAR_LEFT_SPLIT_RIGHT,
+    LAYOUT_WITH_HEADER,
+    LAYOUT_WITH_FOOTER,
+    LAYOUT_WITH_HEADER_AND_FOOTER,
+    LAYOUT_SPLIT_VERTICAL_WITH_HEADER,
     //TODO: add more..?
 } PageLayout;
 
@@ -309,7 +312,6 @@ private rect2i tui_panel_rect(PanelSlot slot){
         }
     case LAYOUT_SIDEBAR_LEFT:
     case LAYOUT_SIDEBAR_RIGHT:
-    case LAYOUT_SIDEBAR_LEFT_SPLIT_RIGHT:
     case LAYOUT_SPLIT_VERTICAL:
     default: assert(false); //TODO: layout not implemented yet
     //TODO: add more panel layout definitions

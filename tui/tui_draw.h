@@ -7,10 +7,20 @@
 // #include "tui_platform.h"
 #include "tui_utils.h"
 #include "tui_screen.h"
+#include "tui_string.h"
+
+//TODO: not sure about this type name
+typedef enum {
+    BOX_TITLE_TOP_LEFT,
+    BOX_TITLE_TOP_RIGHT,
+    BOX_TITLE_BOTTOM_LEFT,
+    BOX_TITLE_BOTTOM_RIGHT,
+} BoxTitleAnchor;
 
 void tui_draw_box(Screen *screen, rect2i rect);
 void tui_draw_box_connected(Screen *screen, rect2i rect);
 void tui_draw_box_connected_cell(Screen *screen, int x, int y);
+void tui_draw_box_title(Screen *screen, rect2i box, String *title, BoxTitleAnchor anchor);
 void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
 void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
 void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect2i rect); //TODO:
@@ -139,6 +149,31 @@ void tui_draw_box_connected_cell(Screen *screen, int x, int y){
     }
 }
 
+void tui_draw_box_title(Screen *screen, rect2i box, String *title, BoxTitleAnchor anchor){
+    size_t title_width = utf8_str_display_width(title->data);
+
+    size_t x = 0;
+    size_t y = 0;
+
+    size_t left   = box.pos.x + 4;
+    size_t right  = box.pos.x + box.size.w - (title_width) - 8;
+    size_t top    = box.pos.y;
+    size_t bottom = box.pos.y + box.size.h - 1;
+
+    switch(anchor){
+        case BOX_TITLE_TOP_LEFT:     x = left;  y = top;    break;
+        case BOX_TITLE_TOP_RIGHT:    x = right; y = top;    break;
+        case BOX_TITLE_BOTTOM_LEFT:  x = left;  y = bottom; break;
+        case BOX_TITLE_BOTTOM_RIGHT: x = right; y = bottom; break;
+    }
+
+    screen_set_utf8(  screen, x,                 y, BOX_VL);
+    screen_set_char(  screen, x+1,               y, ' ');
+    screen_set_string(screen, x+2,               y, title);
+    screen_set_char(  screen, x+2+title_width,   y, ' ');
+    screen_set_utf8(  screen, x+2+title_width+1, y, BOX_VR);
+}
+
 void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to){
     if(screen == NULL || utf8_char == NULL) return;
 
@@ -221,6 +256,7 @@ void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect2i rect){
 
 void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
     //TODO: implement
+    assert(false);
 }
 
 void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
