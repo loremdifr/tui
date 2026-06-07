@@ -87,9 +87,14 @@ private void page_example_render(void){
 			.storage=name,
 			.capacity=name_length_max
 		);
+
+		tui_widget_select("SELECT_DUMMY_1",
+			.label=u8"Dummy Select: ",
+			.value=u8"Option A"
+		);
+
 		// tui_widget_input_textarea(); //importante para descripciones
 		// tui_widget_input_numbers(); //quizas importante para numero de calle?
-		// tui_widget_input_select(); //posiblemente importante como base del otro
 		// tui_widget_input_select_suggestions(); //importante para buscar calles
 		// tui_widget_input_select_radio(); //creo que no hace falta por ahora
 		// tui_widget_input_select_checkbox(); //creo que no hace falta por ahora

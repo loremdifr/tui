@@ -43,6 +43,9 @@
 #define TUI_WIDGET_SPINNER_IMPL
 #include "tui_widget_spinner.h"
 
+#define TUI_WIDGET_SELECT_IMPL
+#include "tui_widget_select.h"
+
 // Pages and nav ---------------------------------------------------------------
 
 typedef void (*InitFunction   )(void);
@@ -559,6 +562,7 @@ void tui_run_loop(void){
 		//before the input processing pass!
 		tui_layout_prepare(&APP_STATE.next_screen, active_page->layout);
 		active_page->render(); // <- this actually creates the widgets
+		tui_layout_prepare_widget_overlay();
 
 		//NOTE: The order is important! it is from deeper control upwards.
 		//      Any of those functions returning true will consume the event

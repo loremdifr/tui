@@ -32,11 +32,13 @@ typedef enum {
     SLOT_TOP,
     SLOT_BOTTOM,
     SLOT_OVERLAY,
+    SLOT_WIDGETS_OVERLAY_DO_NOT_USE,
 } PanelSlot;
 
 typedef struct Widget Widget;
 typedef bool (*WidgetInputFunction  )(Widget *widget, InputEvent input_event);
 typedef void (*WidgetRenderFunction )(Widget *widget, Screen *screen, vec2i position);
+typedef void (*WidgetOverlayFunction)(Widget *widget);
 
 struct Widget {
     const char           *id;
@@ -48,6 +50,7 @@ struct Widget {
     bool                  is_inline;
     WidgetInputFunction   input;
     WidgetRenderFunction  render;
+    WidgetOverlayFunction build_overlay_panel;
 };
 
 private constexpr int TUI_WIDGETS_IN_PANEL_MAX = 32;
@@ -79,6 +82,7 @@ void *tui_widget_state(const char *widget_id, size_t data_size);
 
 //used in the actual rendering process by tui.h
 void tui_layout_prepare(Screen *screen, PageLayout layout);
+void tui_layout_prepare_widget_overlay(void);
 bool tui_widget_focused_input(InputEvent input_event);
 void tui_layout_render(void); //actually rendering to the screen
 
@@ -120,6 +124,11 @@ typedef struct {
     int8_t       panel_curr; // -1 = no panel selected
     uint8_t      panel_focused; //at least one panel always focused
     int          panel_focused_prev;
+    //TODO: could we refactor this whole thing into being a panel like all the others..??
+    int          widget_overlay_focused_prev;
+    int          widget_overlay_owner_panel;
+    const char  *widget_overlay_owner_widget;
+    //--------------------
     uint8_t      widget_auto_id;
     const char  *widget_focused[TUI_PANELS_MAX]; //one id per panel
     int          panel_scroll_offset[TUI_PANELS_MAX]; //one per panel
@@ -131,6 +140,9 @@ typedef struct {
 private LayoutState LAYOUT_STATE = {
     .panel_curr         = -1,
     .panel_focused_prev = -1,
+    .widget_overlay_focused_prev = -1,
+    .widget_overlay_owner_panel = -1,
+    .widget_overlay_owner_widget = nullptr,
     .arena_frame        = nullptr,
 };
 
@@ -154,7 +166,7 @@ private void tui_render_widget(Widget *widget, vec2i position){
 }
 
 private void tui_render_panel(Panel *panel, int scroll_offset){
-    const int BASE_X = panel->outer_rect.pos.x + BORDER + PADDING;
+    const int BASE_X = panel->outer_rect.pos.x + BORDER + PADDING + 1;
     const int BASE_Y = panel->outer_rect.pos.y + BORDER + PADDING;
     vec2i cursor_pos = {.x = BASE_X, .y = BASE_Y};
 
@@ -295,7 +307,7 @@ private Widget *tui_get_widget_focused(){
 
 private rect2i tui_panel_rect(PanelSlot slot){
     //panel size is based on the slot it occuppies in the type of layout
-    if(slot == SLOT_OVERLAY){
+    if(slot == SLOT_OVERLAY || slot == SLOT_WIDGETS_OVERLAY_DO_NOT_USE){
         //overlay slot is the same for all layouts, starts at max size,
         //and will shrink before rendering up to the widgets boundaries
         return (rect2i){ .size = LAYOUT_STATE.base_size };
@@ -318,6 +330,73 @@ private rect2i tui_panel_rect(PanelSlot slot){
     }
 }
 
+private void tui_panel_shrink_to_widgets(Panel *panel){
+    //achicar panel al tamaño de los widgets
+    panel->inner_rect = panel->widgets_rect;
+    panel->outer_rect = panel->widgets_rect;
+
+    //agrandar
+    panel->outer_rect.size.w += PADDING * 2 + BORDER * 2;
+    panel->outer_rect.size.h += PADDING * 2 + BORDER * 2;
+
+    panel->outer_rect.size.w = max(32, panel->outer_rect.size.w);
+    panel->outer_rect.size.h = max(8,  panel->outer_rect.size.h);
+
+    //centrar
+    panel->outer_rect.pos.x = center_in_container(
+        panel->outer_rect.pos.x,
+        panel->outer_rect.size.w,
+        LAYOUT_STATE.base_size.w
+    );
+    panel->outer_rect.pos.y = center_in_container(
+        panel->outer_rect.pos.y,
+        panel->outer_rect.size.h,
+        LAYOUT_STATE.base_size.h
+    );
+
+    //compensar
+    panel->inner_rect.pos.x  = panel->outer_rect.pos.x  + BORDER + PADDING;
+    panel->inner_rect.pos.y  = panel->outer_rect.pos.y  + BORDER + PADDING;
+    panel->inner_rect.size.w = panel->outer_rect.size.w - BORDER * 2 - PADDING * 2;
+    panel->inner_rect.size.h = panel->outer_rect.size.h - BORDER * 2 - PADDING * 2;
+}
+
+private void tui_render_overlay_panel(Panel *overlay_panel, int scroll_offset){
+    //in case there was still an open inline row from the definition pass
+    tui_widget_row_end(overlay_panel);
+
+    //shrink and render
+    tui_panel_shrink_to_widgets(overlay_panel);
+    tui_draw_rect(LAYOUT_STATE.screen, u8" ", overlay_panel->outer_rect);
+    tui_render_panel(overlay_panel, scroll_offset);
+}
+
+private Panel *tui_widget_overlay_panel_create(void){
+    Widget *widget = tui_get_widget_focused();
+    if(widget == nullptr) return nullptr;
+    if(widget->build_overlay_panel == nullptr) return nullptr;
+
+    int panel_focused_prev = LAYOUT_STATE.panel_focused;
+    const char *widget_overlay_owner_widget = widget->id;
+
+    tui_panel_begin(SLOT_WIDGETS_OVERLAY_DO_NOT_USE);
+    widget->build_overlay_panel(widget);
+    tui_panel_end();
+
+    Panel *overlay_panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_count - 1];
+    if(overlay_panel->widget_count == 0){
+        LAYOUT_STATE.panel_count--;
+        return nullptr;
+    }
+
+    LAYOUT_STATE.widget_overlay_focused_prev = panel_focused_prev;
+    LAYOUT_STATE.widget_overlay_owner_panel = panel_focused_prev;
+    LAYOUT_STATE.widget_overlay_owner_widget = widget_overlay_owner_widget;
+    LAYOUT_STATE.panel_focused = LAYOUT_STATE.panel_count - 1;
+
+    return overlay_panel;
+}
+
 void tui_panel_begin(PanelSlot slot){
     assert(LAYOUT_STATE.panel_curr == -1); //close the prev panel first!
     assert(LAYOUT_STATE.panel_count < TUI_PANELS_MAX);
@@ -332,8 +411,8 @@ void tui_panel_begin(PanelSlot slot){
                 .y = panel_rect.pos.y + PADDING + BORDER,
             },
             .size = (vec2i){
-                .w = panel_rect.size.w - (PADDING + BORDER) * 2,
-                .h = panel_rect.size.h - (PADDING + BORDER) * 2,
+                .w = panel_rect.size.w - PADDING * 2 - BORDER * 2,
+                .h = panel_rect.size.h - PADDING * 2 - BORDER * 2,
             },
         },
     };
@@ -503,6 +582,13 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
     }
 
     //clear panels and widgets
+    if(LAYOUT_STATE.widget_overlay_focused_prev != -1){
+        LAYOUT_STATE.panel_focused = LAYOUT_STATE.widget_overlay_focused_prev;
+        LAYOUT_STATE.widget_overlay_focused_prev = -1;
+        LAYOUT_STATE.widget_overlay_owner_panel = -1;
+        LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
+    }
+
     LAYOUT_STATE.panel_curr     = -1;
     LAYOUT_STATE.panel_count    = 0;
     LAYOUT_STATE.widget_auto_id = 0;
@@ -515,7 +601,45 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
     LAYOUT_STATE.screen = screen;
 }
 
+void tui_layout_prepare_widget_overlay(void){
+    tui_widget_overlay_panel_create();
+}
+
+private bool tui_widget_overlay_close_input(InputEvent input_event){
+    if(input_event.input_type != INPUT_KEY) return false;
+    if(input_event.key_event.key != KEY_ESCAPE) return false;
+    if(LAYOUT_STATE.panel_focused >= LAYOUT_STATE.panel_count) return false;
+
+    Panel *panel_focused = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_focused];
+    if(panel_focused->slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) return false;
+    if(LAYOUT_STATE.widget_overlay_owner_panel < 0) return true;
+    if(LAYOUT_STATE.widget_overlay_owner_panel >= LAYOUT_STATE.panel_count) return true;
+    if(LAYOUT_STATE.widget_overlay_owner_widget == nullptr) return true;
+
+    int owner_panel_index = LAYOUT_STATE.widget_overlay_owner_panel;
+    Panel *owner_panel = &LAYOUT_STATE.panels[owner_panel_index];
+    for(int i = 0; i < owner_panel->widget_count; i++){
+        Widget *owner_widget = &owner_panel->widgets[i];
+        if(strcmp(owner_widget->id, LAYOUT_STATE.widget_overlay_owner_widget) != 0) continue;
+        if(owner_widget->input != nullptr){
+            owner_widget->input(owner_widget, input_event);
+        }
+        break;
+    }
+
+    if(LAYOUT_STATE.panel_focused == LAYOUT_STATE.panel_count - 1){
+        LAYOUT_STATE.panel_count--;
+    }
+    LAYOUT_STATE.panel_focused = owner_panel_index;
+    LAYOUT_STATE.widget_overlay_focused_prev = -1;
+    LAYOUT_STATE.widget_overlay_owner_panel = -1;
+    LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
+    return true;
+}
+
 bool tui_widget_focused_input(InputEvent input_event){
+    if(tui_widget_overlay_close_input(input_event)) return true;
+
     Widget *widget = tui_get_widget_focused();
     if(widget == nullptr) return false;
     if(widget->input == nullptr) return false;
@@ -527,21 +651,15 @@ void tui_layout_render(){
     Panel *overlay_panel = nullptr;
     int overlay_panel_index = 0;
 
-    //render panels
     for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
         Panel *panel = &LAYOUT_STATE.panels[i];
-        panel->focused = (LAYOUT_STATE.panel_focused == i);
-
         if(panel->slot == SLOT_OVERLAY){
             overlay_panel_index = i;
             overlay_panel = panel;
-            continue;
+            break;
         }
-        int scroll_offset = LAYOUT_STATE.panel_scroll_offset[i];
-        tui_render_panel(panel, scroll_offset);
     }
 
-    //render OVERLAY PANEL
     if(overlay_panel && overlay_panel->widget_count > 0){
         //si hay overlay, siempre es el focused
         if(LAYOUT_STATE.panel_focused != overlay_panel_index){
@@ -549,41 +667,6 @@ void tui_layout_render(){
             LAYOUT_STATE.panel_focused_prev = LAYOUT_STATE.panel_focused;
             LAYOUT_STATE.panel_focused      = overlay_panel_index;
         }
-        //achicar panel al tamaño de los widgets
-        overlay_panel->inner_rect = overlay_panel->widgets_rect;
-        overlay_panel->outer_rect = overlay_panel->widgets_rect;
-
-        //agrandar
-        overlay_panel->outer_rect.size.w += PADDING * 2 + BORDER * 2;
-        overlay_panel->outer_rect.size.h += PADDING * 2 + BORDER * 2;
-
-        overlay_panel->outer_rect.size.w = max(32, overlay_panel->outer_rect.size.w);
-        overlay_panel->outer_rect.size.h = max(8,  overlay_panel->outer_rect.size.h);
-
-        //centrar
-        overlay_panel->outer_rect.pos.x = center_in_container(
-            overlay_panel->outer_rect.pos.x,
-            overlay_panel->outer_rect.size.w,
-            LAYOUT_STATE.base_size.w
-        );
-        overlay_panel->outer_rect.pos.y = center_in_container(
-            overlay_panel->outer_rect.pos.y,
-            overlay_panel->outer_rect.size.h,
-            LAYOUT_STATE.base_size.h
-        );
-
-        //compensar
-        overlay_panel->inner_rect.pos.x  = overlay_panel->outer_rect.pos.x  + BORDER;
-        overlay_panel->inner_rect.pos.y  = overlay_panel->outer_rect.pos.y  + BORDER;
-        overlay_panel->inner_rect.size.w = overlay_panel->outer_rect.size.w - BORDER * 2;
-        overlay_panel->inner_rect.size.h = overlay_panel->outer_rect.size.h - BORDER * 2;
-
-        //
-        tui_draw_rect(LAYOUT_STATE.screen, u8" ", overlay_panel->outer_rect);
-        tui_render_panel(
-            overlay_panel,
-            LAYOUT_STATE.panel_scroll_offset[SLOT_OVERLAY]
-        );
     }else if(LAYOUT_STATE.panel_focused_prev != -1){
         //if overlay wont show but it was previously focused,
         //we restore the focused panel to the one before showing the overlay
@@ -592,7 +675,46 @@ void tui_layout_render(){
         LAYOUT_STATE.panel_focused_prev = -1;
     }
 
-    //TODO: render overlay_2
+    Panel *widget_overlay_panel = nullptr;
+    int widget_overlay_panel_index = 0;
+
+    for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
+        Panel *panel = &LAYOUT_STATE.panels[i];
+        if(panel->slot == SLOT_WIDGETS_OVERLAY_DO_NOT_USE){
+            widget_overlay_panel_index = i;
+            widget_overlay_panel = panel;
+            break;
+        }
+    }
+
+    if(widget_overlay_panel == nullptr){
+        widget_overlay_panel = tui_widget_overlay_panel_create();
+        widget_overlay_panel_index = LAYOUT_STATE.panel_count - 1;
+    }
+
+    //render panels
+    for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
+        Panel *panel = &LAYOUT_STATE.panels[i];
+        panel->focused = (LAYOUT_STATE.panel_focused == i);
+
+        if(panel->slot == SLOT_OVERLAY
+        || panel->slot == SLOT_WIDGETS_OVERLAY_DO_NOT_USE){
+            continue;
+        }
+        int scroll_offset = LAYOUT_STATE.panel_scroll_offset[i];
+        tui_render_panel(panel, scroll_offset);
+    }
+
+    //render OVERLAY PANEL
+    if(overlay_panel && overlay_panel->widget_count > 0){
+        overlay_panel->focused = true;
+        tui_render_overlay_panel(overlay_panel, LAYOUT_STATE.panel_scroll_offset[overlay_panel_index]);
+    }
+
+    if(widget_overlay_panel != nullptr){
+        widget_overlay_panel->focused = true;
+        tui_render_overlay_panel(widget_overlay_panel, LAYOUT_STATE.panel_scroll_offset[widget_overlay_panel_index]);
+    }
 
     //reset arena
     arena_reset(LAYOUT_STATE.arena_frame);
