@@ -210,9 +210,9 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
             auto centered_row = center_in_container(
                 cursor_pos.x,
                 inline_row_width,
-                panel->outer_rect.size.w - PADDING - BORDER
+                panel->inner_rect.size.w
             );
-            cursor_pos.x += centered_row;
+            cursor_pos.x = centered_row;
         }
 
         //not an inline widget, reset the row
@@ -227,7 +227,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
             cursor_pos.x = center_in_container(
                 cursor_pos.x,
                 widget->size.w,
-                panel->outer_rect.size.w - PADDING - BORDER
+                panel->inner_rect.size.w
             );
         }
 
