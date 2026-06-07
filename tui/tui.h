@@ -267,12 +267,19 @@ private void tui_render(void){
 			if(memcmp(curr_cell, next_cell, sizeof(Cell)) == 0){
 				continue;
 			}
+
+			//skip cells that are the second column of a wide character
+			//TODO: is this correct..? test more
+			auto prev_column_cell = screen_get(&APP_STATE.next_screen, x - 1, y);
+			bool is_second_column_of_wide_char = (x > 0 && prev_column_cell->display_width > 1);
+			if(is_second_column_of_wide_char) continue;
+
 			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
 			tui_write_color(next_cell->text_format, next_cell->fg_color, next_cell->bg_color);
-			if(next_cell->bytes_used > 0){
-				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
-			}else{
+			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
 				tui_write(" ");
+			}else{
+				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
 			}
 		}
 	}

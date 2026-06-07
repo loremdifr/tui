@@ -73,7 +73,7 @@ private void page_example_render(void){
 		}else{
 			tui_widget_label("show_popup: false");
 		}
-		tui_widget_label(u8"Hello World! 🌎");
+		tui_widget_label(u8" 🌎 Hello World! 🌎 ");
 
 		tui_widget_switch("SWITCH_1",
 			.label=u8"Mostrar Popup ",

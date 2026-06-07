@@ -73,8 +73,9 @@ int            utf8_str_length(const uint8_t *str);
 const uint8_t *utf8_str_next_char(const uint8_t *curr_char);
 uint8_t       *utf8_str_concat(uint8_t *dest, const uint8_t *src);
 uint8_t       *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t limit);
-uint32_t       utf8_pack(const uint8_t bytes[]);
+uint32_t       utf8_pack(const uint8_t bytes[static 4]);
 void           utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes);
+uint8_t        utf8_char_display_width(const uint8_t bytes[static 4]);
 
 #ifdef TUI_UTILS_IMPL
 
@@ -197,7 +198,7 @@ uint8_t *utf8_str_concat_max(uint8_t *dest, const uint8_t *src, size_t limit){
     return dest;
 }
 
-uint32_t utf8_pack(const uint8_t bytes[]){
+uint32_t utf8_pack(const uint8_t bytes[static 4]){
     // inspect the first byte to know how many bytes there
     // are in total, and put them in order in a uint32
     auto total_bytes = utf8_char_length(bytes[0]);
@@ -228,6 +229,57 @@ void utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes){
     unpacked_bytes[1] = (packed_bytes >> 8  ) & byte_mask;
     unpacked_bytes[2] = (packed_bytes >> 8*2) & byte_mask;
     unpacked_bytes[3] = (packed_bytes >> 8*3) & byte_mask;
+}
+
+
+private uint32_t utf8_codepoint_from_bytes(const uint8_t bytes[static 4]){
+    //to get the utf8 codepoint we have to remove the continuation bits from
+    //each byte (first two), and then concat the other bits in order
+    //NOTE: first 2 bits are the continuation byte marker, so we use multiple of 8-2=6
+
+    uint8_t char_length = utf8_char_length(bytes[0]);
+    constexpr uint8_t mask_cont  = 0b00111111;
+    constexpr uint8_t mask_5bits = 0b00011111;
+    constexpr uint8_t mask_4bits = 0b00001111;
+    constexpr uint8_t mask_3bits = 0b00000111;
+
+    switch(char_length){
+        case 1: return (uint32_t)bytes[0];
+        case 2: return ((uint32_t)(bytes[0] & mask_5bits) << 6)
+                     |  (uint32_t)(bytes[1] & mask_cont);
+        case 3: return ((uint32_t)(bytes[0] & mask_4bits) << 12)
+                     | ((uint32_t)(bytes[1] & mask_cont)  << 6)
+                     |  (uint32_t)(bytes[2] & mask_cont);
+        case 4: return ((uint32_t)(bytes[0] & mask_3bits) << 18)
+                     | ((uint32_t)(bytes[1] & mask_cont)  << 12)
+                     | ((uint32_t)(bytes[2] & mask_cont)  << 6)
+                     |  (uint32_t)(bytes[3] & mask_cont);
+        default: return 0;
+    }
+}
+
+uint8_t utf8_char_display_width(const uint8_t bytes[static 4]){
+    //unicode display width is kind of a mess and there's no easy way to know
+    //the width of a character. so we add here whitelisted ranges as we need them.
+    //we want to avoid corrupting the screen as much as possible, so it's better that
+    //a character does not show than it breaking the rendering.
+
+    uint32_t codepoint = utf8_codepoint_from_bytes(bytes);
+
+    // narrow
+    if(codepoint >= 0x20   && codepoint <= 0x7E)   return 1; //ascii
+    if(codepoint >= 0xA0   && codepoint <= 0x17F)  return 1; //latin
+    if(codepoint >= 0x400  && codepoint <= 0x52F)  return 1; //cyrillic
+    if(codepoint >= 0x2000 && codepoint <= 0x206F) return 1; //punctuation and other smybols
+    if(codepoint >= 0x2190 && codepoint <= 0x21FF) return 1; //arrows
+    if(codepoint >= 0x2500 && codepoint <= 0x259F) return 1; //box drawing chars and blocks
+    if(codepoint >= 0x2800 && codepoint <= 0x28FF) return 1; //braille
+
+    // w i d e
+    if(codepoint >= 0x2600   && codepoint <= 0x27BF)  return 2; // misc siymbols
+    if(codepoint >= 0x1F300  && codepoint <= 0x1FAFF) return 2; // emojis
+
+    return 0;
 }
 
 #endif //TUI_UTILS_IMPL

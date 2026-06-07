@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "tui_utils.h"
+#include "tui_string.h"
 
 typedef enum {
     NORMAL    = 0x00,
@@ -38,8 +39,7 @@ typedef struct {
     TextFormat text_format;
     Color      fg_color;
     Color      bg_color;
-    //not supported for now:
-    // uint8_t display_width;
+    uint8_t    display_width;
 } Cell;
 
 typedef struct{
@@ -112,10 +112,12 @@ void screen_set(Screen *screen, int x, int y, Cell cell){
 
 void screen_set_utf8(Screen *screen, int x, int y, const uint8_t *utf8){
     assert(screen != NULL);
-    uint8_t total_bytes = utf8_char_length(utf8[0]);
+    uint8_t total_bytes   = utf8_char_length(utf8[0]);
+    uint8_t display_width = utf8_char_display_width(utf8);
     Cell cell = {
-        .bytes = {},
-        .bytes_used = total_bytes,
+        .bytes         = {},
+        .bytes_used    = total_bytes,
+        .display_width = display_width,
     };
     for(uint8_t i = 0; i < total_bytes; i++){
         cell.bytes[i] = utf8[i];
@@ -126,8 +128,9 @@ void screen_set_utf8(Screen *screen, int x, int y, const uint8_t *utf8){
 void screen_set_char(Screen *screen, int x, int y, char chr){
 	assert(screen != NULL);
     Cell cell = {
-        .bytes = {(uint8_t)chr, 0, 0, 0},
-        .bytes_used = 1,
+        .bytes         = {(uint8_t)chr, 0, 0, 0},
+        .bytes_used    = 1,
+        .display_width = 1,
     };
     screen_set(screen, x, y, cell);
 }
@@ -138,8 +141,6 @@ void screen_set_utf8_str(Screen *screen, int x, int y, const uint8_t *str){
 }
 
 void screen_set_string(Screen *screen, int x, int y, String *str){
-    //TODO: should problbly convert the entire codebase to use Strings and simplify things
-    //TODO: probably need to assert that characters are actually 1 char wide somehow
     assert(screen != NULL);
     if(str == NULL || str->data == NULL) return;
 
@@ -167,8 +168,12 @@ void screen_set_string(Screen *screen, int x, int y, String *str){
             cell.bytes[i] = curr_char[i];
         }
 
-        screen_set(screen, curr_x, y, cell);
-        curr_x++;
+        cell.display_width = utf8_char_display_width(curr_char);
+        if(cell.display_width > 0){
+            screen_set(screen, curr_x, y, cell);
+        }
+        curr_x += cell.display_width; //move x cursor according to char width
+
         curr_char = utf8_str_next_char(curr_char);
     }
 }
