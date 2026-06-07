@@ -10,16 +10,13 @@ else
     DS := /
 endif
 
-BUILD_DIR = build
-EXEC_NAME = $(BUILD_DIR)$(DS)main$(EXT)
-SRC_NAME  = main.c
+SRC_NAME  := $(addprefix $(CURDIR)/, main.c)
+BUILD_DIR := $(addprefix $(CURDIR)/, build)
+EXEC_NAME  = $(BUILD_DIR)$(DS)main$(EXT)
+INCLUDES_DIR := $(addprefix $(CURDIR)/, ../..)
 
 CFLAGS = -fdiagnostics-color=always -W -Werror -Wextra -pedantic -g -std=gnu23
-##### NOTE: change this if reusing this MakeFile in your project!
-#####       the include might need to point to the root instead:
-#####       CFLAGS+= -I.
-CFLAGS+= -I../..
-#####
+CFLAGS+= -I$(INCLUDES_DIR)
 
 LD_LIBS = -lm
 
@@ -37,7 +34,7 @@ run: clean
 ifeq ($(OS),Windows_NT)
 	@cmd /C "$(EXEC_NAME) $(ARGS)"
 else
-	@./$(EXEC_NAME) $(ARGS)
+	@$(EXEC_NAME) $(ARGS)
 endif
 
 #used for syntax checking
