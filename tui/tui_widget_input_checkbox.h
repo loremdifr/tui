@@ -47,11 +47,6 @@ private void tui_widget_input_checkbox_render(Widget *widget, Screen *screen, ve
         position.y,
         widget_data->label
     );
-
-    //right pad so that all the checkboxes share the same the same width
-    // for(int x = rendered_width; x < widget->size.w; x++){
-    //     screen_set_char(screen, position.x + x, position.y, ' ');
-    // }
 }
 
 private bool tui_widget_input_checkbox_input(Widget *widget, InputEvent input_event){
