@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#define I18N_HINT_SELECT_TEXT u8"Seleccionar"
+#define I18N_HELP_TITLE u8"Atajos de Teclado"
+#define I18N_HELP_OPEN u8"[?] Ayuda"
+#define I18N_HELP_CLOSE u8"[?] Ocultar Ayuda"
+
 #define TUI_IMPL
 #include "tui/tui.h"
 
@@ -26,4 +31,3 @@ int main(void)
 	printf("\n - PROGRAMA FINALIZADO - \n");
 	return 0;
 }
-

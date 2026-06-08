@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <stdarg.h>
 
+#include "tui_i18n.h"
+
 #define TUI_UTILS_IMPL
 #include "tui_utils.h"
 
@@ -236,29 +238,29 @@ private void tui_reset_hotkeys(void){
 	tui_register_key(KEY_RIGHT,  KEY_MOD_NONE,  &tui_cursor_next_widget);
 	tui_register_key(KEY_UP,     KEY_MOD_NONE,  &tui_cursor_prev_widget);
 	tui_register_key(KEY_DOWN,   KEY_MOD_NONE,  &tui_cursor_next_widget);
-	tui_register_key_hint(u8"[↑] [↓]", u8"Select");
+	tui_register_key_hint(I18N_HINT_SELECT_KEY, I18N_HINT_SELECT_TEXT);
 
 	//enter to activate selected widget
 	//TODO: if this is here--- shouldnt we have ENTER as an activate widget key??
 	//      and not in the widget itself?
-	tui_register_key_hint(u8"[ENTER]", u8"OK");
+	tui_register_key_hint(I18N_HINT_OK_KEY, I18N_HINT_OK_TEXT);
 
 	//scroll
 	//TODO: this should somehow detect if the active panel is scrollable
 	tui_register_key(KEY_PAGEUP,    KEY_MOD_NONE,  &tui_panel_scroll_up);
 	tui_register_key(KEY_PAGEDOWN,  KEY_MOD_NONE,  &tui_panel_scroll_down);
-	tui_register_key_hint(u8"[PgUp] [PgDown]", u8"Scroll");
+	tui_register_key_hint(I18N_HINT_SCROLL_KEY, I18N_HINT_SCROLL_TEXT);
 
 	//tab to select panels
 	//TODO: this should be contingent on there being more than 1 panel
-	tui_register_key_hint(u8"[TAB] [SHIFT+TAB]", u8"Switch Panel");
+	tui_register_key_hint(I18N_HINT_SWITCH_PANEL_KEY, I18N_HINT_SWITCH_PANEL_TEXT);
 	tui_register_key(KEY_TAB,    KEY_MOD_NONE,  &tui_cursor_next_panel);
 	tui_register_key(KEY_TAB,    KEY_MOD_SHIFT, &tui_cursor_prev_panel);
 
 	//esc to navigate back
 	//TODO: this should be contingent on there even being a back in the nav
 	tui_register_key(KEY_ESCAPE, KEY_MOD_NONE,  &tui_navigate_back);
-	tui_register_key_hint(u8"[ESC]", u8"Back");
+	tui_register_key_hint(I18N_HINT_BACK_KEY, I18N_HINT_BACK_TEXT);
 
 	//? to toggle help overlay
 	//NOTE: registered here instead of tui_render_hotkeys because hotkeys
@@ -371,10 +373,10 @@ private void tui_render_hotkeys(Screen *screen){
         });
 
         // box title and footer
-        static uint8_t *help_title = u8"Hotkeys";
-        static uint8_t *help_footer = u8"[?] Hide Help Panel";
-        String help_title_str  = string_from(help_title, strlen((char *)help_title));
-        String help_footer_str = string_from(help_footer, strlen((char *)help_footer));
+        static const uint8_t *help_title = I18N_HELP_TITLE;
+        static const uint8_t *help_footer = I18N_HELP_CLOSE;
+        String help_title_str  = string_from((uint8_t *)help_title, strlen((char *)help_title));
+        String help_footer_str = string_from((uint8_t *)help_footer, strlen((char *)help_footer));
         tui_draw_box_title(screen, (rect2i){
             .pos = {0, box_y},
             .size = {max_width, box_height}
