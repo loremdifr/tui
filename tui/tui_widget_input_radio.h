@@ -55,8 +55,11 @@ private void tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i
 
     if(widget->focused){
         screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
-    }else{
+        screen_set_utf8_str(screen, position.x, position.y, radio);
+    }else if (is_selected){
         screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    }else{
+        screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
     }
 
     screen_set_utf8_str(screen, position.x, position.y, radio);

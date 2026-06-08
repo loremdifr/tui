@@ -31,6 +31,8 @@ typedef enum {
     SLOT_SIDEBAR,
     SLOT_TOP,
     SLOT_BOTTOM,
+    SLOT_LEFT,
+    SLOT_RIGHT,
     SLOT_OVERLAY,
     SLOT_WIDGETS_OVERLAY_DO_NOT_USE,
 } PanelSlot;
@@ -321,48 +323,55 @@ private rect2i tui_panel_rect(PanelSlot slot){
     int footer_h  = 6;
 
     switch(LAYOUT_STATE.layout){
-    case LAYOUT_SINGLE_PANEL: return (rect2i){.size = {w, h}};
+    case LAYOUT_SINGLE_PANEL: return (rect2i){.size = {base_w, base_h}};
     case LAYOUT_SIDEBAR_LEFT:
-        switch slot:
-        case SLOT_SIDEBAR: return (rect2i){.size = {sidebar_w, h}};
-        case SLOT_MAIN:    return (rect2i){.pos  = {sidebar_w, 0}, .size = {w - sidebar_w, h}};
+        switch(slot){
+        case SLOT_SIDEBAR: return (rect2i){.size = {sidebar_w, base_h}};
+        case SLOT_MAIN:    return (rect2i){.pos  = {sidebar_w, 0}, .size = {base_w - sidebar_w, base_h}};
         default: assert(false); //layout doesnt support this slot
+        }
     case LAYOUT_SIDEBAR_RIGHT:
-        switch slot:
-        case SLOT_MAIN:    return (rect2i){.size = {w - sidebar_w, h}};
-        case SLOT_SIDEBAR: return (rect2i){.pos  = {w - sidebar_w, 0}, .size = {sidebar_w, h}};
+        switch(slot){
+        case SLOT_MAIN:    return (rect2i){.size = {base_w - sidebar_w, base_h}};
+        case SLOT_SIDEBAR: return (rect2i){.pos  = {base_w - sidebar_w, 0}, .size = {sidebar_w, base_h}};
         default: assert(false); //layout doesnt support this slot
+        }
     case LAYOUT_SPLIT_VERTICAL:
-        switch slot:
-        case SLOT_LEFT:    return (rect2i){.size = {w / 2, h}};
-        case SLOT_RIGHT:   return (rect2i){.pos = {w / 2, 0}, .size = {w - w / 2, h}};
+        switch(slot){
+        case SLOT_LEFT:    return (rect2i){.size = {base_w / 2, base_h}};
+        case SLOT_RIGHT:   return (rect2i){.pos = {base_w / 2, 0}, .size = {base_w - base_w / 2, base_h}};
         default: assert(false); //layout doesnt support this slot
+        }
     case LAYOUT_WITH_HEADER:
-        switch slot:
-        case SLOT_TOP:    return (rect2i){.size = {w, header_h}};
-        case SLOT_MAIN:   return (rect2i){.pos = {0, header_h}, .size = {w, h - header_h}};
+        switch(slot){
+        case SLOT_TOP:    return (rect2i){.size = {base_w, header_h}};
+        case SLOT_MAIN:   return (rect2i){.pos = {0, header_h}, .size = {base_w, base_h - header_h}};
         default: assert(false); //layout doesnt support this slot
+        }
     case LAYOUT_WITH_FOOTER:
-        switch slot:
-        case SLOT_MAIN:   return (rect2i){.size = {w, h - footer_h}};
-        case SLOT_BOTTOM: return (rect2i){.pos = {0, h - footer_h}, .size = {w, footer_h}};
+        switch(slot){
+        case SLOT_MAIN:   return (rect2i){.size = {base_w, base_h - footer_h}};
+        case SLOT_BOTTOM: return (rect2i){.pos = {0, base_h - footer_h}, .size = {base_w, footer_h}};
         default: assert(false); //layout doesnt support this slot
+        }
     case LAYOUT_WITH_HEADER_AND_FOOTER:
-        switch slot:
-        case SLOT_TOP:    return (rect2i){.size = {w, header_h}};
-        case SLOT_MAIN:   return (rect2i){.pos = {0, header_h}, .size = {w, h - header_h - footer_h}};
-        case SLOT_BOTTOM: return (rect2i){.pos = {0, h - footer_h}, .size = {w, footer_h}};
+        switch(slot){
+        case SLOT_TOP:    return (rect2i){.size = {base_w, header_h}};
+        case SLOT_MAIN:   return (rect2i){.pos = {0, header_h}, .size = {base_w, base_h - header_h - footer_h}};
+        case SLOT_BOTTOM: return (rect2i){.pos = {0, base_h - footer_h}, .size = {base_w, footer_h}};
         default: assert(false); //layout doesnt support this slot
+        }
     case LAYOUT_SPLIT_VERTICAL_WITH_HEADER:
-        switch slot:
-        case SLOT_TOP:    return (rect2i){.size = {w, header_h}};
-        case SLOT_LEFT:   return (rect2i){.pos = {0, header_h}, .size = {w / 2, h - header_h}};
-        case SLOT_RIGHT:  return (rect2i){.pos = {w / 2, header_h}, .size = {w - w / 2, h - header_h}};
+        switch(slot){
+        case SLOT_TOP:    return (rect2i){.size = {base_w, header_h}};
+        case SLOT_LEFT:   return (rect2i){.pos = {0, header_h}, .size = {base_w / 2, base_h - header_h}};
+        case SLOT_RIGHT:  return (rect2i){.pos = {base_w / 2, header_h}, .size = {base_w - base_w / 2, base_h - header_h}};
         default: assert(false); //layout doesnt support this slot
+        }
     }
 
     assert(false); //ERROR: layout not implemented!
-    return r;
+    return (rect2i){ .size = LAYOUT_STATE.base_size };
 }
 
 private void tui_panel_shrink_to_widgets(Panel *panel){
@@ -437,7 +446,7 @@ void tui_panel_begin(PanelSlot slot){
     assert(LAYOUT_STATE.panel_count < TUI_PANELS_MAX);
 
     auto panel_rect = tui_panel_rect(slot);
-    panel_rect.pos.y += 1: //leave space for the app title
+    panel_rect.pos.y += 1; //leave space for the app title
     Panel new_panel = {
         .slot = slot,
         .outer_rect = panel_rect,
