@@ -1,11 +1,24 @@
+REFACTOR:
+	[x]	first, salvage parts from the overlays @done (26-06-08 07:10)
+	[x]	then, remove them @done (26-06-08 07:10)
+	[x]	then, introduce the layers @done (26-06-08 07:10)
+	[x]	then, make the base layer work @done (26-06-08 07:10)
+	[x]	then, ensure the layer focusing mechanism exists @done (26-06-08 07:10)
+	[x]	add the overlay layer and make the overlay work again @done (26-06-08 08:51)
+		[x]	- shrink overlay layer! @done (26-06-08 08:51)
+	[x]	add the widget overlay layer and make it work again @done (26-06-08 08:51)
+	[ ]	figure out how to properly bind the widget to the subwidget..
+
+--- ✄ -----------------------
+
 	[ ]	fix the declaration of stb style files: the IMPL should not be encapsulated inside the initial if guard declaration
 
 MUST-HAVE:
 
-	[ ]	Page Navigation
-		[ ]	test moving to different pages
-		[ ]	actually dont crash if there's no previous page when going back
-		[ ]	show the history at the top of the screen
+	[x]	Page Navigation @done (26-06-08 03:31)
+		[x]	test moving to different pages @done (26-06-08 03:30)
+		[x]	actually dont crash if there's no previous page when going back @done (26-06-08 03:31)
+		[x]	show the history at the top of the screen @done (26-06-08 03:31)
 	[ ]	pages functionpointers must be optional
 	[ ]	probably all containers need scrolling
 		-	because all panels have a border, we can render the scrollbar inside the border!
@@ -46,21 +59,17 @@ MUST-HAVE:
 			[x]	utf8 support @done (26-05-30 21:20)
 			[x]	deleting and backspacing @done (26-05-30 21:20)
 			[x]	scrollable content and avoid overflow @done (26-06-01 03:15)
-			[ ]	word by word movment
+			[x]	word by word movment @done (26-06-08 03:31)
 			[ ]	selection
 			[ ]	expandable size to the placeholder or container max
-		[ ]	select
-		[ ]	select with autocomplete
-		[ ]	number input
-		[ ]	checkbox
+		[x]	select @done (26-06-08 03:31)
+		[x]	select with autocomplete @done (26-06-08 03:31)
+		[x]	number input @done (26-06-08 03:31)
+		[x]	checkbox @done (26-06-08 03:31)
 		[x]	switch toggle @done (26-05-30 21:18)
 		[x]	spinner @done (26-05-30 21:18)
 		[ ]	tabs
-		[ ]	radio
-			- you give them a storage and a value
-			- it shows if the storage is the value
-			- and entering, it applies
-		---
+		[x]	radio @done (26-06-08 03:31)
 		[ ]	table ?
 		[x]	two or more elements side by side? inline widgets!
 
@@ -71,6 +80,6 @@ Extra stuff:
 		[ ]	drag
 
 [x]	scrollable content @done (26-06-03 15:47)
-[ ]	Panel title?
+[x]	Panel title? @done (26-06-08 03:31)
 [ ]	top menu declaration support
 [ ]	tooltip layout functionality

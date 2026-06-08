@@ -293,7 +293,7 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
 
 //public
 void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params){
-    Panel *curr_panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
+    Panel *panel = tui_get_panel_building();
 
     //widget data
 	WidgetInputTextData *widget_data = (WidgetInputTextData *)arena_alloc(
@@ -324,7 +324,7 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
     int total_width = widget_data->label_width + widget_data->input_width;
 
     // ensure input fits inside the panel
-    int panel_width = curr_panel->inner_rect.size.w;
+    int panel_width = panel->inner_rect.size.w;
     if(total_width > panel_width) total_width = panel_width;
     widget_data->input_width = max(1, total_width - (int)widget_data->label_width);
 

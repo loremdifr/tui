@@ -190,7 +190,7 @@ private void page_example_render(void){
 		tui_widget_select_autocomplete("SELECT_AUTO_1",
 			.label=u8"Autocomplete: ",
 			.storage=&autocomplete_selected_option,
-			.autocomplete=&page_example_autocomplete,
+			.get_suggestions=&page_example_autocomplete,
 			.options_capacity=arr_size(AUTOCOMPLETE_OPTIONS)
 		);
 
@@ -240,13 +240,15 @@ private void page_example_render(void){
 
 	if(!show_popup) return;
 
-	tui_panel_begin(SLOT_OVERLAY);
-		tui_widget_label("Hello from popup!");
-		tui_widget_button("BUTTON_POPUP",
-			.label=u8"OK!",
-			.on_click=&close_example_popup,
-		);
-	tui_panel_end();
+	tui_layer_begin(LAYER_OVERLAY, LAYOUT_SINGLE_PANEL);
+		tui_panel_begin(SLOT_MAIN);
+			tui_widget_label("Hello from popup!");
+			tui_widget_button("BUTTON_POPUP",
+				.label=u8"OK!",
+				.on_click=&close_example_popup,
+			);
+		tui_panel_end();
+	tui_layer_end();
 }
 
 Page PAGE_EXAMPLE = {

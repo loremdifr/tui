@@ -33,9 +33,8 @@ private void tui_widget_label_render(Widget *widget, Screen *screen, vec2i posit
 
 //public
 void tui_widget_label_(const uint8_t *text){
-    Panel *curr_panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
-
-    auto max_width = max(0, curr_panel->inner_rect.size.width);
+    Panel *panel = tui_get_panel_building();
+    auto max_width = max(0, panel->inner_rect.size.width);
 
 	WidgetLabelData *widget_data = (WidgetLabelData *)arena_alloc(
 		LAYOUT_STATE.arena_frame, sizeof(WidgetLabelData)

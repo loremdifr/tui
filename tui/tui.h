@@ -397,10 +397,6 @@ private void tui_render_hotkeys(Screen *screen){
 
 
 private void tui_render(void){
-	tui_layout_render();
-    tui_render_header(&APP_STATE.next_screen);
-	tui_render_hotkeys(&APP_STATE.next_screen);
-
 	//display diff of screen buffers
 	for(int x = 0; x < APP_STATE.curr_screen.size.x; x++){
 		for(int y = 0; y < APP_STATE.curr_screen.size.y; y++){
@@ -495,7 +491,7 @@ void tui_run_loop(void){
 	}
 
 #ifdef TUI_WINDOWS
-	//windos is a naughty naught boy
+	//windos is a naught ynaught boy
 	Sleep(100);
 	emit_resize_event();
 #endif //TUI_WINDOWS
@@ -523,9 +519,8 @@ void tui_run_loop(void){
 		//prepare page render and create widgets,
 		//this is done here because widgets need to exist
 		//before the input processing pass!
-		tui_layout_prepare(&APP_STATE.next_screen, active_page->layout);
+		tui_layout_prepare(&APP_STATE.next_screen);
 		active_page->render(); // <- this actually creates the widgets
-		tui_layout_prepare_widget_overlay();
 
 		//NOTE: The order is important! it is from deeper control upwards.
 		//      Any of those functions returning true will consume the event
@@ -537,6 +532,7 @@ void tui_run_loop(void){
 		screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK); //reset format
 
 		tui_layout_render();
+		tui_render_header(&APP_STATE.next_screen);
 		tui_render_hotkeys(&APP_STATE.next_screen);
 
 		//render the TUI diff to the screen
@@ -550,19 +546,6 @@ void tui_run_loop(void){
 	tui_close();
 }
 
-private void tui_layout_reset_focus(void){
-	//TODO: this is probably not very good. might need to remake this whole thing
-	LAYOUT_STATE.panel_focused = 0;
-	for(int i = 0; i < TUI_PANELS_MAX; i++){
-		LAYOUT_STATE.widget_focused[i]      = nullptr;
-		LAYOUT_STATE.panel_scroll_offset[i] = 0;
-	}
-	LAYOUT_STATE.panel_focused_prev          = -1;
-	LAYOUT_STATE.widget_overlay_focused_prev = -1;
-	LAYOUT_STATE.widget_overlay_owner_panel  = -1;
-	LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
-}
-
 void tui_navigate_to(const char *page_id){
 	int page_index  = 0;
 	bool page_found = false;
@@ -573,13 +556,13 @@ void tui_navigate_to(const char *page_id){
 	assert(page_found); // did you try to navigate to a page that doesn't exist?
 	assert(NAV_HISTORY.count < TUI_NAV_HISTORY_MAX - 1); //stack overflow
 	NAV_HISTORY.stack[NAV_HISTORY.count++] = page_index;
-	tui_layout_reset_focus();
+	tui_layout_reset();
 }
 
 void tui_navigate_back(void){
 	if (NAV_HISTORY.count <= 1) return; //check 1 because root is part of history!
 	NAV_HISTORY.count--;
-	tui_layout_reset_focus();
+	tui_layout_reset();
 }
 
 Page *tui_get_curr_page(){

@@ -14,6 +14,14 @@
 #endif //TUI_DRAW_IMPL
 #include "tui_draw.h"
 
+
+typedef enum {
+    LAYER_BASE = 0,
+    LAYER_OVERLAY,
+    LAYER_WIDGETS_OVERLAY_DO_NOT_USE,
+    LAYER_COUNT,
+} PageLayerKind;
+
 typedef enum {
     LAYOUT_SINGLE_PANEL,
     LAYOUT_SIDEBAR_LEFT,
@@ -33,8 +41,6 @@ typedef enum {
     SLOT_BOTTOM,
     SLOT_LEFT,
     SLOT_RIGHT,
-    SLOT_OVERLAY,
-    SLOT_WIDGETS_OVERLAY_DO_NOT_USE,
 } PanelSlot;
 
 typedef struct Widget Widget;
@@ -52,7 +58,7 @@ struct Widget {
     bool                  is_inline;
     WidgetInputFunction   input;
     WidgetRenderFunction  render;
-    WidgetOverlayFunction build_overlay_panel;
+    WidgetOverlayFunction overlay;
 };
 
 private constexpr int TUI_WIDGETS_IN_PANEL_MAX = 32;
@@ -73,9 +79,13 @@ typedef struct {
     Color bg_color;
 } AnimationFrame;
 
-//API TO DEFIN THE PANELS AND WIDGETS ON THE PAGE
+//API TO DEFINE THE PANELS AND WIDGETS ON THE PAGE
 void tui_panel_begin(PanelSlot slot);
 void tui_panel_end(void);
+
+//NOTE: setting the layer is NOT required, framework assumes base layer by default.
+void tui_layer_begin(PageLayerKind layer, PageLayout layout);
+void tui_layer_end(void);
 
 //widgets
 char *tui_create_widget_id();
@@ -83,16 +93,17 @@ void  tui_widget_push(Widget widget);
 void *tui_widget_state(const char *widget_id, size_t data_size);
 
 //used in the actual rendering process by tui.h
-void tui_layout_prepare(Screen *screen, PageLayout layout);
-void tui_layout_prepare_widget_overlay(void);
+void tui_layout_prepare(Screen *screen);
 bool tui_widget_focused_input(InputEvent input_event);
 void tui_layout_render(void); //actually rendering to the screen
+void tui_layout_reset(void);
 
 //focus/navigation
 void tui_cursor_next_widget(void);
 void tui_cursor_prev_widget(void);
 void tui_cursor_next_panel(void);
 void tui_cursor_prev_panel(void);
+Panel *tui_get_panel_building(void); //used by widgets
 void tui_panel_scroll(int offset);
 void tui_panel_scroll_to(int widget_index); //TODO: widget index or widget pointer?
 void tui_panel_scroll_up(void);
@@ -104,6 +115,20 @@ private constexpr int PADDING = 1;
 private constexpr int BORDER = 1;
 private constexpr int TUI_PANELS_MAX = 12;
 private constexpr int TUI_WIDGET_STATES_MAX = TUI_PANELS_MAX * TUI_WIDGETS_IN_PANEL_MAX;
+
+typedef struct {
+    PageLayout   layout;
+    bool         shrink;
+    bool         focused;
+    Panel        panels[TUI_PANELS_MAX];
+    uint8_t      panel_count;
+    int8_t       panel_building; // -1 = no panel selected
+    uint8_t      panel_focused; //at least one panel always focused
+    int          panel_scroll_offset[TUI_PANELS_MAX]; //one per panel
+    const char  *widget_focused[TUI_PANELS_MAX]; //one id per panel
+    uint8_t      widget_auto_id; //IDs are global to the layer,
+                                 //in case the user wants to move widgest around
+} PageLayer;
 
 typedef struct {
     const char *widget_id;
@@ -120,32 +145,21 @@ typedef struct {
 private WidgetStateRegistry WIDGET_REGISTRY = {.arena  = nullptr};
 
 typedef struct {
-    vec2i        base_size;
-    Panel        panels[TUI_PANELS_MAX];
-    uint8_t      panel_count;
-    int8_t       panel_curr; // -1 = no panel selected
-    uint8_t      panel_focused; //at least one panel always focused
-    int          panel_focused_prev;
-    //TODO: could we refactor this whole thing into being a panel like all the others..??
-    int          widget_overlay_focused_prev;
-    int          widget_overlay_owner_panel;
-    const char  *widget_overlay_owner_widget;
-    //--------------------
-    uint8_t      widget_auto_id;
-    const char  *widget_focused[TUI_PANELS_MAX]; //one id per panel
-    int          panel_scroll_offset[TUI_PANELS_MAX]; //one per panel
-    PageLayout   layout;
+    vec2i         base_size;
+    PageLayer     layers[LAYER_COUNT];
+    PageLayerKind layer_building;
+    PageLayerKind layer_focused;
     Screen      *screen;
     Arena       *arena_frame;
 } LayoutState;
 
 private LayoutState LAYOUT_STATE = {
-    .panel_curr         = -1,
-    .panel_focused_prev = -1,
-    .widget_overlay_focused_prev = -1,
-    .widget_overlay_owner_panel = -1,
-    .widget_overlay_owner_widget = nullptr,
-    .arena_frame        = nullptr,
+    .layers = {
+        [LAYER_BASE]                       = {.panel_building = -1, .shrink = false},
+        [LAYER_OVERLAY]                    = {.panel_building = -1, .shrink = true},
+        [LAYER_WIDGETS_OVERLAY_DO_NOT_USE] = {.panel_building = -1, .shrink = true},
+    },
+    .arena_frame = nullptr,
 };
 
 private void tui_widget_row_begin(Panel *panel);
@@ -177,7 +191,6 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
 
     //panels always render their content centered vertically
     //widget heights are precomputed
-
 
     cursor_pos.y = panel->inner_rect.pos.y;
     if (panel->widgets_rect.size.h <= panel->inner_rect.size.h) {
@@ -286,12 +299,24 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
     }
 }
 
+private PageLayer *tui_get_layer_focused(){
+    PageLayer *layer_focused = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_focused];
+    return layer_focused;
+}
+
 private Panel *tui_get_panel_focused(){
-    return &(LAYOUT_STATE.panels[LAYOUT_STATE.panel_focused]);
+    PageLayer *layer_focused = tui_get_layer_focused();
+    return &(layer_focused->panels[layer_focused->panel_focused]);
+}
+
+Panel *tui_get_panel_building(){
+    PageLayer *layer_building = &(LAYOUT_STATE.layers[LAYOUT_STATE.layer_building]);
+    return &(layer_building->panels[layer_building->panel_building]);
 }
 
 private Widget *tui_get_widget_focused(){
-    auto widget_focused_id = LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused];
+    PageLayer *layer_focused = tui_get_layer_focused();
+    auto widget_focused_id = layer_focused->widget_focused[layer_focused->panel_focused];
     if(widget_focused_id == nullptr){
         return nullptr;
     }
@@ -307,14 +332,8 @@ private Widget *tui_get_widget_focused(){
     return nullptr;
 }
 
-private rect2i tui_panel_rect(PanelSlot slot){
+private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot){
     //panel size is based on the slot it occupies in the type of layout
-
-    if(slot == SLOT_OVERLAY || slot == SLOT_WIDGETS_OVERLAY_DO_NOT_USE){
-        //overlay slot is the same for all layouts, starts at max size,
-        //and will shrink before rendering up to the widgets boundaries
-        return (rect2i){ .size = LAYOUT_STATE.base_size };
-    }
 
     int base_w    = LAYOUT_STATE.base_size.w;
     int base_h    = LAYOUT_STATE.base_size.h;
@@ -322,7 +341,7 @@ private rect2i tui_panel_rect(PanelSlot slot){
     int header_h  = 6;
     int footer_h  = 6;
 
-    switch(LAYOUT_STATE.layout){
+    switch(layout){
     case LAYOUT_SINGLE_PANEL: return (rect2i){.size = {base_w, base_h}};
     case LAYOUT_SIDEBAR_LEFT:
         switch(slot){
@@ -405,47 +424,25 @@ private void tui_panel_shrink_to_widgets(Panel *panel){
     panel->inner_rect.size.h = panel->outer_rect.size.h - BORDER * 2 - PADDING * 2;
 }
 
-private void tui_render_overlay_panel(Panel *overlay_panel, int scroll_offset){
-    //in case there was still an open inline row from the definition pass
-    tui_widget_row_end(overlay_panel);
-
-    //shrink and render
-    tui_panel_shrink_to_widgets(overlay_panel);
-    tui_draw_rect(LAYOUT_STATE.screen, u8" ", overlay_panel->outer_rect);
-    tui_render_panel(overlay_panel, scroll_offset);
+void tui_layer_begin(PageLayerKind layer, PageLayout layout){
+    //switching to the requested layout and setting it's layout
+    assert(layer != LAYER_COUNT);
+    LAYOUT_STATE.layer_building       = layer;
+    LAYOUT_STATE.layers[layer].layout = layout;
 }
 
-private Panel *tui_widget_overlay_panel_create(void){
-    Widget *widget = tui_get_widget_focused();
-    if(widget == nullptr) return nullptr;
-    if(widget->build_overlay_panel == nullptr) return nullptr;
-
-    int panel_focused_prev = LAYOUT_STATE.panel_focused;
-    const char *widget_overlay_owner_widget = widget->id;
-
-    tui_panel_begin(SLOT_WIDGETS_OVERLAY_DO_NOT_USE);
-    widget->build_overlay_panel(widget);
-    tui_panel_end();
-
-    Panel *overlay_panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_count - 1];
-    if(overlay_panel->widget_count == 0){
-        LAYOUT_STATE.panel_count--;
-        return nullptr;
-    }
-
-    LAYOUT_STATE.widget_overlay_focused_prev = panel_focused_prev;
-    LAYOUT_STATE.widget_overlay_owner_panel = panel_focused_prev;
-    LAYOUT_STATE.widget_overlay_owner_widget = widget_overlay_owner_widget;
-    LAYOUT_STATE.panel_focused = LAYOUT_STATE.panel_count - 1;
-
-    return overlay_panel;
+void tui_layer_end(void){
+    //go back to the base layer, making no changes to it
+    LAYOUT_STATE.layer_building = LAYER_BASE;
 }
 
 void tui_panel_begin(PanelSlot slot){
-    assert(LAYOUT_STATE.panel_curr == -1); //close the prev panel first!
-    assert(LAYOUT_STATE.panel_count < TUI_PANELS_MAX);
+    assert(LAYOUT_STATE.layer_building < LAYER_COUNT);
+    PageLayer *layer_building = &(LAYOUT_STATE.layers[LAYOUT_STATE.layer_building]);
+    assert(layer_building->panel_building == -1); //close the prev panel first!
+    assert(layer_building->panel_count < TUI_PANELS_MAX);
 
-    auto panel_rect = tui_panel_rect(slot);
+    auto panel_rect = tui_panel_rect(layer_building->layout, slot);
     panel_rect.pos.y += 1; //leave space for the app title
     Panel new_panel = {
         .slot = slot,
@@ -461,20 +458,23 @@ void tui_panel_begin(PanelSlot slot){
             },
         },
     };
-    LAYOUT_STATE.panel_curr = LAYOUT_STATE.panel_count;
-    LAYOUT_STATE.panels[LAYOUT_STATE.panel_count++] = new_panel;
+    layer_building->panel_building = layer_building->panel_count;
+    layer_building->panels[layer_building->panel_count++] = new_panel;
 }
 
 void tui_panel_end(void){
-    assert(LAYOUT_STATE.panel_curr != -1); //no panel to close
-    LAYOUT_STATE.panel_curr = -1;
+    PageLayer *layer_building = &(LAYOUT_STATE.layers[LAYOUT_STATE.layer_building]);
+    assert(layer_building->panel_building != -1); //no panel to close
+    layer_building->panel_building = -1;
 }
 
 void tui_panel_scroll(int offset){
-    Panel *panel      = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_focused];
-    int scroll_offset = LAYOUT_STATE.panel_scroll_offset[LAYOUT_STATE.panel_focused];
+    PageLayer *layer_focused = tui_get_layer_focused();
+    Panel     *panel         = tui_get_panel_focused();
+    auto       panel_idx     = layer_focused->panel_focused;
+    int        scroll_offset = layer_focused->panel_scroll_offset[panel_idx];
 
-    LAYOUT_STATE.panel_scroll_offset[LAYOUT_STATE.panel_focused] = clamp(
+    layer_focused->panel_scroll_offset[layer_focused->panel_focused] = clamp(
         scroll_offset + offset,
         0,
         max(0, panel->widgets_rect.size.h - panel->inner_rect.size.h)
@@ -492,20 +492,23 @@ void tui_panel_scroll_down(void){
 }
 
 char *tui_create_widget_id(){
+    PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
     char *new_id = (char *)arena_alloc(LAYOUT_STATE.arena_frame, sizeof(char) * 16);
-    sprintf(new_id, "auto_id_%d", LAYOUT_STATE.widget_auto_id++);
+    sprintf(new_id, "auto_id_%d", layer_building->widget_auto_id++);
     return new_id;
 }
 
 private inline Widget *get_latest_widget(){
-    Panel *panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
+    PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
+    Panel *panel = &layer_building->panels[layer_building->panel_building];
     if(panel->widget_count == 0) return nullptr;
     return &panel->widgets[panel->widget_count - 1];
 }
 
 private inline Widget *get_new_widget(char const *widget_id){
-    assert(LAYOUT_STATE.panel_curr != -1); //must be used inside a tui_panel_begin!
-    Panel *panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
+    PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
+    assert(layer_building->panel_building != -1); //must be used inside a tui_panel_begin!
+    Panel *panel = &layer_building->panels[layer_building->panel_building];
     assert(panel->widget_count < TUI_WIDGETS_IN_PANEL_MAX); //too many widgets!
 
     Widget *new_widget = &panel->widgets[panel->widget_count++];
@@ -581,17 +584,18 @@ private void tui_widget_row_end(Panel *panel){
 }
 
 void tui_widget_push(Widget widget){
-    assert(LAYOUT_STATE.panel_curr != -1); //must be used inside a tui_panel_begin!
+    PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
+    assert(layer_building->panel_building != -1); //must be used inside a tui_panel_begin!
     Widget *last_widget = get_latest_widget();
     Widget *new_widget  = get_new_widget(widget.id);
     memcpy(new_widget, &widget, sizeof(Widget));
 
     //widget focus
-    auto panel_focused_widget = LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_curr];
+    auto panel_focused_widget = layer_building->widget_focused[layer_building->panel_building];
     new_widget->focused = panel_focused_widget != NULL && strcmp(new_widget->id, panel_focused_widget) == 0;
 
     //panel row, increases widget rect in panel
-    Panel *panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
+    Panel *panel = &layer_building->panels[layer_building->panel_building];
     bool inside_row = (last_widget == nullptr || last_widget->is_inline);
     if(new_widget->is_inline && !inside_row){
         //comienza nueva row inline
@@ -609,7 +613,8 @@ void tui_widget_push(Widget widget){
     }
 }
 
-void tui_layout_prepare(Screen *screen, PageLayout layout){
+void tui_layout_prepare(Screen *screen){
+    PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
 
     if(LAYOUT_STATE.arena_frame == nullptr){
         LAYOUT_STATE.arena_frame = arena_init(1024 * 1024 * 5); //5mb
@@ -619,24 +624,9 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
         WIDGET_REGISTRY.arena = arena_init(1024 * 1024 * 5); //5mb
     }
 
-    //if layout changes we reset the widget registry
-    if(layout != LAYOUT_STATE.layout){
-        LAYOUT_STATE.layout = layout;
-        arena_reset(WIDGET_REGISTRY.arena);
-        WIDGET_REGISTRY.states_count = 0;
-    }
-
-    //clear panels and widgets
-    if(LAYOUT_STATE.widget_overlay_focused_prev != -1){
-        LAYOUT_STATE.panel_focused = LAYOUT_STATE.widget_overlay_focused_prev;
-        LAYOUT_STATE.widget_overlay_focused_prev = -1;
-        LAYOUT_STATE.widget_overlay_owner_panel = -1;
-        LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
-    }
-
-    LAYOUT_STATE.panel_curr     = -1;
-    LAYOUT_STATE.panel_count    = 0;
-    LAYOUT_STATE.widget_auto_id = 0;
+    layer_building->panel_building = -1;
+    layer_building->panel_count    = 0;
+    layer_building->widget_auto_id = 0;
 
     //NOTE: base size has h-2 to leave room for header at top
     //      and key hints at bottom
@@ -647,45 +637,41 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
     LAYOUT_STATE.screen = screen;
 }
 
-void tui_layout_prepare_widget_overlay(void){
-    tui_widget_overlay_panel_create();
-}
+// private bool tui_widget_overlay_close_input(InputEvent input_event){
+//     if(input_event.input_type != INPUT_KEY) return false;
+//     if(input_event.key_event.key != KEY_ESCAPE) return false;
+//     if(LAYOUT_STATE.panel_focused >= LAYOUT_STATE.panel_count) return false;
 
-private bool tui_widget_overlay_close_input(InputEvent input_event){
-    if(input_event.input_type != INPUT_KEY) return false;
-    if(input_event.key_event.key != KEY_ESCAPE) return false;
-    if(LAYOUT_STATE.panel_focused >= LAYOUT_STATE.panel_count) return false;
+//     Panel *panel_focused = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_focused];
+//     if(panel_focused->slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) return false;
+//     if(LAYOUT_STATE.widget_overlay_owner_panel < 0) return true;
+//     if(LAYOUT_STATE.widget_overlay_owner_panel >= LAYOUT_STATE.panel_count) return true;
+//     if(LAYOUT_STATE.widget_overlay_owner_widget == nullptr) return true;
 
-    Panel *panel_focused = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_focused];
-    if(panel_focused->slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) return false;
-    if(LAYOUT_STATE.widget_overlay_owner_panel < 0) return true;
-    if(LAYOUT_STATE.widget_overlay_owner_panel >= LAYOUT_STATE.panel_count) return true;
-    if(LAYOUT_STATE.widget_overlay_owner_widget == nullptr) return true;
+//     int owner_panel_index = LAYOUT_STATE.widget_overlay_owner_panel;
+//     Panel *owner_panel = &LAYOUT_STATE.panels[owner_panel_index];
+//     for(int i = 0; i < owner_panel->widget_count; i++){
+//         Widget *owner_widget = &owner_panel->widgets[i];
+//         if(strcmp(owner_widget->id, LAYOUT_STATE.widget_overlay_owner_widget) != 0) continue;
+//         if(owner_widget->input != nullptr){
+//             owner_widget->input(owner_widget, input_event);
+//         }
+//         break;
+//     }
 
-    int owner_panel_index = LAYOUT_STATE.widget_overlay_owner_panel;
-    Panel *owner_panel = &LAYOUT_STATE.panels[owner_panel_index];
-    for(int i = 0; i < owner_panel->widget_count; i++){
-        Widget *owner_widget = &owner_panel->widgets[i];
-        if(strcmp(owner_widget->id, LAYOUT_STATE.widget_overlay_owner_widget) != 0) continue;
-        if(owner_widget->input != nullptr){
-            owner_widget->input(owner_widget, input_event);
-        }
-        break;
-    }
-
-    if(LAYOUT_STATE.panel_focused == LAYOUT_STATE.panel_count - 1){
-        LAYOUT_STATE.panel_count--;
-    }
-    LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = 0;
-    LAYOUT_STATE.panel_focused = owner_panel_index;
-    LAYOUT_STATE.widget_overlay_focused_prev = -1;
-    LAYOUT_STATE.widget_overlay_owner_panel = -1;
-    LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
-    return true;
-}
+//     if(LAYOUT_STATE.panel_focused == LAYOUT_STATE.panel_count - 1){
+//         LAYOUT_STATE.panel_count--;
+//     }
+//     LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = 0;
+//     LAYOUT_STATE.panel_focused = owner_panel_index;
+//     LAYOUT_STATE.widget_overlay_focused_prev = -1;
+//     LAYOUT_STATE.widget_overlay_owner_panel = -1;
+//     LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
+//     return true;
+// }
 
 bool tui_widget_focused_input(InputEvent input_event){
-    if(tui_widget_overlay_close_input(input_event)) return true;
+    // if(tui_widget_overlay_close_input(input_event)) return true;
 
     Widget *widget = tui_get_widget_focused();
     if(widget == nullptr) return false;
@@ -693,99 +679,117 @@ bool tui_widget_focused_input(InputEvent input_event){
     return widget->input(widget, input_event);
 }
 
+private void tui_layout_evaluate_layer_focused(void){
+    //decide focused layer first, from top to bottom
+    for(PageLayerKind layer_idx = LAYER_WIDGETS_OVERLAY_DO_NOT_USE; layer_idx >= 0; layer_idx--){
+        PageLayer *layer = &LAYOUT_STATE.layers[layer_idx];
+
+        //if any of its panels has any widget at all, then it's the focused one
+        for(int i = 0; i < layer->panel_count; i++){
+            Panel *panel = &layer->panels[i];
+            if(panel->widget_count == 0) continue;
+
+            LAYOUT_STATE.layer_focused = layer_idx;
+            return;
+        }
+    }
+}
+
 void tui_layout_render(){
-    //if we find the overlay panel defined, we store it for later
-    Panel *overlay_panel = nullptr;
-    int overlay_panel_index = 0;
-
-    for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
-        Panel *panel = &LAYOUT_STATE.panels[i];
-        if(panel->slot == SLOT_OVERLAY){
-            overlay_panel_index = i;
-            overlay_panel = panel;
-            break;
+    //first of all we build the widget overlays, very important!
+     for(PageLayerKind layer_idx = LAYER_BASE; layer_idx < LAYER_COUNT; layer_idx++){
+        PageLayer *layer = &LAYOUT_STATE.layers[layer_idx];
+        for(int i = 0; i < layer->panel_count; i++){
+            Panel *panel = &layer->panels[i];
+            for(int j = 0; j < panel->widget_count; j++){
+                Widget *widget = &panel->widgets[j];
+                if(!widget->overlay) continue;
+                widget->overlay(widget);
+            }
         }
     }
 
-    if(overlay_panel){
-        //si hay overlay, siempre es el focused
-        if(LAYOUT_STATE.panel_focused != overlay_panel_index){
-            //guardamos el anterior focused anterior para poder volver atras
-            LAYOUT_STATE.panel_focused_prev = LAYOUT_STATE.panel_focused;
-            LAYOUT_STATE.panel_focused      = overlay_panel_index;
+    //evaluate focused layer
+    tui_layout_evaluate_layer_focused();
+
+    //render layers from bottom to top
+    for(PageLayerKind layer_idx = 0; layer_idx < LAYER_COUNT; layer_idx++){
+        PageLayer *layer = &LAYOUT_STATE.layers[layer_idx];
+        layer->focused   = (LAYOUT_STATE.layer_focused == layer_idx);
+
+        //render panels of layer
+        for(int i = 0; i < layer->panel_count; i++){
+            Panel *panel = &layer->panels[i];
+            panel->focused = layer->focused && (layer->panel_focused == i);
+
+            if(layer->shrink){
+                //TODO: to make this work nicely with multipanel layouts we should
+                //     instead: shrink all panels first, then shrink the layer, and
+                //     then expand the panels back up to fill the layer.
+                tui_panel_shrink_to_widgets(panel);
+            }
+
+            //clear panel background
+            tui_draw_rect(LAYOUT_STATE.screen, u8" ", panel->outer_rect);
+
+            //render
+            int scroll_offset = layer->panel_scroll_offset[i];
+            tui_render_panel(panel, scroll_offset);
         }
-    }else if(LAYOUT_STATE.panel_focused_prev != -1){
-        //if overlay wont show but it was previously focused,
-        //we restore the focused panel to the one before showing the overlay
-        LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = 0;
-        LAYOUT_STATE.panel_focused = LAYOUT_STATE.panel_focused_prev;
-        LAYOUT_STATE.panel_focused_prev = -1;
-    }
 
-    Panel *widget_overlay_panel = nullptr;
-    int widget_overlay_panel_index = 0;
-
-    for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
-        Panel *panel = &LAYOUT_STATE.panels[i];
-        if(panel->slot == SLOT_WIDGETS_OVERLAY_DO_NOT_USE){
-            widget_overlay_panel_index = i;
-            widget_overlay_panel = panel;
-            break;
-        }
-    }
-
-    if(widget_overlay_panel == nullptr){
-        widget_overlay_panel = tui_widget_overlay_panel_create();
-        widget_overlay_panel_index = LAYOUT_STATE.panel_count - 1;
-    }
-
-    //render panels
-    for (int i = 0; i < LAYOUT_STATE.panel_count; i++){
-        Panel *panel = &LAYOUT_STATE.panels[i];
-        panel->focused = (LAYOUT_STATE.panel_focused == i);
-
-        if(panel->slot == SLOT_OVERLAY
-        || panel->slot == SLOT_WIDGETS_OVERLAY_DO_NOT_USE){
-            continue;
-        }
-        int scroll_offset = LAYOUT_STATE.panel_scroll_offset[i];
-        tui_render_panel(panel, scroll_offset);
-    }
-
-    //render OVERLAY PANEL
-    if(overlay_panel && overlay_panel->widget_count > 0){
-        overlay_panel->focused = true;
-        tui_render_overlay_panel(overlay_panel, LAYOUT_STATE.panel_scroll_offset[overlay_panel_index]);
-    }
-
-    if(widget_overlay_panel != nullptr){
-        widget_overlay_panel->focused = true;
-        tui_render_overlay_panel(widget_overlay_panel, LAYOUT_STATE.panel_scroll_offset[widget_overlay_panel_index]);
+        //reset the layer state for next frame
+        layer->panel_building = -1;
+        layer->panel_count = 0;
     }
 
     //reset arena
     arena_reset(LAYOUT_STATE.arena_frame);
-    //reset the layout state
-    LAYOUT_STATE.panel_curr = -1;
-    LAYOUT_STATE.panel_count = 0;
+}
+
+void tui_layout_reset(void){
+    //this should be called right after the currently active page is changed,
+    //to ensure no dirty data remains in the layout
+    //This should not be called between each frame, because we destroy the
+    //entire registry and all state!
+
+    //reset arenas
+    if(WIDGET_REGISTRY.arena != nullptr){
+        arena_reset(WIDGET_REGISTRY.arena);
+    }
+    if(LAYOUT_STATE.arena_frame != nullptr){
+        arena_reset(LAYOUT_STATE.arena_frame);
+    }
+
+    //reset widgets registry
+    WIDGET_REGISTRY = (WidgetStateRegistry){ .arena = nullptr};
+
+    //reset state
+    LAYOUT_STATE = (LayoutState){
+        .layers = {
+            [LAYER_BASE]                       = {.panel_building = -1, .shrink = false},
+            [LAYER_OVERLAY]                    = {.panel_building = -1, .shrink = true},
+            [LAYER_WIDGETS_OVERLAY_DO_NOT_USE] = {.panel_building = -1, .shrink = true},
+        },
+        .arena_frame = nullptr,
+    };
 }
 
 //focus navigation
 
 void tui_cursor_next_widget(void){
+    PageLayer *layer_focused = tui_get_layer_focused();
     Panel *panel = tui_get_panel_focused();
     if(panel->widget_count == 0) return;
 
+    auto panel_idx = layer_focused->panel_focused;
+    auto widget_focused = layer_focused->widget_focused[panel_idx];
     int i = -1; //default focused widget
 
     // find currently focused widget index
-    if(LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] != NULL){
+    if(widget_focused != NULL){
         for(i = 0; i < panel->widget_count; i++){
             auto widget = panel->widgets[i];
-            if(strcmp(
-                LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused],
-                widget.id) == 0
-            ){
+            if(strcmp(widget_focused, widget.id) == 0){
                 break;
             }
         }
@@ -795,26 +799,26 @@ void tui_cursor_next_widget(void){
     for(int j = 1; j <= panel->widget_count; j++){
         auto widget = panel->widgets[(i + j) % panel->widget_count];
         if(widget.focusable){
-            LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = widget.id;
+            layer_focused->widget_focused[layer_focused->panel_focused] = widget.id;
             break;
         }
     }
 }
 
 void tui_cursor_prev_widget(void){
+    PageLayer *layer_focused = tui_get_layer_focused();
     Panel *panel = tui_get_panel_focused();
     if(panel->widget_count == 0) return;
 
+    auto panel_idx = layer_focused->panel_focused;
+    auto widget_focused = layer_focused->widget_focused[panel_idx];
     int i = panel->widget_count; //default focused widget
 
     // find currently focused widget index
-    if(LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] != NULL){
+    if(widget_focused != NULL){
         for(i = 0; i < panel->widget_count; i++){
             auto widget = panel->widgets[i];
-            if(strcmp(
-                LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused],
-                widget.id) == 0
-            ){
+            if(strcmp(widget_focused, widget.id) == 0 ){
                 break;
             }
         }
@@ -825,44 +829,24 @@ void tui_cursor_prev_widget(void){
         int widget_index = (i - j + panel->widget_count - 1) % panel->widget_count;
         auto widget = panel->widgets[widget_index];
         if(widget.focusable){
-            LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = widget.id;
+            layer_focused->widget_focused[layer_focused->panel_focused] = widget.id;
             break;
         }
     }
 }
 
 void tui_cursor_next_panel(void){
-    if(LAYOUT_STATE.panel_count <= 1) return;
-
-    int start = LAYOUT_STATE.panel_focused;
-    int next  = start;
-
-    //because there are two special types of panels we have to do this to avoid them
-    for(int i = 0; i < LAYOUT_STATE.panel_count; i++){
-        next = (next + 1) % LAYOUT_STATE.panel_count;
-        if(LAYOUT_STATE.panels[next].slot != SLOT_OVERLAY &&
-           LAYOUT_STATE.panels[next].slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) {
-            LAYOUT_STATE.panel_focused = (uint8_t)next;
-            return;
-        }
-    }
+    PageLayer *layer_focused = tui_get_layer_focused();
+    if(layer_focused->panel_count <= 1) return;
+    int next_panel = (layer_focused->panel_focused + 1) % layer_focused->panel_count;
+    layer_focused->panel_focused = (uint8_t)next_panel;
 }
 
 void tui_cursor_prev_panel(void){
-    if(LAYOUT_STATE.panel_count <= 1) return;
-
-    int start = LAYOUT_STATE.panel_focused;
-    int prev  = start;
-
-    //because there are two special types of panels we have to do this to avoid them
-    for(int i = 0; i < LAYOUT_STATE.panel_count; i++){
-        prev = (prev - 1 + LAYOUT_STATE.panel_count) % LAYOUT_STATE.panel_count;
-        if(LAYOUT_STATE.panels[prev].slot != SLOT_OVERLAY &&
-           LAYOUT_STATE.panels[prev].slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) {
-            LAYOUT_STATE.panel_focused = (uint8_t)prev;
-            return;
-        }
-    }
+    PageLayer *layer_focused = tui_get_layer_focused();
+    if(layer_focused->panel_count <= 1) return;
+    int next_panel = (layer_focused->panel_focused - 1) % layer_focused->panel_count;
+    layer_focused->panel_focused = (uint8_t)next_panel;
 }
 
 #endif //TUI_LAYOUT_IMPL

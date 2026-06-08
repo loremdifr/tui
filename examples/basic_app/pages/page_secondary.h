@@ -63,13 +63,15 @@ private void page_secondary_render(void){
 
 	if(!secondary_popup) return;
 
-	tui_panel_begin(SLOT_OVERLAY);
-		tui_widget_label(u8"Secondary Popup!");
-		tui_widget_button("SECONDARY_POPUP_BUTTON",
-			.label=u8"OK!",
-			.on_click=&close_secondary_popup,
-		);
-	tui_panel_end();
+	tui_layer_begin(LAYER_OVERLAY, LAYOUT_SINGLE_PANEL);
+		tui_panel_begin(SLOT_MAIN);
+			tui_widget_label(u8"Secondary Popup!");
+			tui_widget_button("SECONDARY_POPUP_BUTTON",
+				.label=u8"OK!",
+				.on_click=&close_secondary_popup,
+			);
+		tui_panel_end();
+	tui_layer_end();
 }
 
 Page PAGE_SECONDARY = {

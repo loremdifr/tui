@@ -5,18 +5,18 @@
 #include "tui_widget_input_radio.h"
 #include "tui_widget_select.h"
 
-typedef size_t (*WidgetSelectAutocompleteFunction)(
+typedef size_t (*WidgetSuggestionsFunction)(
     const uint8_t *query,
     WidgetSelectOption *options,
     size_t options_capacity
 );
 
 typedef struct {
-    bool                            is_inline;
-    const uint8_t                  *label;
-    size_t                         *storage;
-    WidgetSelectAutocompleteFunction autocomplete;
-    size_t                          options_capacity;
+    bool                       is_inline;
+    const uint8_t             *label;
+    size_t                    *storage;
+    WidgetSuggestionsFunction  get_suggestions;
+    size_t                     options_capacity;
 } WidgetSelectAutocompleteParams;
 
 #define tui_widget_select_autocomplete(widget_id, ...) \
@@ -30,13 +30,13 @@ void tui_widget_select_autocomplete_(const char *widget_id, WidgetSelectAutocomp
 #define TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX 8
 
 typedef struct {
-    const uint8_t                  *label;
-    size_t                         *storage;
-    WidgetSelectAutocompleteFunction autocomplete;
-    size_t                          label_width;
-    size_t                          option_width;
-    size_t                          options_capacity;
-    WidgetSelectOption              suggestions[TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX];
+    const uint8_t             *label;
+    size_t                    *storage;
+    WidgetSuggestionsFunction  get_suggestions;
+    size_t                     label_width;
+    size_t                     option_width;
+    size_t                     options_capacity;
+    WidgetSelectOption         suggestions[TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX];
 } WidgetSelectAutocompleteData;
 
 typedef struct {
@@ -49,89 +49,57 @@ typedef struct {
 private const uint8_t *tui_widget_select_autocomplete_selected_label(WidgetSelectAutocompleteData *data){
     if(data == nullptr || data->storage == nullptr) return u8"";
 
-    WidgetSelectOption options[TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX] = {};
-    size_t options_capacity = data->options_capacity;
-    if(options_capacity > TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX){
-        options_capacity = TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX;
-    }
-    size_t options_count = data->autocomplete(u8"", options, options_capacity);
-    if(options_count > TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX){
-        options_count = TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX;
-    }
+    // WidgetSelectOption options[TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX] = {};
+    // size_t options_capacity = data->options_capacity;
+    // if(options_capacity > TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX){
+    //     options_capacity = TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX;
+    // }
+    // size_t options_count = data->suggestions(u8"", options, options_capacity);
+    // if(options_count > TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX){
+    //     options_count = TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX;
+    // }
 
-    for(size_t i = 0; i < options_count; i++){
-        if(options[i].value == *data->storage){
-            return options[i].label;
-        }
-    }
-    return options_count > 0 ? options[0].label : u8"";
-}
-
-private void tui_widget_select_autocomplete_close_overlay(void){
-    tui_widget_select_close_overlay();
-}
-
-private void tui_widget_select_autocomplete_overlay_option_on_select(void){
-    tui_widget_select_autocomplete_close_overlay();
+    // for(size_t i = 0; i < options_count; i++){
+    //     if(options[i].value == *data->storage){
+    //         return options[i].label;
+    //     }
+    // }
+    // return options_count > 0 ? options[0].label : u8"";
+    return u8"";
 }
 
 private void tui_widget_select_autocomplete_overlay(Widget *widget){
     WidgetSelectAutocompleteData  *data  = widget->data;
     WidgetSelectAutocompleteState *state = widget->state;
-    SELECT_OVERLAY_CONTEXT.state = (WidgetSelectState *)state;
 
-    if(state->focus_query_on_open){
-        LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_curr] = state->query_widget_id;
-    }
+    if(!state->overlay_open) return;
 
-    tui_widget_input_text(
-        state->query_widget_id,
-        .label=u8"Search: ",
-        .placeholder=u8"Type to filter...",
-        .storage=state->query,
-        .capacity=sizeof(state->query)
-    );
+    tui_layer_begin(LAYER_WIDGETS_OVERLAY_DO_NOT_USE, LAYOUT_WITH_HEADER);
+        tui_panel_begin(SLOT_TOP);
+            tui_widget_input_text(
+                state->query_widget_id,
+                .label=u8"Search: ",
+                .placeholder=u8"Type to filter...",
+                .storage=state->query,
+                .capacity=sizeof(state->query)
+            );
+        tui_panel_end();
+        tui_panel_begin(SLOT_MAIN);
+            // for(size_t i = 0; i < data->options_count; i++){
+            //     char *option_id = tui_create_widget_id();
+            //     tui_widget_input_radio(
+            //         option_id,
+            //         .label        = data->options[i].label,
+            //         .storage      = data->storage,
+            //         .storage_size = sizeof(size_t),
+            //         .value        = &data->options[i].value,
+            //         //TODO:
+            //         // .on_select    = &tui_widget_select_close
+            //     );
+            // }
+        tui_panel_end();
+    tui_layer_end();
 
-    if(state->focus_query_on_open){
-        WidgetInputTextState *query_state = (WidgetInputTextState *)tui_widget_state(
-            state->query_widget_id,
-            sizeof(WidgetInputTextState)
-        );
-        query_state->editing = false;
-        query_state->cursor = utf8_str_length(state->query);
-        query_state->scroll = 0;
-        query_state->caret_show = true;
-        query_state->caret_last_shown = get_curr_time();
-        state->focus_query_on_open = false;
-    }
-
-    WidgetSelectOption local_options[TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX] = {};
-    size_t option_capacity = data->options_capacity;
-    if(option_capacity > TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX){
-        option_capacity = TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX;
-    }
-    size_t option_count = data->autocomplete(state->query, local_options, option_capacity);
-    if(option_count > TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX){
-        option_count = TUI_WIDGET_SELECT_AUTOCOMPLETE_OPTIONS_MAX;
-    }
-
-    if(option_count == 0){
-        tui_widget_label(u8"No matches");
-        return;
-    }
-
-    for(size_t i = 0; i < option_count; i++){
-        data->suggestions[i] = local_options[i];
-        char *option_id = tui_create_widget_id();
-        tui_widget_input_radio(
-            option_id,
-            .label = data->suggestions[i].label,
-            .storage = data->storage,
-            .storage_size = sizeof(size_t),
-            .value = &data->suggestions[i].value,
-            .on_select = &tui_widget_select_autocomplete_overlay_option_on_select
-        );
-    }
 }
 
 private void tui_widget_select_autocomplete_render(Widget *widget, Screen *screen, vec2i position){
@@ -203,7 +171,7 @@ private bool tui_widget_select_autocomplete_input(Widget *widget, InputEvent inp
 void tui_widget_select_autocomplete_(const char *widget_id, WidgetSelectAutocompleteParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
-    assert(params->autocomplete != nullptr);
+    assert(params->get_suggestions != nullptr);
     assert(params->options_capacity > 0);
 
     WidgetSelectAutocompleteData *widget_data = (WidgetSelectAutocompleteData *)arena_alloc(
@@ -211,7 +179,7 @@ void tui_widget_select_autocomplete_(const char *widget_id, WidgetSelectAutocomp
     );
     widget_data->label            = params->label;
     widget_data->storage          = params->storage;
-    widget_data->autocomplete     = params->autocomplete;
+    // widget_data->suggestions      = params->suggestions;
     widget_data->label_width      = utf8_str_display_width(params->label);
     widget_data->option_width     = 0;
     widget_data->options_capacity = params->options_capacity;
@@ -240,9 +208,7 @@ void tui_widget_select_autocomplete_(const char *widget_id, WidgetSelectAutocomp
         .is_inline = params->is_inline,
         .input     = &tui_widget_select_autocomplete_input,
         .render    = &tui_widget_select_autocomplete_render,
-        .build_overlay_panel  = widget_state->overlay_open
-            ? &tui_widget_select_autocomplete_overlay
-            : nullptr,
+        .overlay   = &tui_widget_select_autocomplete_overlay,
     };
     tui_widget_push(new_widget);
 }
