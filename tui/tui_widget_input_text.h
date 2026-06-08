@@ -43,6 +43,12 @@ typedef struct {
 } WidgetInputTextState;
 
 
+private void tui_widget_input_text_reset_cursor(Widget *widget){
+    WidgetInputTextState *widget_state = widget->state;
+    widget_state->caret_show = true;
+    widget_state->caret_last_shown = get_curr_time();
+}
+
 private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputTextData  *data  = widget->data;
     WidgetInputTextState *state = widget->state;
@@ -108,13 +114,17 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     }
 
     if(widget->focused && state->editing && state->caret_show){
-        screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
-        screen_set_utf8(
-            screen,
-            position.x + data->label_width + max(0, state->cursor - state->scroll),
-            position.y,
-            u8"█"
-        );
+        int caret_x = position.x + data->label_width + (int)(state->cursor - state->scroll);
+        if(state->cursor < data->string.length){
+            // Over a character: Invert character colors
+            screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
+            auto char_substr = string_substr(&data->string, state->cursor, state->cursor + 1);
+            screen_set_string(screen, caret_x, position.y, &char_substr);
+        }else{
+            // At the end: Solid block
+            screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
+            screen_set_utf8(screen, caret_x, position.y, u8"█");
+        }
     }
 
     if(widget->focused){
@@ -144,6 +154,46 @@ private inline void tui_widget_input_text_move_cursor(Widget *widget, int move){
         0,
         (int)widget_data->string.length
     );
+}
+
+private void tui_widget_input_text_move_word(Widget *widget, int direction){
+    WidgetInputTextData  *widget_data  = widget->data;
+    WidgetInputTextState *widget_state = widget->state;
+
+    if(direction == 0) return;
+    if(widget_data->string.length == 0) return;
+
+    size_t curr = widget_state->cursor;
+
+    if(direction < 0){ // Left
+        if(curr == 0) return;
+        curr--;
+        do{
+            // skip spaces
+            auto curr_char = string_byte_pos_from_index(&widget_data->string, curr);
+            if(widget_data->string.data[curr_char] != ' ') break;
+            curr--;
+        }while(curr > 0);
+
+        // go to start of word = skip until space
+        do{
+            auto next_char = string_byte_pos_from_index(&widget_data->string, curr-1);
+            if(widget_data->string.data[next_char] == ' ') break;
+            curr--;
+        }while(curr > 0);
+
+    }else{ //right
+        if(curr >= widget_data->string.length) return;
+
+        // skip curr word = skip until space
+        do{
+            auto next_char = string_byte_pos_from_index(&widget_data->string, curr+1);
+            if(widget_data->string.data[next_char] == ' ') break;
+            curr++;
+        }while(curr < widget_data->string.length);
+    }
+
+    widget_state->cursor = curr;
 }
 
 private void tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
@@ -177,36 +227,40 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
         case KEY_F1:
         case KEY_HOME:
             if(!widget_state->editing) break;
+            tui_widget_input_text_reset_cursor(widget);
             widget_state->cursor = 0;
             break;
         case KEY_F2:
         case KEY_END:
             if(!widget_state->editing) break;
+            tui_widget_input_text_reset_cursor(widget);
             widget_state->cursor = widget_data->string.length;
             break;
         case KEY_LEFT:
-            //TODO: ctrl move
             if(!widget_state->editing) break;
+            tui_widget_input_text_reset_cursor(widget);
+            if(key.ctrl) tui_widget_input_text_move_word(widget, -1); break;
             tui_widget_input_text_move_cursor(widget, -1);
             break;
         case KEY_RIGHT:
             if(!widget_state->editing) break;
+            tui_widget_input_text_reset_cursor(widget);
+            if(key.ctrl) tui_widget_input_text_move_word(widget, +1);
             tui_widget_input_text_move_cursor(widget, +1);
             break;
         case KEY_BACKSPACE:
             if(!widget_state->editing) break;
+            tui_widget_input_text_reset_cursor(widget);
             tui_widget_input_text_backspace(widget);
             break;
         case KEY_DELETE:
             if(!widget_state->editing) break;
+            tui_widget_input_text_reset_cursor(widget);
             tui_widget_input_text_delete(widget);
             break;
         case KEY_ENTER:
             widget_state->editing = !widget_state->editing;
-            if(widget_state->editing){
-                widget_state->caret_show = true;
-                widget_state->caret_last_shown = get_curr_time();
-            }
+            if(widget_state->editing) tui_widget_input_text_reset_cursor(widget);
             return true; //important! otherwise it bubbles up!
             break;
         case KEY_ESCAPE:
@@ -239,6 +293,7 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
 
 //public
 void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params){
+    Panel *curr_panel = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_curr];
 
     //widget data
 	WidgetInputTextData *widget_data = (WidgetInputTextData *)arena_alloc(
@@ -246,9 +301,12 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
 	);
     widget_data->label       = params->label;
     widget_data->label_width = utf8_str_length(params->label);
-    widget_data->input_width = 16; // TODO: do something about this
     widget_data->placeholder = params->placeholder;
     widget_data->string      = string_from(params->storage, params->capacity);
+
+    // change size based on placeholder
+    size_t placeholder_len = utf8_str_length(params->placeholder);
+    widget_data->input_width = max(16, (int)placeholder_len + 1);
 
     //widget state persist across frames
     auto widget_state = (WidgetInputTextState *)tui_widget_state(
@@ -263,14 +321,18 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
     // that the cursor is not pointing "outside" the string
     widget_state->cursor = clamp(widget_state->cursor, 0, widget_data->string.length);
 
-    //TODO: length should be based on: a default width, or the placeholder if longer,
-    //      and then shrunk to fit into the panel... that might be rendering?
+    int total_width = widget_data->label_width + widget_data->input_width;
+
+    // ensure input fits inside the panel
+    int panel_width = curr_panel->inner_rect.size.w;
+    if(total_width > panel_width) total_width = panel_width;
+    widget_data->input_width = max(1, total_width - (int)widget_data->label_width);
 
     Widget new_widget  = {
         .id        = widget_id,
         .data      = widget_data,
         .state     = widget_state,
-        .size.w    = widget_data->label_width + widget_data->input_width,
+        .size.w    = total_width,
         .size.h    = 2,
         .focusable = true,
         .is_inline = params->is_inline,

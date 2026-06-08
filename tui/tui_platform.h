@@ -553,39 +553,46 @@ private void emit_key(uint32_t unicode, bool alt){
 }
 
 private void emit_escape_sequence(const char *params, uint8_t final_byte){
+	bool ctrl = (strcmp(params, "1;5") == 0);
+	InputEvent event = {
+        .input_type       = INPUT_KEY,
+        .key_event.ctrl   = ctrl,
+        // .key_event.alt = alt, //TODO: add support for alt here
+	};
+
 	switch(final_byte){
 	//arrow keys
-	case 'A': emit_special_key(KEY_UP);      break;
-	case 'B': emit_special_key(KEY_DOWN);    break;
-	case 'C': emit_special_key(KEY_RIGHT);   break;
-	case 'D': emit_special_key(KEY_LEFT);    break;
-	case 'H': emit_special_key(KEY_HOME);    break;
-	case 'F': emit_special_key(KEY_END);     break;
-	case 'Z': emit_special_key(KEY_BACKTAB); break;
+	case 'A': event.key_event.key = KEY_UP;      break;
+	case 'B': event.key_event.key = KEY_DOWN;    break;
+	case 'C': event.key_event.key = KEY_RIGHT;   break;
+	case 'D': event.key_event.key = KEY_LEFT;    break;
+	case 'H': event.key_event.key = KEY_HOME;    break;
+	case 'F': event.key_event.key = KEY_END;     break;
+	case 'Z': event.key_event.key = KEY_BACKTAB; break;
 
 	//FKEYS
 	case '~': {
 		int code;
 		sscanf(params, "%d", &code);
 		switch(code){
-		case 1:  emit_special_key(KEY_HOME);     break;
-		//case 2:  emit_special_key(KEY_INSERT); break; //is this correct?
-		case 3:  emit_special_key(KEY_DELETE);   break;
-		case 4:  emit_special_key(KEY_END);      break;
-		case 5:  emit_special_key(KEY_PAGEUP);   break;
-		case 6:  emit_special_key(KEY_PAGEDOWN); break;
-		case 11: emit_special_key(KEY_F1);       break;
-		case 12: emit_special_key(KEY_F2);       break;
-		case 13: emit_special_key(KEY_F3);       break;
-		case 14: emit_special_key(KEY_F4);       break;
-		case 15: emit_special_key(KEY_F5);       break;
-		case 17: emit_special_key(KEY_F6);       break;
-		case 18: emit_special_key(KEY_F7);       break;
-		case 19: emit_special_key(KEY_F8);       break;
-		case 20: emit_special_key(KEY_F9);       break;
-		case 21: emit_special_key(KEY_F10);      break;
-		case 23: emit_special_key(KEY_F11);      break;
-		case 24: emit_special_key(KEY_F12);      break;
+		case 1:  event.key_event.key = KEY_HOME;     break;
+		//case 2:  event.key_event.key = KEY_INSERT; break; //is this correct?
+		case 3:  event.key_event.key = KEY_DELETE;   break;
+		case 4:  event.key_event.key = KEY_END;      break;
+		case 5:  event.key_event.key = KEY_PAGEUP;   break;
+		case 6:  event.key_event.key = KEY_PAGEDOWN; break;
+		case 11: event.key_event.key = KEY_F1;       break;
+		case 12: event.key_event.key = KEY_F2;       break;
+		case 13: event.key_event.key = KEY_F3;       break;
+		case 14: event.key_event.key = KEY_F4;       break;
+		case 15: event.key_event.key = KEY_F5;       break;
+		case 17: event.key_event.key = KEY_F6;       break;
+		case 18: event.key_event.key = KEY_F7;       break;
+		case 19: event.key_event.key = KEY_F8;       break;
+		case 20: event.key_event.key = KEY_F9;       break;
+		case 21: event.key_event.key = KEY_F10;      break;
+		case 23: event.key_event.key = KEY_F11;      break;
+		case 24: event.key_event.key = KEY_F12;      break;
 		//TODO: agregar mas...?
 		}
 		break;
@@ -596,6 +603,8 @@ private void emit_escape_sequence(const char *params, uint8_t final_byte){
 	case 'M':
 	case 'm':
 	}
+
+	input_event_queue_push(event);
 }
 
 private void parse_next_byte(uint8_t byte){

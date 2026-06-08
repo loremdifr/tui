@@ -83,7 +83,7 @@ private void page_example_render(void){
 
 		tui_widget_input_text("INPUT_TEXT_1", //WIDGET_ID, do not repeat!
 			.label=u8"Nombre: ",
-			.placeholder=u8"carlitos",
+			.placeholder=u8"Placeholder text...",
 			.storage=name,
 			.capacity=name_length_max
 		);
