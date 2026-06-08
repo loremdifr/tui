@@ -280,7 +280,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
     int shown_from = scroll_offset;
     int shown_to   = scroll_offset + panel->inner_rect.size.h;
     if(shown_to - shown_from < total_size){ //dont show scrollbar if can't scroll
-        tui_draw_scrollbar(LAYOUT_STATE.screen, from, to, total_size, shown_from, shown_to);
+        tui_draw_scrollbar_vertical(LAYOUT_STATE.screen, from, to, total_size, shown_from, shown_to);
     }
 }
 
@@ -306,28 +306,63 @@ private Widget *tui_get_widget_focused(){
 }
 
 private rect2i tui_panel_rect(PanelSlot slot){
-    //panel size is based on the slot it occuppies in the type of layout
+    //panel size is based on the slot it occupies in the type of layout
+
     if(slot == SLOT_OVERLAY || slot == SLOT_WIDGETS_OVERLAY_DO_NOT_USE){
         //overlay slot is the same for all layouts, starts at max size,
         //and will shrink before rendering up to the widgets boundaries
         return (rect2i){ .size = LAYOUT_STATE.base_size };
     }
 
+    int base_w    = LAYOUT_STATE.base_size.w;
+    int base_h    = LAYOUT_STATE.base_size.h;
+    int sidebar_w = max(30, 0.4 * base_w);
+    int header_h  = 6;
+    int footer_h  = 6;
+
     switch(LAYOUT_STATE.layout){
-    case LAYOUT_SINGLE_PANEL:
-        switch(slot){
-        case SLOT_MAIN: return (rect2i){ .size = LAYOUT_STATE.base_size };
-        case SLOT_TOP:
-        case SLOT_SIDEBAR:
-        case SLOT_BOTTOM:
-        default: assert(false); //using an invalid slot for this layout
-        }
+    case LAYOUT_SINGLE_PANEL: return (rect2i){.size = {w, h}};
     case LAYOUT_SIDEBAR_LEFT:
+        switch slot:
+        case SLOT_SIDEBAR: return (rect2i){.size = {sidebar_w, h}};
+        case SLOT_MAIN:    return (rect2i){.pos  = {sidebar_w, 0}, .size = {w - sidebar_w, h}};
+        default: assert(false); //layout doesnt support this slot
     case LAYOUT_SIDEBAR_RIGHT:
+        switch slot:
+        case SLOT_MAIN:    return (rect2i){.size = {w - sidebar_w, h}};
+        case SLOT_SIDEBAR: return (rect2i){.pos  = {w - sidebar_w, 0}, .size = {sidebar_w, h}};
+        default: assert(false); //layout doesnt support this slot
     case LAYOUT_SPLIT_VERTICAL:
-    default: assert(false); //TODO: layout not implemented yet
-    //TODO: add more panel layout definitions
+        switch slot:
+        case SLOT_LEFT:    return (rect2i){.size = {w / 2, h}};
+        case SLOT_RIGHT:   return (rect2i){.pos = {w / 2, 0}, .size = {w - w / 2, h}};
+        default: assert(false); //layout doesnt support this slot
+    case LAYOUT_WITH_HEADER:
+        switch slot:
+        case SLOT_TOP:    return (rect2i){.size = {w, header_h}};
+        case SLOT_MAIN:   return (rect2i){.pos = {0, header_h}, .size = {w, h - header_h}};
+        default: assert(false); //layout doesnt support this slot
+    case LAYOUT_WITH_FOOTER:
+        switch slot:
+        case SLOT_MAIN:   return (rect2i){.size = {w, h - footer_h}};
+        case SLOT_BOTTOM: return (rect2i){.pos = {0, h - footer_h}, .size = {w, footer_h}};
+        default: assert(false); //layout doesnt support this slot
+    case LAYOUT_WITH_HEADER_AND_FOOTER:
+        switch slot:
+        case SLOT_TOP:    return (rect2i){.size = {w, header_h}};
+        case SLOT_MAIN:   return (rect2i){.pos = {0, header_h}, .size = {w, h - header_h - footer_h}};
+        case SLOT_BOTTOM: return (rect2i){.pos = {0, h - footer_h}, .size = {w, footer_h}};
+        default: assert(false); //layout doesnt support this slot
+    case LAYOUT_SPLIT_VERTICAL_WITH_HEADER:
+        switch slot:
+        case SLOT_TOP:    return (rect2i){.size = {w, header_h}};
+        case SLOT_LEFT:   return (rect2i){.pos = {0, header_h}, .size = {w / 2, h - header_h}};
+        case SLOT_RIGHT:  return (rect2i){.pos = {w / 2, header_h}, .size = {w - w / 2, h - header_h}};
+        default: assert(false); //layout doesnt support this slot
     }
+
+    assert(false); //ERROR: layout not implemented!
+    return r;
 }
 
 private void tui_panel_shrink_to_widgets(Panel *panel){
@@ -402,6 +437,7 @@ void tui_panel_begin(PanelSlot slot){
     assert(LAYOUT_STATE.panel_count < TUI_PANELS_MAX);
 
     auto panel_rect = tui_panel_rect(slot);
+    panel_rect.pos.y += 1: //leave space for the app title
     Panel new_panel = {
         .slot = slot,
         .outer_rect = panel_rect,
@@ -593,11 +629,12 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
     LAYOUT_STATE.panel_count    = 0;
     LAYOUT_STATE.widget_auto_id = 0;
 
-    //NOTE: base size has h-1 to leave room for the key hints
+    //NOTE: base size has h-2 to leave room for header at top
+    //      and key hints at bottom
     LAYOUT_STATE.base_size.w = screen->size.w;
-    LAYOUT_STATE.base_size.h = screen->size.h - 1;
+    LAYOUT_STATE.base_size.h = screen->size.h - 2;
 
-    assert(screen != NULL); //apagaste el monitor capo
+    assert(screen != NULL); //apagaste el monitor capo??
     LAYOUT_STATE.screen = screen;
 }
 
@@ -661,7 +698,7 @@ void tui_layout_render(){
         }
     }
 
-    if(overlay_panel && overlay_panel->widget_count > 0){
+    if(overlay_panel){
         //si hay overlay, siempre es el focused
         if(LAYOUT_STATE.panel_focused != overlay_panel_index){
             //guardamos el anterior focused anterior para poder volver atras
@@ -786,14 +823,37 @@ void tui_cursor_prev_widget(void){
 }
 
 void tui_cursor_next_panel(void){
-    //TODO: order of panels should be determined by
-    //      the layout!
-    // panel_focused move next...
-    // TODO: need to ensure there never is a
-    //       state where no panel is focused
-}
-void tui_cursor_prev_panel(void){
+    if(LAYOUT_STATE.panel_count <= 1) return;
 
+    int start = LAYOUT_STATE.panel_focused;
+    int next  = start;
+
+    //because there are two special types of panels we have to do this to avoid them
+    for(int i = 0; i < LAYOUT_STATE.panel_count; i++){
+        next = (next + 1) % LAYOUT_STATE.panel_count;
+        if(LAYOUT_STATE.panels[next].slot != SLOT_OVERLAY &&
+           LAYOUT_STATE.panels[next].slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) {
+            LAYOUT_STATE.panel_focused = (uint8_t)next;
+            return;
+        }
+    }
+}
+
+void tui_cursor_prev_panel(void){
+    if(LAYOUT_STATE.panel_count <= 1) return;
+
+    int start = LAYOUT_STATE.panel_focused;
+    int prev  = start;
+
+    //because there are two special types of panels we have to do this to avoid them
+    for(int i = 0; i < LAYOUT_STATE.panel_count; i++){
+        prev = (prev - 1 + LAYOUT_STATE.panel_count) % LAYOUT_STATE.panel_count;
+        if(LAYOUT_STATE.panels[prev].slot != SLOT_OVERLAY &&
+           LAYOUT_STATE.panels[prev].slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) {
+            LAYOUT_STATE.panel_focused = (uint8_t)prev;
+            return;
+        }
+    }
 }
 
 #endif //TUI_LAYOUT_IMPL

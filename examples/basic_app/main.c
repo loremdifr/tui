@@ -16,11 +16,14 @@
 #define PAGE_EXAMPLE_IMPL
 #include "pages/page_example.h"
 
+#define PAGE_SECONDARY_IMPL
+#include "pages/page_secondary.h"
+
 int main(void)
 {
 	//setup de la app
 	tui_register_page(PAGE_EXAMPLE_ID, &PAGE_EXAMPLE);
-	// tui_register_page(MI_PAGINITA_ID, &MI_PAGINITA_ID);
+	tui_register_page(PAGE_SECONDARY_ID, &PAGE_SECONDARY);
 
 	//comienzo de la app
 	tui_navigate_to(PAGE_EXAMPLE_ID); //definimos la primera pagina o home

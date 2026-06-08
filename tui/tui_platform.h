@@ -335,8 +335,9 @@ private void tui_parse_input(void){
 
     		if(key == KEY_TAB && shift){
     			InputEvent event = {
-    				.input_type    = INPUT_KEY,
-    				.key_event.key = KEY_BACKTAB,
+    				.input_type      = INPUT_KEY,
+    				.key_event.key   = KEY_BACKTAB,
+					.key_event.shift = true,
     			};
     			input_event_queue_push(event);
     			continue;
@@ -568,7 +569,10 @@ private void emit_escape_sequence(const char *params, uint8_t final_byte){
 	case 'D': event.key_event.key = KEY_LEFT;    break;
 	case 'H': event.key_event.key = KEY_HOME;    break;
 	case 'F': event.key_event.key = KEY_END;     break;
-	case 'Z': event.key_event.key = KEY_BACKTAB; break;
+	case 'Z':
+		event.key_event.key   = KEY_BACKTAB;
+		event.key_event.shift = true;
+		break;
 
 	//FKEYS
 	case '~': {

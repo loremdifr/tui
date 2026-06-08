@@ -11,8 +11,53 @@ extern Page PAGE_EXAMPLE;
 
 //variables de la pagina
 bool show_popup = false;
+
+bool accept_checkbox = false;
+
+size_t selected_radio = 0;
+static const size_t RADIO_OPTION_A = 0;
+static const size_t RADIO_OPTION_B = 1;
+static const size_t RADIO_OPTION_C = 2;
+int selected_number = 7;
+
+size_t selected_option = 0;
+static WidgetSelectOption SELECT_OPTIONS[] = {
+	{.value = 0, .label = u8"Uno"},
+	{.value = 1, .label = u8"Dos"},
+	{.value = 2, .label = u8"Tres"},
+};
+
+size_t autocomplete_selected_option = 0;
+static WidgetSelectOption AUTOCOMPLETE_OPTIONS[] = {
+	{.value = 0, .label = u8"La mejor Opcion"},
+	{.value = 1, .label = u8"La peor opcion"},
+	{.value = 2, .label = u8"opcion 3"},
+	{.value = 3, .label = u8"otra"},
+	{.value = 4, .label = u8"opcion premium"},
+	{.value = 5, .label = u8"opcion pirata"},
+};
+
 constexpr size_t name_length_max = 255;
 uint8_t *name;
+
+private size_t page_example_autocomplete(
+	const uint8_t *query,
+	WidgetSelectOption *options,
+	size_t options_capacity
+){
+	size_t count = 0;
+	for(size_t i = 0; i < arr_size(AUTOCOMPLETE_OPTIONS); i++){
+		const uint8_t *label = AUTOCOMPLETE_OPTIONS[i].label;
+		if(query != nullptr && query[0] != '\0'){
+			if(strstr((const char *)label, (const char *)query) == nullptr){
+				continue;
+			}
+		}
+		if(count >= options_capacity) break;
+		options[count++] = AUTOCOMPLETE_OPTIONS[i];
+	}
+	return count;
+}
 
 private void show_example_popup(void){
 	show_popup = true;
@@ -22,6 +67,10 @@ private void show_example_popup(void){
 private void close_example_popup(void){
 	show_popup = false;
 	// memset(name, '\0', name_length_max * sizeof(uint8_t));
+}
+
+private void navigate_to_secondary(void){
+	tui_navigate_to("PAGE_SECONDARY_1");
 }
 
 private void page_example_init(void){
@@ -81,6 +130,49 @@ private void page_example_render(void){
 			.on_toggle=nullptr
 		);
 
+		tui_widget_input_checkbox("CHECKBOX_1",
+			.label=u8"Acepto checkbox",
+			.storage=&accept_checkbox,
+			.on_toggle=nullptr
+		);
+		tui_widget_input_checkbox("CHECKBOX_2",
+			.label=u8"Otro checkbox",
+			.storage=&accept_checkbox,
+			.on_toggle=nullptr
+		);
+		tui_widget_input_checkbox("CHECKBOX_3",
+			.label=u8"Recordar contrasenya~",
+			.storage=&accept_checkbox,
+			.on_toggle=nullptr
+		);
+
+		tui_widget_input_radio("RADIO_1",
+			.label=u8"Primera Opcion",
+			.storage=&selected_radio,
+			.storage_size=sizeof(selected_radio),
+			.value=&RADIO_OPTION_A
+		);
+		tui_widget_input_radio("RADIO_2",
+			.label=u8"Segunda Opcion...",
+			.storage=&selected_radio,
+			.storage_size=sizeof(selected_radio),
+			.value=&RADIO_OPTION_B
+		);
+		tui_widget_input_radio("RADIO_3",
+			.label=u8"Ultima!",
+			.storage=&selected_radio,
+			.storage_size=sizeof(selected_radio),
+			.value=&RADIO_OPTION_C
+		);
+
+		tui_widget_input_number("NUMBER_1",
+			.label=u8"Number: ",
+			.storage=&selected_number,
+			.min_value=-50,
+			.max_value=200,
+			.step=5
+		);
+
 		tui_widget_input_text("INPUT_TEXT_1", //WIDGET_ID, do not repeat!
 			.label=u8"Nombre: ",
 			.placeholder=u8"Placeholder text...",
@@ -90,18 +182,26 @@ private void page_example_render(void){
 
 		tui_widget_select("SELECT_DUMMY_1",
 			.label=u8"Dummy Select: ",
-			.value=u8"Option A"
+			.storage=&selected_option,
+			.options=SELECT_OPTIONS,
+			.options_count=arr_size(SELECT_OPTIONS)
 		);
 
-		// tui_widget_input_textarea(); //importante para descripciones
-		// tui_widget_input_numbers(); //quizas importante para numero de calle?
-		// tui_widget_input_select_suggestions(); //importante para buscar calles
-		// tui_widget_input_select_radio(); //creo que no hace falta por ahora
-		// tui_widget_input_select_checkbox(); //creo que no hace falta por ahora
+		tui_widget_select_autocomplete("SELECT_AUTO_1",
+			.label=u8"Autocomplete: ",
+			.storage=&autocomplete_selected_option,
+			.autocomplete=&page_example_autocomplete,
+			.options_capacity=arr_size(AUTOCOMPLETE_OPTIONS)
+		);
 
 		tui_widget_button("BUTTON_1", //WIDGET_ID, do not repeat!
 			.label=u8"Mostrar Popup",
 			.on_click=&show_example_popup,
+			.is_inline=true,
+		);
+		tui_widget_button("BUTTON_GO_SECONDARY",
+			.label=u8"Go to Page 2",
+			.on_click=&navigate_to_secondary,
 			.is_inline=true,
 		);
 		tui_widget_button("BUTTON_2",

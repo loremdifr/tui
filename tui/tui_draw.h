@@ -25,7 +25,9 @@ void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
 void tui_draw_line_bresenham(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to);
 void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect2i rect); //TODO:
 void tui_draw_circ(Screen *screen, uint8_t *utf8_char, rect2i rect); //TODO:
-void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to);
+void tui_draw_line_braille(Screen *screen, vec2i from, vec2i to);
+void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to);
+void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to);
 
 #ifdef TUI_DRAW_IMPL
 
@@ -167,11 +169,11 @@ void tui_draw_box_title(Screen *screen, rect2i box, String *title, BoxTitleAncho
         case BOX_TITLE_BOTTOM_RIGHT: x = right; y = bottom; break;
     }
 
-    screen_set_utf8(  screen, x,                 y, BOX_VL);
+    screen_set_utf8(  screen, x,                 y, u8"╸");
     screen_set_char(  screen, x+1,               y, ' ');
     screen_set_string(screen, x+2,               y, title);
     screen_set_char(  screen, x+2+title_width,   y, ' ');
-    screen_set_utf8(  screen, x+2+title_width+1, y, BOX_VR);
+    screen_set_utf8(  screen, x+2+title_width+1, y, u8"╺");
 }
 
 void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to){
@@ -259,12 +261,12 @@ void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
     assert(false);
 }
 
-void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
+void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
     //TODO: move these to top level?
-    static uint8_t *SCROLL_CAP_TOP    = u8"┴";
-    static uint8_t *SCROLL_CAP_BOTTOM = u8"┬";
-    static uint8_t *SCROLL_BG         = u8"┆";
-    static uint8_t *SCROLL_KNOB       = u8"█";
+    static uint8_t *SCROLL_CAP_TOP    = u8"╵";
+    static uint8_t *SCROLL_CAP_BOTTOM = u8"╷";
+    static uint8_t *SCROLL_BG         = u8"▋";
+    static uint8_t *SCROLL_KNOB       = u8"▋";
 
     //draw end caps
     screen_set_utf8(screen, from.x, from.y, SCROLL_CAP_TOP);
@@ -281,9 +283,9 @@ void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, in
     auto  scrollbar_size = to.y - from.y;
     auto  shown_size     = shown_to - shown_from;
 
-    float shown_prt      = (float)shown_size / (float)total_size;
-    int   knob_size      = (int)(scrollbar_size * shown_prt);
-    knob_size            = clamp(knob_size, 1, scrollbar_size);
+    float shown_prt = (float)shown_size / (float)total_size;
+    int   knob_size = (int)(scrollbar_size * shown_prt);
+    knob_size       = clamp(knob_size, 1, scrollbar_size);
 
     //pos of the knob
     float scrolled_prt = (float)shown_from / total_size;
@@ -298,6 +300,141 @@ void tui_draw_scrollbar(Screen *screen, vec2i from, vec2i to, int total_size, in
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
     tui_draw_line(screen, SCROLL_KNOB, knob_from, knob_to);
 }
+
+void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
+    //TODO: move these to top level?
+    //TODO: surely this can be refactored somehow...
+    static uint8_t *SCROLL_CAP_LEFT  = u8"╴";
+    static uint8_t *SCROLL_CAP_RIGHT = u8"╶";
+    static uint8_t *SCROLL_BG        = u8"▂";
+    static uint8_t *SCROLL_KNOB      = u8"▂";
+
+    //draw end caps
+    screen_set_utf8(screen, from.x, from.y, SCROLL_CAP_LEFT);
+    screen_set_utf8(screen, to.x, to.y, SCROLL_CAP_RIGHT);
+
+    from.x += 1;
+    to.x   -= 1;
+
+    //draw scroll background
+    screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+    tui_draw_line(screen, SCROLL_BG, from, to);
+
+    //size of the knob
+    auto  scrollbar_size  = to.x - from.x;
+    auto  shown_size      = shown_to - shown_from;
+
+    float shown_prt = (float)shown_size / (float)total_size;
+    int   knob_size = (int)(scrollbar_size * shown_prt);
+    knob_size       = clamp(knob_size, 1, scrollbar_size);
+
+    //pos of the knob
+    float scrolled_prt = (float)shown_from / total_size;
+    auto  knob_from = (vec2i){
+        .x = from.x + (int)(scrolled_prt * scrollbar_size),
+        .y = from.y
+    };
+
+    auto knob_to = (vec2i){.x = knob_from.x + knob_size, .y = from.y};
+
+    //draw the knob
+    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    tui_draw_line(screen, SCROLL_KNOB, knob_from, knob_to);
+}
+
+
+//BRAILLE STUFF -----------------------------
+//source https://github.com/asciimoo/drawille
+//TODO: no clue if this ewven works
+// private void braille_plot_dot(Screen *screen, int dx, int dy){
+//     // bit position for sub-cell offset (sx, sy):
+//     // (0,0)->bit0, (1,0)->bit3
+//     // (0,1)->bit1, (1,1)->bit4
+//     // (0,2)->bit2, (1,2)->bit5
+//     // (0,3)->bit6, (1,3)->bit7
+//     static const uint8_t braille_bit_map[2][4] = {
+//         {0, 1, 2, 6},
+//         {3, 4, 5, 7},
+//     };
+
+//     int cx = dx / 2;
+//     int cy = dy / 4;
+//     if(cx < 0 || cx >= screen->size.w || cy < 0 || cy >= screen->size.h) return;
+//     uint8_t dot_bit = (uint8_t)(1 << braille_bit_map[dx & 1][dy & 3]);
+//     Cell *cell = screen_get(screen, cx, cy);
+//     uint8_t mask = dot_bit;
+//     if(cell->bytes[0] == 0xE2 && (cell->bytes[1] & 0xE0) == 0xA0){
+//         mask |= ((cell->bytes[1] & 0x03) << 6) | (cell->bytes[2] & 0x3F);
+//     }
+//     uint8_t bytes[4] = {
+//         0xE2,
+//         (uint8_t)(0xA0 | (mask >> 6)),
+//         (uint8_t)(0x80 | (mask & 0x3F)),
+//         0,
+//     };
+//     screen_set_utf8(screen, cx, cy, bytes);
+// }
+
+// private void braille_set_center(Screen *screen, int cx, int cy){
+//     // four central dots: bits 1,2,4,5 = 2+4+16+32 = 54 = 0x36
+//     uint8_t mask = 0x36;
+//     Cell *cell = screen_get(screen, cx, cy);
+//     if(cell->bytes[0] == 0xE2 && (cell->bytes[1] & 0xE0) == 0xA0){
+//         mask |= ((cell->bytes[1] & 0x03) << 6) | (cell->bytes[2] & 0x3F);
+//     }
+//     uint8_t bytes[4] = {
+//         0xE2,
+//         (uint8_t)(0xA0 | (mask >> 6)),
+//         (uint8_t)(0x80 | (mask & 0x3F)),
+//         0,
+//     };
+//     screen_set_utf8(screen, cx, cy, bytes);
+// }
+
+// void tui_draw_line_braille(Screen *screen, vec2i from, vec2i to){
+//     from.x = clamp(from.x, 0, screen->size.w - 1);
+//     from.y = clamp(from.y, 0, screen->size.h - 1);
+//     to.x   = clamp(to.x,   0, screen->size.w - 1);
+//     to.y   = clamp(to.y,   0, screen->size.h - 1);
+
+//     // cell coordinates → dot coordinates (center of cell: +1 for x, +2 for y)
+//     vec2i from_dot = {.x = from.x * 2 + 1, .y = from.y * 4 + 2};
+//     vec2i to_dot   = {.x = to.x * 2 + 1,   .y = to.y * 4 + 2};
+
+//     // Bresenham at dot resolution
+//     vec2i diff     = {.x = to_dot.x - from_dot.x, .y = to_dot.y - from_dot.y};
+//     vec2i diff_abs = {.x = abs(diff.x),           .y = abs(diff.y)};
+//     vec2i delta    = {.x = diff_abs.x * 2,        .y = diff_abs.y * 2};
+//     vec2i step     = {.x = sign(diff.x),          .y = sign(diff.y)};
+//     vec2i current  = from_dot;
+
+//     if(delta.x > delta.y){
+//         int err = delta.x / 2;
+//         for(; current.x != to_dot.x; current.x += step.x){
+//             braille_plot_dot(screen, current.x, current.y);
+//             err -= delta.y;
+//             if(err < 0){
+//                 current.y += step.y;
+//                 err += delta.x;
+//             }
+//         }
+//     }else{
+//         int err = delta.y / 2;
+//         for(; current.y != to_dot.y; current.y += step.y){
+//             braille_plot_dot(screen, current.x, current.y);
+//             err -= delta.x;
+//             if(err < 0){
+//                 current.x += step.x;
+//                 err += delta.y;
+//             }
+//         }
+//     }
+//     braille_plot_dot(screen, current.x, current.y);
+
+//     // ensure four central dots at endpoint cells
+//     braille_set_center(screen, from.x, from.y);
+//     braille_set_center(screen, to.x,   to.y);
+// }
 
 #endif //TUI_DRAW_IMPL
 #endif //TUI_DRAW

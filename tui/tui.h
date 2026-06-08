@@ -39,6 +39,15 @@
 #define TUI_WIDGET_SWITCH_IMPL
 #include "tui_widget_switch.h"
 
+#define TUI_WIDGET_INPUT_CHECKBOX_IMPL
+#include "tui_widget_input_checkbox.h"
+
+#define TUI_WIDGET_INPUT_RADIO_IMPL
+#include "tui_widget_input_radio.h"
+
+#define TUI_WIDGET_INPUT_NUMBER_IMPL
+#include "tui_widget_input_number.h"
+
 #define TUI_WIDGET_INPUT_TEXT_IMPL
 #include "tui_widget_input_text.h"
 
@@ -47,6 +56,9 @@
 
 #define TUI_WIDGET_SELECT_IMPL
 #include "tui_widget_select.h"
+
+#define TUI_WIDGET_SELECT_AUTOCOMPLETE_IMPL
+#include "tui_widget_select_autocomplete.h"
 
 // Pages and nav ---------------------------------------------------------------
 
@@ -181,43 +193,6 @@ typedef struct {
 AppState APP_STATE = {};
 
 //TUI loop ---------------------------------------------------------------------
-
-private void tui_render(void){
-	//display diff of screen buffers
-	for(int x = 0; x < APP_STATE.curr_screen.size.x; x++){
-		for(int y = 0; y < APP_STATE.curr_screen.size.y; y++){
-
-			auto curr_cell = screen_get(&APP_STATE.curr_screen, x, y);
-			auto next_cell = screen_get(&APP_STATE.next_screen, x, y);
-			if(memcmp(curr_cell, next_cell, sizeof(Cell)) == 0){
-				continue;
-			}
-
-			//skip cells that are the second column of a wide character
-			//TODO: is this correct..? test more
-			auto prev_column_cell = screen_get(&APP_STATE.next_screen, x - 1, y);
-			bool is_second_column_of_wide_char = (x > 0 && prev_column_cell->display_width > 1);
-			if(is_second_column_of_wide_char) continue;
-
-			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
-			tui_write_color(next_cell->text_format, next_cell->fg_color, next_cell->bg_color);
-			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
-				tui_write(" ");
-			}else{
-				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
-			}
-		}
-	}
-
-	// swap buffer
-	Screen temp = APP_STATE.curr_screen;
-	APP_STATE.curr_screen = APP_STATE.next_screen;
-	APP_STATE.next_screen = temp;
-
-	//clear next buffer
-	screen_clear(&APP_STATE.next_screen);
-}
-
 // TUI HOTKEY KEYS PANEL
 //TODO: not sure if this merits its own file
 private bool HOTKEY_HELP_SHOW    = false;
@@ -254,8 +229,8 @@ private void tui_reset_hotkeys(void){
 	//tab to select panels
 	//TODO: this should be contingent on there being more than 1 panel
 	tui_register_key_hint(I18N_HINT_SWITCH_PANEL_KEY, I18N_HINT_SWITCH_PANEL_TEXT);
-	tui_register_key(KEY_TAB,    KEY_MOD_NONE,  &tui_cursor_next_panel);
-	tui_register_key(KEY_TAB,    KEY_MOD_SHIFT, &tui_cursor_prev_panel);
+	tui_register_key(KEY_TAB,      KEY_MOD_NONE,  &tui_cursor_next_panel);
+	tui_register_key(KEY_BACKTAB,  KEY_MOD_SHIFT, &tui_cursor_prev_panel);
 
 	//esc to navigate back
 	//TODO: this should be contingent on there even being a back in the nav
@@ -269,12 +244,30 @@ private void tui_reset_hotkeys(void){
 	tui_register_key((Key)'?', KEY_MOD_NONE, &tui_toggle_help);
 }
 
-private void tui_render_page_title(Screen *screen){
-	auto page_index = NAV_HISTORY.stack[0];
-	Page *page = PAGE_ROUTES.routes[page_index].page;
-	//TODO: concat the navigation
+private void tui_render_header(Screen *screen){
 	screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
-	screen_set_utf8_str(screen, 4, 0, page->title);
+
+	if (NAV_HISTORY.count <= 0) return;
+
+	size_t available_width = screen->size.w - 2;
+
+	int count = NAV_HISTORY.count;
+	const uint8_t *titles[count];
+	size_t widths[count];
+	for (int i = 0; i < count; i++){
+		int idx = NAV_HISTORY.stack[i];
+		titles[i] = PAGE_ROUTES.routes[idx].page->title;
+		widths[i] = utf8_str_display_width(titles[i]);
+	}
+
+	uint8_t header_str[256] = {};
+    // construct the breadcrumb string
+    for (int i = 0; i < count; i++){
+        if (i > 0) utf8_str_concat(header_str, u8" > ");
+        utf8_str_concat(header_str, titles[i]);
+    }
+
+    screen_set_utf8_str(screen, 1, 0, header_str);
 }
 
 private void tui_render_hotkeys(Screen *screen){
@@ -402,6 +395,47 @@ private void tui_render_hotkeys(Screen *screen){
     }
 }
 
+
+private void tui_render(void){
+	tui_layout_render();
+    tui_render_header(&APP_STATE.next_screen);
+	tui_render_hotkeys(&APP_STATE.next_screen);
+
+	//display diff of screen buffers
+	for(int x = 0; x < APP_STATE.curr_screen.size.x; x++){
+		for(int y = 0; y < APP_STATE.curr_screen.size.y; y++){
+
+			auto curr_cell = screen_get(&APP_STATE.curr_screen, x, y);
+			auto next_cell = screen_get(&APP_STATE.next_screen, x, y);
+			if(memcmp(curr_cell, next_cell, sizeof(Cell)) == 0){
+				continue;
+			}
+
+			//skip cells that are the second column of a wide character
+			//TODO: is this correct..? test more
+			auto prev_column_cell = screen_get(&APP_STATE.next_screen, x - 1, y);
+			bool is_second_column_of_wide_char = (x > 0 && prev_column_cell->display_width > 1);
+			if(is_second_column_of_wide_char) continue;
+
+			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
+			tui_write_color(next_cell->text_format, next_cell->fg_color, next_cell->bg_color);
+			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
+				tui_write(" ");
+			}else{
+				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
+			}
+		}
+	}
+
+	// swap buffer
+	Screen temp = APP_STATE.curr_screen;
+	APP_STATE.curr_screen = APP_STATE.next_screen;
+	APP_STATE.next_screen = temp;
+
+	//clear next buffer
+	screen_clear(&APP_STATE.next_screen);
+}
+
 private bool tui_process_input_hotkeys(InputEvent input_event){
 	//process hotkeys
 	if(input_event.input_type != INPUT_KEY) return false;
@@ -411,8 +445,15 @@ private bool tui_process_input_hotkeys(InputEvent input_event){
 	for(int k = HOTKEYS.total - 1; k >= 0; k--){
 		auto hkey = HOTKEYS.hotkeys[k];
 		if(input_event.key_event.key != hkey.key) continue;
-		//TODO: check modifiers
-		// if(input_event.key_event.shift != hkey.key) continue;
+
+		bool ctrl  = (hkey.mod_keys & KEY_MOD_CTRL)  != 0;
+		bool alt   = (hkey.mod_keys & KEY_MOD_ALT)   != 0;
+		bool shift = (hkey.mod_keys & KEY_MOD_SHIFT) != 0;
+
+		if(input_event.key_event.ctrl  != ctrl)  continue;
+		if(input_event.key_event.alt   != alt)   continue;
+		if(input_event.key_event.shift != shift) continue;
+
 		hkey.action();
 		return true;
 	}
@@ -497,7 +538,6 @@ void tui_run_loop(void){
 
 		tui_layout_render();
 		tui_render_hotkeys(&APP_STATE.next_screen);
-		tui_render_page_title(&APP_STATE.next_screen);
 
 		//render the TUI diff to the screen
 		tui_render();
@@ -510,6 +550,19 @@ void tui_run_loop(void){
 	tui_close();
 }
 
+private void tui_layout_reset_focus(void){
+	//TODO: this is probably not very good. might need to remake this whole thing
+	LAYOUT_STATE.panel_focused = 0;
+	for(int i = 0; i < TUI_PANELS_MAX; i++){
+		LAYOUT_STATE.widget_focused[i]      = nullptr;
+		LAYOUT_STATE.panel_scroll_offset[i] = 0;
+	}
+	LAYOUT_STATE.panel_focused_prev          = -1;
+	LAYOUT_STATE.widget_overlay_focused_prev = -1;
+	LAYOUT_STATE.widget_overlay_owner_panel  = -1;
+	LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
+}
+
 void tui_navigate_to(const char *page_id){
 	int page_index  = 0;
 	bool page_found = false;
@@ -520,12 +573,13 @@ void tui_navigate_to(const char *page_id){
 	assert(page_found); // did you try to navigate to a page that doesn't exist?
 	assert(NAV_HISTORY.count < TUI_NAV_HISTORY_MAX - 1); //stack overflow
 	NAV_HISTORY.stack[NAV_HISTORY.count++] = page_index;
+	tui_layout_reset_focus();
 }
 
 void tui_navigate_back(void){
-	//TODO: if there's only a single page, ask to quit app?
-	if (NAV_HISTORY.count <= 0) return;
+	if (NAV_HISTORY.count <= 1) return; //check 1 because root is part of history!
 	NAV_HISTORY.count--;
+	tui_layout_reset_focus();
 }
 
 Page *tui_get_curr_page(){

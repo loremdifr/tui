@@ -9,11 +9,11 @@ typedef struct {
 } WidgetSelectOption;
 
 typedef struct {
-    bool                    is_inline;
-    const uint8_t          *label;
-    size_t                 *storage;
-    const WidgetSelectOption *options;
-    size_t                  options_count;
+    bool                 is_inline;
+    const uint8_t       *label;
+    size_t              *storage;
+    WidgetSelectOption  *options;
+    size_t               options_count;
 } WidgetSelectParams;
 
 #define tui_widget_select(widget_id, ...) \
@@ -24,12 +24,12 @@ void tui_widget_select_(const char *widget_id, WidgetSelectParams *params);
 #ifdef TUI_WIDGET_SELECT_IMPL
 
 typedef struct {
-    const uint8_t          *label;
-    size_t                 *storage;
-    const WidgetSelectOption *options;
-    size_t                  options_count;
-    size_t                  label_width;
-    size_t                  option_width;
+    const uint8_t       *label;
+    size_t              *storage;
+    WidgetSelectOption  *options;
+    size_t               options_count;
+    size_t               label_width;
+    size_t               option_width;
 } WidgetSelectData;
 
 typedef struct {
