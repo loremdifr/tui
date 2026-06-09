@@ -361,11 +361,9 @@ private Widget *tui_get_widget_focused(){
     return nullptr;
 }
 
-private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot){
+private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot, int base_w, int base_h){
     //panel size is based on the slot it occupies in the type of layout
 
-    int base_w    = LAYOUT_STATE.base_size.w;
-    int base_h    = LAYOUT_STATE.base_size.h;
     int sidebar_w = min(30, 0.4 * base_w);
     int header_h  = 6;
     int footer_h  = 6;
@@ -419,13 +417,13 @@ private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot){
     }
 
     assert(false); //ERROR: layout not implemented!
-    return (rect2i){ .size = LAYOUT_STATE.base_size };
+    return (rect2i){ .size = {base_w, base_h} };
 }
 
 private void tui_panel_shrink_to_widgets(Panel *panel){
     //achicar panel al tamaño de los widgets
-    panel->inner_rect = panel->widgets_rect;
-    panel->outer_rect = panel->widgets_rect;
+    panel->inner_rect.size = panel->widgets_rect.size;
+    panel->outer_rect.size = panel->widgets_rect.size;
 
     //agrandar
     panel->outer_rect.size.w += PADDING * 2 + BORDER * 2;
@@ -434,23 +432,64 @@ private void tui_panel_shrink_to_widgets(Panel *panel){
     panel->outer_rect.size.w = max(32, panel->outer_rect.size.w);
     panel->outer_rect.size.h = max(8,  panel->outer_rect.size.h);
 
-    //centrar
-    panel->outer_rect.pos.x = center_in_container(
-        panel->outer_rect.pos.x,
-        panel->outer_rect.size.w,
-        LAYOUT_STATE.base_size.w
-    );
-    panel->outer_rect.pos.y = center_in_container(
-        panel->outer_rect.pos.y,
-        panel->outer_rect.size.h,
-        LAYOUT_STATE.base_size.h
-    );
+    panel->inner_rect.size.w = panel->outer_rect.size.w - PADDING * 2 - BORDER * 2;
+    panel->inner_rect.size.h = panel->outer_rect.size.h - PADDING * 2 - BORDER * 2;
+}
 
-    //compensar
-    panel->inner_rect.pos.x  = panel->outer_rect.pos.x  + BORDER + PADDING;
-    panel->inner_rect.pos.y  = panel->outer_rect.pos.y  + BORDER + PADDING;
-    panel->inner_rect.size.w = panel->outer_rect.size.w - BORDER * 2 - PADDING * 2;
-    panel->inner_rect.size.h = panel->outer_rect.size.h - BORDER * 2 - PADDING * 2;
+private void tui_layer_shrink(PageLayer *layer) {
+    // ffirst shrink all the panel to the widgets
+    for(int i = 0; i < layer->panel_count; i++){
+        tui_panel_shrink_to_widgets(&layer->panels[i]);
+    }
+
+    //then fix panel gaps
+    if(layer->panel_count > 1){
+        for (int i = 1; i < layer->panel_count; i++) {
+            Panel *prev = &layer->panels[i-1];
+            Panel *curr = &layer->panels[i];
+
+            //assume vertical stacking for simplicity.
+            //TODO: this is probably terrible for other layouts but whatever
+            curr->outer_rect.pos.y = prev->outer_rect.pos.y + prev->outer_rect.size.h;
+            curr->outer_rect.pos.x = prev->outer_rect.pos.x;
+            curr->inner_rect.pos.x = curr->outer_rect.pos.x + BORDER + PADDING;
+            curr->inner_rect.pos.y = curr->outer_rect.pos.y + BORDER + PADDING;
+        }
+    }
+
+    //now we expand the layer
+    rect2i total_rect = {0};
+    for (int i = 0; i < layer->panel_count; i++) {
+        rect2i panel_rect = layer->panels[i].outer_rect;
+        if(i == 0){
+            total_rect = panel_rect;
+            continue;
+        }
+
+        int right = max(
+            total_rect.pos.x + total_rect.size.w,
+            panel_rect.pos.x + panel_rect.size.w
+        );
+        int bottom = max(
+            total_rect.pos.y + total_rect.size.h,
+            panel_rect.pos.y + panel_rect.size.h
+        );
+        total_rect.pos.x  = min(total_rect.pos.x, panel_rect.pos.x);
+        total_rect.pos.y  = min(total_rect.pos.y, panel_rect.pos.y);
+        total_rect.size.w = right  - total_rect.pos.x;
+        total_rect.size.h = bottom - total_rect.pos.y;
+    }
+
+    //center
+    int offset_x = (LAYOUT_STATE.base_size.w - total_rect.size.w) / 2 - total_rect.pos.x;
+    int offset_y = (LAYOUT_STATE.base_size.h - total_rect.size.h) / 2 - total_rect.pos.y;
+
+    for(int i = 0; i < layer->panel_count; i++){
+        layer->panels[i].outer_rect.pos.x += offset_x;
+        layer->panels[i].outer_rect.pos.y += offset_y;
+        layer->panels[i].inner_rect.pos.x += offset_x;
+        layer->panels[i].inner_rect.pos.y += offset_y;
+    }
 }
 
 void tui_layer_begin(PageLayerKind layer, PageLayout layout){
@@ -471,7 +510,10 @@ void tui_panel_begin(PanelSlot slot){
     assert(layer_building->panel_building == -1); //close the prev panel first!
     assert(layer_building->panel_count < TUI_PANELS_MAX);
 
-    auto panel_rect = tui_panel_rect(layer_building->layout, slot);
+    auto panel_rect = tui_panel_rect(
+        layer_building->layout, slot,
+        LAYOUT_STATE.base_size.w, LAYOUT_STATE.base_size.h
+    );
     panel_rect.pos.y += 1; //leave space for the app title
     Panel new_panel = {
         .slot = slot,
@@ -668,42 +710,7 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
     LAYOUT_STATE.screen = screen;
 }
 
-// private bool tui_widget_overlay_close_input(InputEvent input_event){
-//     if(input_event.input_type != INPUT_KEY) return false;
-//     if(input_event.key_event.key != KEY_ESCAPE) return false;
-//     if(LAYOUT_STATE.panel_focused >= LAYOUT_STATE.panel_count) return false;
-
-//     Panel *panel_focused = &LAYOUT_STATE.panels[LAYOUT_STATE.panel_focused];
-//     if(panel_focused->slot != SLOT_WIDGETS_OVERLAY_DO_NOT_USE) return false;
-//     if(LAYOUT_STATE.widget_overlay_owner_panel < 0) return true;
-//     if(LAYOUT_STATE.widget_overlay_owner_panel >= LAYOUT_STATE.panel_count) return true;
-//     if(LAYOUT_STATE.widget_overlay_owner_widget == nullptr) return true;
-
-//     int owner_panel_index = LAYOUT_STATE.widget_overlay_owner_panel;
-//     Panel *owner_panel = &LAYOUT_STATE.panels[owner_panel_index];
-//     for(int i = 0; i < owner_panel->widget_count; i++){
-//         Widget *owner_widget = &owner_panel->widgets[i];
-//         if(strcmp(owner_widget->id, LAYOUT_STATE.widget_overlay_owner_widget) != 0) continue;
-//         if(owner_widget->input != nullptr){
-//             owner_widget->input(owner_widget, input_event);
-//         }
-//         break;
-//     }
-
-//     if(LAYOUT_STATE.panel_focused == LAYOUT_STATE.panel_count - 1){
-//         LAYOUT_STATE.panel_count--;
-//     }
-//     LAYOUT_STATE.widget_focused[LAYOUT_STATE.panel_focused] = 0;
-//     LAYOUT_STATE.panel_focused = owner_panel_index;
-//     LAYOUT_STATE.widget_overlay_focused_prev = -1;
-//     LAYOUT_STATE.widget_overlay_owner_panel = -1;
-//     LAYOUT_STATE.widget_overlay_owner_widget = nullptr;
-//     return true;
-// }
-
 bool tui_widget_focused_input(InputEvent input_event){
-    // if(tui_widget_overlay_close_input(input_event)) return true;
-
     Widget *widget = tui_get_widget_focused();
     if(widget == nullptr) return false;
     if(widget->input == nullptr) return false;
@@ -754,16 +761,14 @@ void tui_layout_render(){
         layer->focused   = (LAYOUT_STATE.layer_focused == layer_idx);
 
         //render panels of layer
+        if(layer->shrink){
+            tui_layer_shrink(layer);
+        }
+
         for(int i = 0; i < layer->panel_count; i++){
             Panel *panel = &layer->panels[i];
             panel->focused = layer->focused && (layer->panel_focused == i);
 
-            if(layer->shrink){
-                //TODO: to make this work nicely with multipanel layouts we should
-                //     instead: shrink all panels first, then shrink the layer, and
-                //     then expand the panels back up to fill the layer.
-                // tui_panel_shrink_to_widgets(panel);
-            }
 
             //clear panel background
             tui_draw_rect(LAYOUT_STATE.screen, u8" ", panel->outer_rect);

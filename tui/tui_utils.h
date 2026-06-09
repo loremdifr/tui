@@ -73,6 +73,7 @@ uint8_t        utf8_char_length(uint8_t byte);
 uint8_t        utf8_char_display_width(const uint8_t bytes[static 4]);
 uint32_t       utf8_pack(const uint8_t bytes[static 4]);
 void           utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes);
+void           utf8_codepoint_to_bytes(uint32_t codepoint, uint8_t bytes[static 4]);
 
 //utf8_str
 size_t         utf8_str_length(const uint8_t *str);
@@ -302,6 +303,44 @@ private uint32_t utf8_codepoint_from_bytes(const uint8_t bytes[static 4]){
                      | ((uint32_t)(bytes[2] & mask_cont)  << 6)
                      |  (uint32_t)(bytes[3] & mask_cont);
         default: return 0;
+    }
+}
+
+void utf8_codepoint_to_bytes(uint32_t codepoint, uint8_t bytes[static 4]){
+    //reverse operation
+
+    //theres no leading byte here to use with utf8_char_length,
+    //so we have check the range directly here to determine total bytes
+    int total_bytes = 4;
+    if(codepoint <= 0xFFFF) total_bytes = 3;
+    if(codepoint <= 0x7FF)  total_bytes = 2;
+    if(codepoint <= 0x7F)   total_bytes = 1;
+
+    constexpr uint8_t mask_cont = 0b00111111;
+    switch(total_bytes){
+    case 1:
+        bytes[0] = (uint8_t)codepoint;
+        bytes[1] = 0;
+        break;
+    case 2:
+        bytes[0] = (uint8_t)(0b11000000 |  (codepoint >> 6));
+        bytes[1] = (uint8_t)(0b10000000 | (codepoint        & mask_cont));
+        bytes[2] = 0;
+        break;
+    case 3:
+        bytes[0] = (uint8_t)(0b11100000 |  (codepoint >> 12));
+        bytes[1] = (uint8_t)(0b10000000 | ((codepoint >> 6) & mask_cont));
+        bytes[2] = (uint8_t)(0b10000000 | (codepoint        & mask_cont));
+        bytes[3] = 0;
+        break;
+    case 4:
+        bytes[0] = (uint8_t)(0b11110000 |  (codepoint >> 18));
+        bytes[1] = (uint8_t)(0b10000000 | ((codepoint >> 12) & mask_cont));
+        bytes[2] = (uint8_t)(0b10000000 | ((codepoint >> 6)  & mask_cont));
+        bytes[3] = (uint8_t)(0b10000000 | (codepoint         & mask_cont));
+        break;
+    default:
+        assert(false); //???
     }
 }
 

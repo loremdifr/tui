@@ -256,9 +256,23 @@ void tui_draw_rect(Screen *screen, uint8_t *utf8_char, rect2i rect){
     }
 }
 
-void tui_draw_circ(Screen */*screen*/, uint8_t */*utf8_char*/, rect2i /*rect*/){
-    //TODO: implement
-    assert(false);
+void tui_draw_circ(Screen *screen, uint8_t *utf8_char, rect2i rect){
+    int center_x   = rect.pos.x + rect.size.w / 2;
+    int center_y   = rect.pos.y + rect.size.h / 2;
+    int radius_x   = rect.size.w / 2;
+    int radius_y   = rect.size.h / 2;
+
+    for(int y = -radius_y; y <= radius_y; y++){
+        for(int x = -radius_x; x <= radius_x; x++){
+            float normal_x = (float)x / radius_x;
+            float normal_y = (float)y / radius_y;
+            float squared_distance = normal_x * normal_x + normal_y * normal_y;
+            bool inside_ellipse = squared_distance<= 1.0f;
+            if(inside_ellipse){
+                screen_set_utf8(screen, center_x + x, center_y + y, utf8_char);
+            }
+        }
+    }
 }
 
 void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
@@ -343,98 +357,108 @@ void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int tot
 }
 
 
-//BRAILLE STUFF -----------------------------
+//BRAILLE STUFF ---------------------------------------------------------------
 //source https://github.com/asciimoo/drawille
-//TODO: no clue if this ewven works
-// private void braille_plot_dot(Screen *screen, int dx, int dy){
-//     // bit position for sub-cell offset (sx, sy):
-//     // (0,0)->bit0, (1,0)->bit3
-//     // (0,1)->bit1, (1,1)->bit4
-//     // (0,2)->bit2, (1,2)->bit5
-//     // (0,3)->bit6, (1,3)->bit7
-//     static const uint8_t braille_bit_map[2][4] = {
-//         {0, 1, 2, 6},
-//         {3, 4, 5, 7},
-//     };
+constexpr int     BRAILLE_W = 2;
+constexpr int     BRAILLE_H = 4;
 
-//     int cx = dx / 2;
-//     int cy = dy / 4;
-//     if(cx < 0 || cx >= screen->size.w || cy < 0 || cy >= screen->size.h) return;
-//     uint8_t dot_bit = (uint8_t)(1 << braille_bit_map[dx & 1][dy & 3]);
-//     Cell *cell = screen_get(screen, cx, cy);
-//     uint8_t mask = dot_bit;
-//     if(cell->bytes[0] == 0xE2 && (cell->bytes[1] & 0xE0) == 0xA0){
-//         mask |= ((cell->bytes[1] & 0x03) << 6) | (cell->bytes[2] & 0x3F);
-//     }
-//     uint8_t bytes[4] = {
-//         0xE2,
-//         (uint8_t)(0xA0 | (mask >> 6)),
-//         (uint8_t)(0x80 | (mask & 0x3F)),
-//         0,
-//     };
-//     screen_set_utf8(screen, cx, cy, bytes);
-// }
+private void braille_plot_dot(Screen *screen, int dot_x, int dot_y){
+    static const uint8_t braille_bit_map[2][4] = { //transpuesta?
+        {0, 1, 2, 6},
+        {3, 4, 5, 7},
+    };
 
-// private void braille_set_center(Screen *screen, int cx, int cy){
-//     // four central dots: bits 1,2,4,5 = 2+4+16+32 = 54 = 0x36
-//     uint8_t mask = 0x36;
-//     Cell *cell = screen_get(screen, cx, cy);
-//     if(cell->bytes[0] == 0xE2 && (cell->bytes[1] & 0xE0) == 0xA0){
-//         mask |= ((cell->bytes[1] & 0x03) << 6) | (cell->bytes[2] & 0x3F);
-//     }
-//     uint8_t bytes[4] = {
-//         0xE2,
-//         (uint8_t)(0xA0 | (mask >> 6)),
-//         (uint8_t)(0x80 | (mask & 0x3F)),
-//         0,
-//     };
-//     screen_set_utf8(screen, cx, cy, bytes);
-// }
+    //convert coords
+    int cell_x = dot_x / BRAILLE_W;
+    int cell_y = dot_y / BRAILLE_H;
 
-// void tui_draw_line_braille(Screen *screen, vec2i from, vec2i to){
-//     from.x = clamp(from.x, 0, screen->size.w - 1);
-//     from.y = clamp(from.y, 0, screen->size.h - 1);
-//     to.x   = clamp(to.x,   0, screen->size.w - 1);
-//     to.y   = clamp(to.y,   0, screen->size.h - 1);
+    //out of bounds checks
+    if(cell_x < 0) return;
+    if(cell_y < 0) return;
+    if(cell_x >= screen->size.x) return;
+    if(cell_y >= screen->size.y) return;
 
-//     // cell coordinates → dot coordinates (center of cell: +1 for x, +2 for y)
-//     vec2i from_dot = {.x = from.x * 2 + 1, .y = from.y * 4 + 2};
-//     vec2i to_dot   = {.x = to.x * 2 + 1,   .y = to.y * 4 + 2};
+    //map the bit to the dot
+    uint8_t dot_bit = (uint8_t)(1 << braille_bit_map[dot_x & 1][dot_y & 3]);
+    Cell *cell      = screen_get(screen, cell_x, cell_y);
+    uint8_t mask    = dot_bit;
 
-//     // Bresenham at dot resolution
-//     vec2i diff     = {.x = to_dot.x - from_dot.x, .y = to_dot.y - from_dot.y};
-//     vec2i diff_abs = {.x = abs(diff.x),           .y = abs(diff.y)};
-//     vec2i delta    = {.x = diff_abs.x * 2,        .y = diff_abs.y * 2};
-//     vec2i step     = {.x = sign(diff.x),          .y = sign(diff.y)};
-//     vec2i current  = from_dot;
+    //merge with existing braille dots already in cell
+    uint32_t codepoint = utf8_codepoint_from_bytes(cell->bytes);
+    if(codepoint >= 0x2800 && codepoint <= 0x28FF){
+        mask |= (codepoint & 0xFF);
+    }
 
-//     if(delta.x > delta.y){
-//         int err = delta.x / 2;
-//         for(; current.x != to_dot.x; current.x += step.x){
-//             braille_plot_dot(screen, current.x, current.y);
-//             err -= delta.y;
-//             if(err < 0){
-//                 current.y += step.y;
-//                 err += delta.x;
-//             }
-//         }
-//     }else{
-//         int err = delta.y / 2;
-//         for(; current.y != to_dot.y; current.y += step.y){
-//             braille_plot_dot(screen, current.x, current.y);
-//             err -= delta.x;
-//             if(err < 0){
-//                 current.x += step.x;
-//                 err += delta.y;
-//             }
-//         }
-//     }
-//     braille_plot_dot(screen, current.x, current.y);
+    uint8_t bytes[4];
+    utf8_codepoint_to_bytes(0x2800 | mask, bytes);
+    screen_set_utf8(screen, cell_x, cell_y, bytes);
+}
 
-//     // ensure four central dots at endpoint cells
-//     braille_set_center(screen, from.x, from.y);
-//     braille_set_center(screen, to.x,   to.y);
-// }
+private void braille_set_center(Screen *screen, int cell_x, int cell_y){
+    constexpr uint8_t BRAILLE_CENTER_DOTS = 0x36; //bits 1,2,4,5 = 2+4+16+32 = 54 = 0x36
+
+    uint8_t mask = BRAILLE_CENTER_DOTS;
+    Cell *cell   = screen_get(screen, cell_x, cell_y);
+
+    //merge with existing braille dots already in cell
+    uint32_t codepoint = utf8_codepoint_from_bytes(cell->bytes);
+    if(codepoint >= 0x2800 && codepoint <= 0x28FF){
+        mask |= (codepoint & 0xFF);
+    }
+
+    uint8_t bytes[4];
+    utf8_codepoint_to_bytes(0x2800 | mask, bytes);
+    screen_set_utf8(screen, cell_x, cell_y, bytes);
+}
+
+void tui_draw_line_braille(Screen *screen, vec2i from, vec2i to){
+    from.x = clamp(from.x, 0, screen->size.x - 1);
+    from.y = clamp(from.y, 0, screen->size.y - 1);
+    to.x   = clamp(to.x,   0, screen->size.x - 1);
+    to.y   = clamp(to.y,   0, screen->size.y - 1);
+
+    //cell coordinates to  dot coordinates (center of cell)
+    vec2i from_dot = {.x = from.x * BRAILLE_W + BRAILLE_W / 2,
+                      .y = from.y * BRAILLE_H + BRAILLE_H / 2};
+    vec2i to_dot   = {.x = to.x * BRAILLE_W + BRAILLE_W / 2,
+                      .y = to.y * BRAILLE_H + BRAILLE_H / 2};
+
+    //now we do bresenham but at dots instead of cells
+
+    vec2i diff     = {.x = to_dot.x - from_dot.x, .y = to_dot.y - from_dot.y};
+    vec2i diff_abs = {.x = abs(diff.x),           .y = abs(diff.y)};
+    vec2i delta    = {.x = diff_abs.x * 2,        .y = diff_abs.y * 2};
+    vec2i step     = {.x = sign(diff.x),          .y = sign(diff.y)};
+    vec2i current  = from_dot;
+
+    bool steep = delta.x > delta.y;
+    if(steep){
+        int err = delta.x / 2;
+        for(; current.x != to_dot.x; current.x += step.x){
+            braille_plot_dot(screen, current.x, current.y);
+            err -= delta.y;
+            if(err < 0){
+                current.y += step.y;
+                err += delta.x;
+            }
+        }
+    }else{
+        int err = delta.y / 2;
+        for(; current.y != to_dot.y; current.y += step.y){
+            braille_plot_dot(screen, current.x, current.y);
+            err -= delta.x;
+            if(err < 0){
+                current.x += step.x;
+                err += delta.y;
+            }
+        }
+    }
+    braille_plot_dot(screen, current.x, current.y);
+
+    //ensure four central dots at starting and ending cell
+    braille_set_center(screen, from.x, from.y);
+    braille_set_center(screen, to.x,   to.y);
+}
 
 #endif //TUI_DRAW_IMPL
 #endif //TUI_DRAW
