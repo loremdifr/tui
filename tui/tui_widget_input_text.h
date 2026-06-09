@@ -104,12 +104,13 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     }
 
     if(widget->focused && !state->editing){
+        const uint8_t *edit_icon = u8"🖉";
         screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
         screen_set_utf8(
             screen,
-            position.x + widget->size.w - 1,
+            position.x + widget->size.w - utf8_str_display_width(edit_icon),
             position.y,
-            u8"🖉"
+            edit_icon
         );
     }
 
