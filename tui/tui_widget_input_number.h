@@ -179,13 +179,13 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
     size_t field_width = widget->size.w - data->label_width - suffix_width;
 
     screen_format(widget->focused ? BOLD : NORMAL, widget->focused ? COLOR_MAGENTA : COLOR_WHITE, COLOR_BLACK);
-    screen_set_utf8_str(screen, position.x, position.y, data->label);
+    screen_set_utf8_str(screen, position.x + PADDING, position.y, data->label);
 
     size_t value_width = utf8_str_display_width(value_text);
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
-    screen_set_utf8_str(screen, position.x + data->label_width, position.y, value_text);
+    screen_set_utf8_str(screen, position.x + PADDING + data->label_width, position.y, value_text);
     for(size_t x = value_width; x < field_width; x++){
-        screen_set_char(screen, position.x + (int)data->label_width + (int)x, position.y, ' ');
+        screen_set_char(screen, position.x + PADDING + (int)data->label_width + (int)x, position.y, ' ');
     }
 
     if(widget->focused){
@@ -195,13 +195,13 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
     }
     screen_set_utf8_str(
         screen,
-        position.x + data->label_width + (int)field_width,
+        position.x + PADDING + data->label_width + (int)field_width,
         position.y,
         u8" ▼▲"
     );
 
     if(widget->focused && state->editing && state->caret_show){
-        int caret_x = position.x + (int)data->label_width + (int)state->cursor;
+        int caret_x = position.x + PADDING + (int)data->label_width + (int)state->cursor;
         if(state->cursor < state->buffer_len){
             screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
             char caret_chr[2] = {state->buffer[state->cursor], '\0'};
@@ -217,11 +217,11 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
         screen,
         u8"‾",
         (vec2i){
-            .x = position.x + (int)data->label_width,
+            .x = position.x + PADDING + (int)data->label_width,
             .y = position.y + 1,
         },
         (vec2i){
-            .x = position.x + (int)data->label_width + (int)field_width - 1 + suffix_width,
+            .x = position.x + PADDING + (int)data->label_width + (int)field_width - 1 + suffix_width,
             .y = position.y + 1,
         }
     );
@@ -336,7 +336,7 @@ void tui_widget_input_number_(const char *widget_id, WidgetInputNumberParams *pa
         .id        = widget_id,
         .data      = widget_data,
         .state     = widget_state,
-        .size.w    = widget_data->label_width + widget_data->value_width + 3,
+        .size.w    = widget_data->label_width + widget_data->value_width + 3 + PADDING * 2,
         .size.h    = 2,
         .focusable = true,
         .is_inline = params->is_inline,

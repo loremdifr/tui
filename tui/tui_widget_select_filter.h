@@ -100,11 +100,11 @@ private void tui_widget_select_filter_render(Widget *widget, Screen *screen, vec
         screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
     }
 
-    screen_set_utf8_str(screen, position.x, position.y, data->label);
-    screen_set_utf8_str(screen, position.x + (int)data->label_width, position.y, selected_label);
+    screen_set_utf8_str(screen, position.x + PADDING, position.y, data->label);
+    screen_set_utf8_str(screen, position.x + PADDING + (int)data->label_width, position.y, selected_label);
     screen_set_utf8_str(
         screen,
-        position.x + (int)data->label_width + selected_width,
+        position.x + PADDING + (int)data->label_width + selected_width,
         position.y,
         u8" ▼"
     );
@@ -172,7 +172,7 @@ void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *
         .id        = widget_id,
         .data      = widget_data,
         .state     = widget_state,
-        .size.w    = widget_data->label_width + selected_width + 2,
+        .size.w    = widget_data->label_width + selected_width + 2 + PADDING * 2,
         .size.h    = 1 + PADDING,
         .focusable = true,
         .is_inline = params->is_inline,

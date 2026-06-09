@@ -41,9 +41,9 @@ private void tui_widget_input_checkbox_render(Widget *widget, Screen *screen, ve
         screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
     }
 
-    screen_set_utf8_str(screen, position.x, position.y, box);
+    screen_set_utf8_str(screen, position.x + PADDING, position.y, box);
     screen_set_utf8_str(screen,
-        position.x + (int)box_width + 1,
+        position.x + PADDING + (int)box_width + 1,
         position.y,
         widget_data->label
     );
@@ -83,7 +83,7 @@ void tui_widget_input_checkbox_(const char *widget_id, WidgetInputCheckboxParams
     widget_data->on_toggle = params->on_toggle;
 
     size_t label_width = utf8_str_display_width(params->label);
-    size_t widget_width = 3 + 1 + label_width;
+    size_t widget_width = 3 + 1 + label_width + PADDING * 2;
 
     //store the biggest checkbox so that we can pad it and they will all line up
     if(widget_width > TUI_WIDGET_INPUT_CHECKBOX_MAX_WIDTH){

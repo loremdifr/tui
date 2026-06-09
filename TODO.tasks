@@ -21,9 +21,10 @@ REFACTOR:
 	[x]	bug: fix navigation button to next page broken @done (26-06-08 23:13)
 	[x]	task: filter out the hotkey hints that arent needed on each page @done (26-06-09 01:09)
 	[x]	task: finish implementation of select @done (26-06-09 03:03)
-	[ ]	task: finish implementation of select with autocomplete
-		[ ]	task: figure out how to implement the list with autocompletions better
-	[ ]	task: finish implementation of canvas
+	[x]	task: finish implementation of select with autocomplete @done (26-06-09 06:17)
+		[x]	task: figure out how to implement the list with autocompletions better @done (26-06-09 06:17)
+		[ ]	task: select_filter should allow navegation between panels with arrows
+	[ ]	task: review code of canvas widget
 	[ ]	task: review code of the widget number
 	[x]	task: need a global way of exiting the app without having to define it in every page... alt q? @done (26-06-08 23:14)
 

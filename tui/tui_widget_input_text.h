@@ -73,7 +73,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
 
     screen_set_utf8_str(
         screen,
-        position.x,
+        position.x + PADDING,
         position.y,
         data->label
     );
@@ -83,7 +83,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         auto placeholder_substr = string_from_substr(data->placeholder, 0, data->input_width);
         screen_set_string(
             screen,
-            position.x + data->label_width,
+            position.x + PADDING + data->label_width,
             position.y,
             &placeholder_substr
         );
@@ -97,7 +97,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         );
         screen_set_string(
             screen,
-            position.x + data->label_width,
+            position.x + PADDING + data->label_width,
             position.y,
             &text_substr
         );
@@ -115,7 +115,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
 
     //caret
     if(widget->focused && state->editing && state->caret_show){
-        int caret_x = position.x + data->label_width + (int)(state->cursor - state->scroll);
+        int caret_x = position.x + PADDING + data->label_width + (int)(state->cursor - state->scroll);
         if(state->cursor < data->string.length){
             //care is on a character, invert that character color
             screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
@@ -137,7 +137,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     //underline
     tui_draw_line(screen, u8"‾",
         (vec2i){
-            .x = position.x + data->label_width,
+            .x = position.x + PADDING + data->label_width,
             .y = position.y + 1
         },
         (vec2i){
@@ -329,7 +329,7 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
     // that the cursor is not pointing "outside" the string
     widget_state->cursor = clamp(widget_state->cursor, 0, widget_data->string.length);
 
-    int total_width = widget_data->label_width + widget_data->input_width;
+    int total_width = widget_data->label_width + widget_data->input_width + PADDING * 2;
 
     // ensure input fits inside the panel
     int panel_width = panel->inner_rect.size.w;
