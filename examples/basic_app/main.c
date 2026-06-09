@@ -13,11 +13,11 @@
 #define TUI_IMPL
 #include "tui/tui.h"
 
-#define PAGE_EXAMPLE_IMPL
-#include "pages/page_example.h"
-
 #define PAGE_SECONDARY_IMPL
 #include "pages/page_secondary.h"
+
+#define PAGE_EXAMPLE_IMPL
+#include "pages/page_example.h"
 
 int main(void)
 {
@@ -26,7 +26,7 @@ int main(void)
 	tui_register_page(PAGE_SECONDARY_ID, &PAGE_SECONDARY);
 
 	//comienzo de la app
-	tui_navigate_to(PAGE_EXAMPLE_ID); //definimos la primera pagina o home
+	tui_navigate_to(PAGE_SECONDARY_ID); //definimos la primera pagina o home
 	tui_run_loop();
 
 	//mensaje de salida

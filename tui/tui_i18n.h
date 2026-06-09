@@ -41,6 +41,14 @@
 #define I18N_HINT_BACK_TEXT u8"Back"
 #endif
 
+#ifndef I18N_HINT_QUIT_KEY
+#define I18N_HINT_QUIT_KEY u8"[ALT+Q]"
+#endif
+
+#ifndef I18N_HINT_QUIT_TEXT
+#define I18N_HINT_QUIT_TEXT u8"Quit"
+#endif
+
 #ifndef I18N_HELP_OPEN
 #define I18N_HELP_OPEN u8"[?] Help"
 #endif

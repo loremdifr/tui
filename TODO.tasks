@@ -7,7 +7,23 @@ REFACTOR:
 	[x]	add the overlay layer and make the overlay work again @done (26-06-08 08:51)
 		[x]	- shrink overlay layer! @done (26-06-08 08:51)
 	[x]	add the widget overlay layer and make it work again @done (26-06-08 08:51)
-	[ ]	figure out how to properly bind the widget to the subwidget..
+	[ ]	overlay layer
+		[ ]	figure out how to properly bind the widget to the subwidget..
+		[ ]	ability to actually close the subwidget
+		[ ]	ability to autoselect a widget, or even auto-enable it (filtering for example)
+		[ ]	window title?
+	[ ]	bug: shift+tab does not cycle properly, it goes to negative one somehow
+	[ ] task: radio buttons have too much vertical padding
+	[ ]	bug: the other app had some glitches with the inline buttons at some point, need investigate further.
+	[ ]	bug: input text editor left arrow
+	[ ]	bug: left padding on label gone
+	[ ]	bug: fix navigation button to next page broken
+	[ ]	task: filter out the hotkey hints that arent needed on each page
+	[ ]	task: finish implementation of select
+	[ ]	task: finish implementation of select with autocomplete
+	[ ]	task: finish implementation of canvas
+	[ ]	task: figure out how to implement the list with autocompletions better
+	[ ]	task: need a global way of exiting the app without having to define it in every page... alt f4?
 
 --- ✄ -----------------------
 

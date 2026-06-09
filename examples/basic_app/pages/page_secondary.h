@@ -56,7 +56,17 @@ private void page_secondary_render(void){
 		tui_widget_button("BACK_BUTTON",
 			.label=u8"Back",
 			.on_click=&tui_navigate_back,
-			.is_inline=true,
+			// .is_inline=true,
+		);
+		tui_widget_button("BACK_BUTTON2",
+			.label=u8"Back",
+			.on_click=&tui_navigate_back,
+			// .is_inline=true,
+		);
+		tui_widget_button("BACK_BUTTON3",
+			.label=u8"Back",
+			.on_click=&tui_navigate_back,
+			// .is_inline=true,
 		);
 
 	tui_panel_end();

@@ -239,7 +239,7 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
         case KEY_LEFT:
             if(!widget_state->editing) break;
             tui_widget_input_text_reset_cursor(widget);
-            if(key.ctrl) tui_widget_input_text_move_word(widget, -1); break;
+            if(key.ctrl) tui_widget_input_text_move_word(widget, -1);
             tui_widget_input_text_move_cursor(widget, -1);
             break;
         case KEY_RIGHT:

@@ -237,6 +237,11 @@ private void tui_reset_hotkeys(void){
 	tui_register_key(KEY_ESCAPE, KEY_MOD_NONE,  &tui_navigate_back);
 	tui_register_key_hint(I18N_HINT_BACK_KEY, I18N_HINT_BACK_TEXT);
 
+	//ALT+F4 to Close the App!
+	//TODO: this should be contingent on there even being a back in the nav
+	tui_register_key(KEY_Q, KEY_MOD_ALT,  &tui_quit);
+	tui_register_key_hint(I18N_HINT_QUIT_KEY, I18N_HINT_QUIT_TEXT);
+
 	//? to toggle help overlay
 	//NOTE: registered here instead of tui_render_hotkeys because hotkeys
 	//      are reset every frame BEFORE input processing.
@@ -519,7 +524,7 @@ void tui_run_loop(void){
 		//prepare page render and create widgets,
 		//this is done here because widgets need to exist
 		//before the input processing pass!
-		tui_layout_prepare(&APP_STATE.next_screen);
+		tui_layout_prepare(&APP_STATE.next_screen, active_page->layout);
 		active_page->render(); // <- this actually creates the widgets
 
 		//NOTE: The order is important! it is from deeper control upwards.

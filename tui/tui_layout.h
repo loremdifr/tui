@@ -93,7 +93,7 @@ void  tui_widget_push(Widget widget);
 void *tui_widget_state(const char *widget_id, size_t data_size);
 
 //used in the actual rendering process by tui.h
-void tui_layout_prepare(Screen *screen);
+void tui_layout_prepare(Screen *screen, PageLayout layout);
 bool tui_widget_focused_input(InputEvent input_event);
 void tui_layout_render(void); //actually rendering to the screen
 void tui_layout_reset(void);
@@ -337,7 +337,7 @@ private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot){
 
     int base_w    = LAYOUT_STATE.base_size.w;
     int base_h    = LAYOUT_STATE.base_size.h;
-    int sidebar_w = max(30, 0.4 * base_w);
+    int sidebar_w = min(30, 0.4 * base_w);
     int header_h  = 6;
     int footer_h  = 6;
 
@@ -613,7 +613,7 @@ void tui_widget_push(Widget widget){
     }
 }
 
-void tui_layout_prepare(Screen *screen){
+void tui_layout_prepare(Screen *screen, PageLayout layout){
     PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
 
     if(LAYOUT_STATE.arena_frame == nullptr){
@@ -627,6 +627,8 @@ void tui_layout_prepare(Screen *screen){
     layer_building->panel_building = -1;
     layer_building->panel_count    = 0;
     layer_building->widget_auto_id = 0;
+
+    LAYOUT_STATE.layers[LAYER_BASE].layout = layout;
 
     //NOTE: base size has h-2 to leave room for header at top
     //      and key hints at bottom

@@ -117,7 +117,7 @@ void tui_widget_input_radio_(const char *widget_id, WidgetInputRadioParams *para
     size_t label_width = utf8_str_display_width(params->label);
     size_t widget_width = PADDING * 2 + 2 + label_width;
 
-    //store the biggest checkbox so that we can pad it and they will all line up
+    //store the widest radio btn so that we can pad it and they will all line up
     if(widget_width > TUI_WIDGET_INPUT_RADIO_MAX_WIDTH){
         TUI_WIDGET_INPUT_RADIO_MAX_WIDTH = widget_width;
     }

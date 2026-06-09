@@ -70,7 +70,7 @@ private void close_example_popup(void){
 }
 
 private void navigate_to_secondary(void){
-	tui_navigate_to("PAGE_SECONDARY_1");
+	tui_navigate_to(PAGE_SECONDARY_ID);
 }
 
 private void page_example_init(void){
