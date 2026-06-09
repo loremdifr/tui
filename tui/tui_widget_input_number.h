@@ -175,7 +175,7 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
         value_text = (const uint8_t *)value_buffer;
     }
 
-    size_t suffix_width = (widget->focused || state->editing) ? 3 : 0;
+    const size_t suffix_width = 3;
     size_t field_width = widget->size.w - data->label_width - suffix_width;
 
     screen_format(widget->focused ? BOLD : NORMAL, widget->focused ? COLOR_MAGENTA : COLOR_WHITE, COLOR_BLACK);
@@ -188,15 +188,17 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
         screen_set_char(screen, position.x + (int)data->label_width + (int)x, position.y, ' ');
     }
 
-    if(widget->focused || state->editing){
-        screen_format(widget->focused ? BOLD : NORMAL, COLOR_MAGENTA, COLOR_BLACK);
-        screen_set_utf8_str(
-            screen,
-            position.x + data->label_width + (int)field_width,
-            position.y,
-            u8" ▼▲"
-        );
+    if(widget->focused){
+        screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
+    }else{
+        screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
     }
+    screen_set_utf8_str(
+        screen,
+        position.x + data->label_width + (int)field_width,
+        position.y,
+        u8" ▼▲"
+    );
 
     if(widget->focused && state->editing && state->caret_show){
         int caret_x = position.x + (int)data->label_width + (int)state->cursor;
@@ -219,7 +221,7 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
             .y = position.y + 1,
         },
         (vec2i){
-            .x = position.x + (int)data->label_width + (int)field_width - 1,
+            .x = position.x + (int)data->label_width + (int)field_width - 1 + suffix_width,
             .y = position.y + 1,
         }
     );

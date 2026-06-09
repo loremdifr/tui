@@ -32,16 +32,6 @@ typedef struct {
     size_t               option_width;
 } WidgetSelectData;
 
-typedef struct {
-    bool overlay_open;
-} WidgetSelectState;
-
-typedef struct {
-    WidgetSelectState  *state;
-} WidgetSelectOverlayContext;
-
-private WidgetSelectOverlayContext SELECT_OVERLAY_CONTEXT = {};
-
 private size_t tui_widget_select_selected_index(WidgetSelectData *data){
     if(data->storage == nullptr) return 0;
     for(size_t i = 0; i < data->options_count; i++){
@@ -58,14 +48,8 @@ private const uint8_t *tui_widget_select_option_label(WidgetSelectData *data, si
     return data->options[index].label;
 }
 
-// private size_t tui_widget_select_option_value(WidgetSelectData *data, size_t index){
-//     if(data == nullptr) return 0;
-//     if(index >= data->options_count) return 0;
-//     return data->options[index].value;
-// }
-
 private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetSelectData  *data  = widget->data;
+    WidgetSelectData  *data = widget->data;
 
     size_t selected_index         = tui_widget_select_selected_index(data);
     const uint8_t *selected_label = tui_widget_select_option_label(data, selected_index);
@@ -79,7 +63,6 @@ private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i posi
 
     screen_set_utf8_str(screen, position.x, position.y, data->label);
     screen_set_utf8_str(screen, position.x + (int)data->label_width, position.y, selected_label);
-
     screen_set_utf8_str(
         screen,
         position.x + (int)data->label_width + (int)data->option_width,
@@ -90,18 +73,22 @@ private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i posi
 }
 
 private bool tui_widget_select_input(Widget *widget, InputEvent input_event){
-    WidgetSelectState *state = widget->state;
+    WidgetSelectData  *data = widget->data;
 
     switch (input_event.input_type) {
     case INPUT_KEY:
         switch (input_event.key_event.key) {
         case KEY_ENTER:
-            state->overlay_open = !state->overlay_open;
-            return true;
+            if(tui_widget_overlay_is_open()){
+                tui_widget_overlay_close();
+            }else{
+                tui_widget_overlay_open();
+            }
+            return true; //important! we capture the event!
         case KEY_ESCAPE:
-            if(!state->overlay_open) break;
-            state->overlay_open = false;
-            return true;
+            if(!tui_widget_overlay_is_open()) break;
+            tui_widget_overlay_close();
+            return true; //important! we capture the event!
         case KEY_NONE:
         default:
             break;
@@ -111,19 +98,12 @@ private bool tui_widget_select_input(Widget *widget, InputEvent input_event){
         break;
     }
 
-    return state->overlay_open;
+    return tui_widget_overlay_is_open();
 }
-
-// private void tui_widget_select_close(Widget *widget){
-//     WidgetSelectState *state = widget->state;
-//     state->overlay_open = false;
-// }
 
 private void tui_widget_select_overlay(Widget *widget){
     WidgetSelectData  *data  = widget->data;
-    WidgetSelectState *state = widget->state;
 
-    if(!state->overlay_open) return;
     tui_layer_begin(LAYER_WIDGETS_OVERLAY_DO_NOT_USE, LAYOUT_SINGLE_PANEL);
         tui_panel_begin(SLOT_MAIN);
             for(size_t i = 0; i < data->options_count; i++){
@@ -134,8 +114,7 @@ private void tui_widget_select_overlay(Widget *widget){
                     .storage      = data->storage,
                     .storage_size = sizeof(size_t),
                     .value        = &data->options[i].value,
-                    //TODO:
-                    // .on_select    = &tui_widget_select_close
+                    .on_select    = &tui_widget_overlay_close
                 );
             }
         tui_panel_end();
@@ -165,15 +144,9 @@ void tui_widget_select_(const char *widget_id, WidgetSelectParams *params){
         }
     }
 
-    WidgetSelectState *widget_state = (WidgetSelectState *)tui_widget_state(
-        widget_id,
-        sizeof(WidgetSelectState)
-    );
-
     Widget new_widget = {
         .id        = widget_id,
         .data      = widget_data,
-        .state     = widget_state,
         .size.w    = widget_data->label_width + widget_data->option_width + 2,
         .size.h    = 1 + PADDING,
         .focusable = true,

@@ -26,7 +26,7 @@ int main(void)
 	tui_register_page(PAGE_SECONDARY_ID, &PAGE_SECONDARY);
 
 	//comienzo de la app
-	tui_navigate_to(PAGE_SECONDARY_ID); //definimos la primera pagina o home
+	tui_navigate_to(PAGE_EXAMPLE_ID); //definimos la primera pagina o home
 	tui_run_loop();
 
 	//mensaje de salida

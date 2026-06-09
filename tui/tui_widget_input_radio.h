@@ -46,7 +46,7 @@ private void tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i
     WidgetInputRadioData *widget_data = widget->data;
     bool is_selected = tui_widget_input_radio_is_selected(widget_data);
 
-    static const uint8_t RADIO_ON[4]  = u8"●";
+    static const uint8_t RADIO_ON[4]  = u8"◉";
     static const uint8_t RADIO_OFF[4] = u8"○";
     const uint8_t *radio = is_selected ? RADIO_ON : RADIO_OFF;
     size_t radio_width   = 1; //utf8_str_display_width(radio);

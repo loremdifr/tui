@@ -221,24 +221,28 @@ private void tui_reset_hotkeys(void){
 	tui_register_key_hint(I18N_HINT_OK_KEY, I18N_HINT_OK_TEXT);
 
 	//scroll
-	//TODO: this should somehow detect if the active panel is scrollable
-	tui_register_key(KEY_PAGEUP,    KEY_MOD_NONE,  &tui_panel_scroll_up);
-	tui_register_key(KEY_PAGEDOWN,  KEY_MOD_NONE,  &tui_panel_scroll_down);
-	tui_register_key_hint(I18N_HINT_SCROLL_KEY, I18N_HINT_SCROLL_TEXT);
+	auto panel = tui_get_panel_focused();
+	if(tui_is_panel_scrollable(panel)){
+		tui_register_key(KEY_PAGEUP,    KEY_MOD_NONE,  &tui_panel_scroll_up);
+		tui_register_key(KEY_PAGEDOWN,  KEY_MOD_NONE,  &tui_panel_scroll_down);
+		tui_register_key_hint(I18N_HINT_SCROLL_KEY, I18N_HINT_SCROLL_TEXT);
+	}
 
 	//tab to select panels
-	//TODO: this should be contingent on there being more than 1 panel
-	tui_register_key_hint(I18N_HINT_SWITCH_PANEL_KEY, I18N_HINT_SWITCH_PANEL_TEXT);
-	tui_register_key(KEY_TAB,      KEY_MOD_NONE,  &tui_cursor_next_panel);
-	tui_register_key(KEY_BACKTAB,  KEY_MOD_SHIFT, &tui_cursor_prev_panel);
+	auto layer = tui_get_layer_focused();
+	if(layer->panel_count > 1){
+		tui_register_key_hint(I18N_HINT_SWITCH_PANEL_KEY, I18N_HINT_SWITCH_PANEL_TEXT);
+		tui_register_key(KEY_TAB,      KEY_MOD_NONE,  &tui_cursor_next_panel);
+		tui_register_key(KEY_BACKTAB,  KEY_MOD_SHIFT, &tui_cursor_prev_panel);
+	}
 
 	//esc to navigate back
-	//TODO: this should be contingent on there even being a back in the nav
-	tui_register_key(KEY_ESCAPE, KEY_MOD_NONE,  &tui_navigate_back);
-	tui_register_key_hint(I18N_HINT_BACK_KEY, I18N_HINT_BACK_TEXT);
+	if(NAV_HISTORY.count > 1){
+		tui_register_key(KEY_ESCAPE, KEY_MOD_NONE,  &tui_navigate_back);
+		tui_register_key_hint(I18N_HINT_BACK_KEY, I18N_HINT_BACK_TEXT);
+	}
 
-	//ALT+F4 to Close the App!
-	//TODO: this should be contingent on there even being a back in the nav
+	//ALT+Q to Close the App!
 	tui_register_key(KEY_Q, KEY_MOD_ALT,  &tui_quit);
 	tui_register_key_hint(I18N_HINT_QUIT_KEY, I18N_HINT_QUIT_TEXT);
 
@@ -276,8 +280,8 @@ private void tui_render_header(Screen *screen){
 }
 
 private void tui_render_hotkeys(Screen *screen){
-    screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
-    auto separator = u8" ● ";
+    screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
+    auto separator = u8" • ";
 
     size_t max_width = screen->size.w; //in characters/cells
     size_t max_size = max_width * 4 + 1; //4 bytes for u8 + terminator
@@ -300,7 +304,9 @@ private void tui_render_hotkeys(Screen *screen){
         if(i != HOTKEY_HINTS.total - 1){
         	//last hotkey doesnt have separator
         	//TODO: use the max_width instead?
+        	screen_format(NORMAL, COLOR_BLUE, COLOR_BLACK);
             utf8_str_concat(hint_text, separator);
+            screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
         }
 
         //add hint to the display_str

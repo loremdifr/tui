@@ -43,7 +43,10 @@ typedef enum {
     SLOT_RIGHT,
 } PanelSlot;
 
+//forward declares
 typedef struct Widget Widget;
+typedef struct PageLayer PageLayer;
+
 typedef bool (*WidgetInputFunction  )(Widget *widget, InputEvent input_event);
 typedef void (*WidgetRenderFunction )(Widget *widget, Screen *screen, vec2i position);
 typedef void (*WidgetOverlayFunction)(Widget *widget);
@@ -109,6 +112,11 @@ void tui_panel_scroll_to(int widget_index); //TODO: widget index or widget point
 void tui_panel_scroll_up(void);
 void tui_panel_scroll_down(void);
 
+PageLayer *tui_get_layer_focused(void);
+bool tui_is_panel_scrollable(Panel *panel);
+Panel *tui_get_panel_focused(void);
+Panel *tui_get_panel_building(void);
+
 #ifdef TUI_LAYOUT_IMPL
 
 private constexpr int PADDING = 1;
@@ -116,7 +124,7 @@ private constexpr int BORDER = 1;
 private constexpr int TUI_PANELS_MAX = 12;
 private constexpr int TUI_WIDGET_STATES_MAX = TUI_PANELS_MAX * TUI_WIDGETS_IN_PANEL_MAX;
 
-typedef struct {
+struct PageLayer {
     PageLayout   layout;
     bool         shrink;
     bool         focused;
@@ -128,7 +136,7 @@ typedef struct {
     const char  *widget_focused[TUI_PANELS_MAX]; //one id per panel
     uint8_t      widget_auto_id; //IDs are global to the layer,
                                  //in case the user wants to move widgest around
-} PageLayer;
+};
 
 typedef struct {
     const char *widget_id;
@@ -151,6 +159,8 @@ typedef struct {
     PageLayerKind layer_focused;
     Screen      *screen;
     Arena       *arena_frame;
+    bool         widget_overlay_active; //because the widgets are encapsulated,
+                                        // we have to manage their overlay state from here.
 } LayoutState;
 
 private LayoutState LAYOUT_STATE = {
@@ -160,7 +170,20 @@ private LayoutState LAYOUT_STATE = {
         [LAYER_WIDGETS_OVERLAY_DO_NOT_USE] = {.panel_building = -1, .shrink = true},
     },
     .arena_frame = nullptr,
+    .widget_overlay_active = false,
 };
+
+void tui_widget_overlay_open(void) {
+    LAYOUT_STATE.widget_overlay_active = true;
+}
+
+void tui_widget_overlay_close(void) {
+    LAYOUT_STATE.widget_overlay_active = false;
+}
+
+bool tui_widget_overlay_is_open(void) {
+    return LAYOUT_STATE.widget_overlay_active;
+}
 
 private void tui_widget_row_begin(Panel *panel);
 private void tui_widget_row_push(Panel *panel, Widget *widget);
@@ -282,6 +305,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
 
     //panel scroll
     if(!panel->focused) return;
+    if(!tui_is_panel_scrollable(panel)) return;
     constexpr int scrollbar_padding = 2;
     auto from = (vec2i){
         .x = panel->outer_rect.pos.x + panel->outer_rect.size.x -1,
@@ -299,12 +323,16 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
     }
 }
 
-private PageLayer *tui_get_layer_focused(){
+PageLayer *tui_get_layer_focused(){
     PageLayer *layer_focused = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_focused];
     return layer_focused;
 }
 
-private Panel *tui_get_panel_focused(){
+bool tui_is_panel_scrollable(Panel *panel){
+   return panel->widgets_rect.size.h > panel->inner_rect.size.h;
+}
+
+Panel *tui_get_panel_focused(){
     PageLayer *layer_focused = tui_get_layer_focused();
     return &(layer_focused->panels[layer_focused->panel_focused]);
 }
@@ -683,7 +711,8 @@ bool tui_widget_focused_input(InputEvent input_event){
 
 private void tui_layout_evaluate_layer_focused(void){
     //decide focused layer first, from top to bottom
-    for(PageLayerKind layer_idx = LAYER_WIDGETS_OVERLAY_DO_NOT_USE; layer_idx >= 0; layer_idx--){
+    // for(PageLayerKind layer_idx = LAYER_WIDGETS_OVERLAY_DO_NOT_USE; layer_idx >= 0; layer_idx--){
+    for(int layer_idx = 2; layer_idx >= 0; layer_idx--){
         PageLayer *layer = &LAYOUT_STATE.layers[layer_idx];
 
         //if any of its panels has any widget at all, then it's the focused one
@@ -706,6 +735,8 @@ void tui_layout_render(){
             for(int j = 0; j < panel->widget_count; j++){
                 Widget *widget = &panel->widgets[j];
                 if(!widget->overlay) continue;
+                if(!widget->focused) continue;
+                if(!LAYOUT_STATE.widget_overlay_active) continue;
                 widget->overlay(widget);
             }
         }
@@ -762,8 +793,11 @@ void tui_layout_reset(void){
         arena_reset(LAYOUT_STATE.arena_frame);
     }
 
+    Arena *saved_arena_frame = LAYOUT_STATE.arena_frame;
+    Arena *saved_widget_arena = WIDGET_REGISTRY.arena;
+
     //reset widgets registry
-    WIDGET_REGISTRY = (WidgetStateRegistry){ .arena = nullptr};
+    WIDGET_REGISTRY = (WidgetStateRegistry){ .arena = saved_widget_arena };
 
     //reset state
     LAYOUT_STATE = (LayoutState){
@@ -772,7 +806,7 @@ void tui_layout_reset(void){
             [LAYER_OVERLAY]                    = {.panel_building = -1, .shrink = true},
             [LAYER_WIDGETS_OVERLAY_DO_NOT_USE] = {.panel_building = -1, .shrink = true},
         },
-        .arena_frame = nullptr,
+        .arena_frame = saved_arena_frame,
     };
 }
 
@@ -847,7 +881,8 @@ void tui_cursor_next_panel(void){
 void tui_cursor_prev_panel(void){
     PageLayer *layer_focused = tui_get_layer_focused();
     if(layer_focused->panel_count <= 1) return;
-    int next_panel = (layer_focused->panel_focused - 1) % layer_focused->panel_count;
+    //we cant do it the same way as the other because the % operator in C is UB with negative numbers
+    int next_panel = (layer_focused->panel_focused + layer_focused->panel_count - 1) % layer_focused->panel_count;
     layer_focused->panel_focused = (uint8_t)next_panel;
 }
 

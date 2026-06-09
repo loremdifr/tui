@@ -113,15 +113,16 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         );
     }
 
+    //caret
     if(widget->focused && state->editing && state->caret_show){
         int caret_x = position.x + data->label_width + (int)(state->cursor - state->scroll);
         if(state->cursor < data->string.length){
-            // Over a character: Invert character colors
+            //care is on a character, invert that character color
             screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
             auto char_substr = string_substr(&data->string, state->cursor, state->cursor + 1);
             screen_set_string(screen, caret_x, position.y, &char_substr);
         }else{
-            // At the end: Solid block
+            //simple solid block
             screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
             screen_set_utf8(screen, caret_x, position.y, u8"█");
         }
@@ -133,6 +134,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
     }
 
+    //underline
     tui_draw_line(screen, u8"‾",
         (vec2i){
             .x = position.x + data->label_width,
@@ -168,29 +170,29 @@ private void tui_widget_input_text_move_word(Widget *widget, int direction){
     if(direction < 0){ // Left
         if(curr == 0) return;
         curr--;
-        do{
-            // skip spaces
+        // skip spaces
+        while(curr > 0){
             auto curr_char = string_byte_pos_from_index(&widget_data->string, curr);
             if(widget_data->string.data[curr_char] != ' ') break;
             curr--;
-        }while(curr > 0);
+        }
 
         // go to start of word = skip until space
-        do{
+        while(curr > 0){
             auto next_char = string_byte_pos_from_index(&widget_data->string, curr-1);
             if(widget_data->string.data[next_char] == ' ') break;
             curr--;
-        }while(curr > 0);
+        }
 
     }else{ //right
         if(curr >= widget_data->string.length) return;
 
         // skip curr word = skip until space
-        do{
+        while(curr < widget_data->string.length){
             auto next_char = string_byte_pos_from_index(&widget_data->string, curr+1);
             if(widget_data->string.data[next_char] == ' ') break;
             curr++;
-        }while(curr < widget_data->string.length);
+        }
     }
 
     widget_state->cursor = curr;
@@ -239,14 +241,20 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
         case KEY_LEFT:
             if(!widget_state->editing) break;
             tui_widget_input_text_reset_cursor(widget);
-            if(key.ctrl) tui_widget_input_text_move_word(widget, -1);
-            tui_widget_input_text_move_cursor(widget, -1);
+            if(key.ctrl){
+                tui_widget_input_text_move_word(widget, -1);
+            }else{
+                tui_widget_input_text_move_cursor(widget, -1);
+            }
             break;
         case KEY_RIGHT:
             if(!widget_state->editing) break;
             tui_widget_input_text_reset_cursor(widget);
-            if(key.ctrl) tui_widget_input_text_move_word(widget, +1);
-            tui_widget_input_text_move_cursor(widget, +1);
+            if(key.ctrl){
+                tui_widget_input_text_move_word(widget, +1);
+            }else{
+                tui_widget_input_text_move_cursor(widget, +1);
+            }
             break;
         case KEY_BACKSPACE:
             if(!widget_state->editing) break;
