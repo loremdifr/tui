@@ -191,11 +191,7 @@ private void tui_widget_row_push(Panel *panel, Widget *widget);
 private void tui_widget_row_end(Panel *panel);
 
 private inline int center_in_container(int base, int length, int container_length){
-    base += container_length / 2 - length / 2;
-    //cant do -1 on h above because it's an int and it doesnt accumulate the 0.5 after division
-    //we do it twice separatedly to avoid reaching negativess
-    if(base > 1) base--;
-    if(base > 1) base--;
+    base += (container_length - length + 1) / 2;
     return base;
 }
 
@@ -633,12 +629,12 @@ private void tui_widget_row_push(Panel *panel, Widget *widget){
     //should NOT modify the widgets_rect !
 
     //HEIGHT: biggest widget height remains
-    panel->curr_row_size.h += widget->size.h;
+    if(widget->size.h > panel->curr_row_size.h){
+        panel->curr_row_size.h = widget->size.h;
+    }
 
     //WIDTH:  widget width is always added to row width
-    if(widget->size.w > panel->curr_row_size.w){
-        panel->curr_row_size.w = widget->size.w;
-    }
+    panel->curr_row_size.w += widget->size.w;
 }
 
 private void tui_widget_row_end(Panel *panel){
