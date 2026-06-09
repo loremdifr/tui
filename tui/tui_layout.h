@@ -279,7 +279,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
         if (i >= panel->widget_count - 1) break; //no more panels, break early
 
         //hay siguiente?
-        Widget *next_widget = (i < panel->widget_count - 2)
+        Widget *next_widget = (i < panel->widget_count - 1)
             ? &panel->widgets[i + 1]
             : nullptr;
 
