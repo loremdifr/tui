@@ -64,7 +64,7 @@ struct Widget {
     WidgetOverlayFunction overlay;
 };
 
-private constexpr int TUI_WIDGETS_IN_PANEL_MAX = 32;
+private constexpr int TUI_WIDGETS_IN_PANEL_MAX = 64;
 typedef struct {
     PanelSlot slot;
     bool      focused;
