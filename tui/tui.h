@@ -508,10 +508,6 @@ void tui_run_loop(void){
 #endif //TUI_WINDOWS
 
 	while(!APP_STATE.exit){
-		// RESET HOTKEYS:
-		// we do this every frame to make it more convenient to the user
-		tui_reset_hotkeys();
-
         APP_STATE.curr_frame_time = get_curr_time();
         APP_STATE.frame_delta = APP_STATE.curr_frame_time - APP_STATE.prev_frame_time;
 
@@ -532,6 +528,10 @@ void tui_run_loop(void){
 		//before the input processing pass!
 		tui_layout_prepare(&APP_STATE.next_screen, active_page->layout);
 		active_page->render(); // <- this actually creates the widgets
+
+		// RESET HOTKEYS:
+		// we do this every frame to make it more convenient to the user
+		tui_reset_hotkeys();
 
 		//NOTE: The order is important! it is from deeper control upwards.
 		//      Any of those functions returning true will consume the event
