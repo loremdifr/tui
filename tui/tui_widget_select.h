@@ -9,11 +9,15 @@ typedef struct {
 } WidgetSelectOption;
 
 typedef struct {
+    WidgetSelectOption *values;
+    size_t count;
+} WidgetSelectOptions;
+
+typedef struct {
     bool                 is_inline;
     const uint8_t       *label;
     size_t              *storage;
-    WidgetSelectOption  *options;
-    size_t               options_count;
+    WidgetSelectOptions   options;
 } WidgetSelectParams;
 
 #define tui_widget_select(widget_id, ...) \
@@ -24,36 +28,32 @@ void tui_widget_select_(const char *widget_id, WidgetSelectParams *params);
 #ifdef TUI_WIDGET_SELECT_IMPL
 
 typedef struct {
-    const uint8_t       *label;
     size_t              *storage;
-    WidgetSelectOption  *options;
-    size_t               options_count;
+    const uint8_t       *label;
     size_t               label_width;
-    size_t               option_width;
+    WidgetSelectOptions   options;
 } WidgetSelectData;
 
-private size_t tui_widget_select_selected_index(WidgetSelectData *data){
-    if(data->storage == nullptr) return 0;
-    for(size_t i = 0; i < data->options_count; i++){
-        if(data->options[i].value == *data->storage){
-            return i;
+private const uint8_t *tui_widget_select_label(WidgetSelectData *data){
+    if(data == nullptr) return u8"";
+    if(data->options.count == 0) return u8"";
+    size_t selected_index = 0;
+    if(data->storage != nullptr){
+        for(size_t i = 0; i < data->options.count; i++){
+            if(data->options.values[i].value == *data->storage){
+                selected_index = i;
+                break;
+            }
         }
     }
-    return 0;
-}
-
-private const uint8_t *tui_widget_select_option_label(WidgetSelectData *data, size_t index){
-    if(data == nullptr) return u8"";
-    if(index >= data->options_count) return u8"";
-    return data->options[index].label;
+    return data->options.values[selected_index].label;
 }
 
 private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i position){
     WidgetSelectData  *data = widget->data;
 
-    size_t selected_index         = tui_widget_select_selected_index(data);
-    const uint8_t *selected_label = tui_widget_select_option_label(data, selected_index);
-    size_t selected_width         = utf8_str_display_width(selected_label);
+    auto selected_label   = tui_widget_select_label(data);
+    size_t selected_width = utf8_str_display_width(selected_label);
 
     if(widget->focused){
         screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
@@ -65,7 +65,7 @@ private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i posi
     screen_set_utf8_str(screen, position.x + (int)data->label_width, position.y, selected_label);
     screen_set_utf8_str(
         screen,
-        position.x + (int)data->label_width + (int)data->option_width,
+        position.x + (int)data->label_width + selected_width,
         position.y,
         u8" ▼"
     );
@@ -73,7 +73,7 @@ private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i posi
 }
 
 private bool tui_widget_select_input(Widget *widget, InputEvent input_event){
-    WidgetSelectData  *data = widget->data;
+    WidgetSelectData *data = widget->data;
 
     switch (input_event.input_type) {
     case INPUT_KEY:
@@ -102,18 +102,18 @@ private bool tui_widget_select_input(Widget *widget, InputEvent input_event){
 }
 
 private void tui_widget_select_overlay(Widget *widget){
-    WidgetSelectData  *data  = widget->data;
+    WidgetSelectData *data = widget->data;
 
     tui_layer_begin(LAYER_WIDGETS_OVERLAY_DO_NOT_USE, LAYOUT_SINGLE_PANEL);
         tui_panel_begin(SLOT_MAIN);
-            for(size_t i = 0; i < data->options_count; i++){
+            for(size_t i = 0; i < data->options.count; i++){
                 char *option_id = tui_create_widget_id();
                 tui_widget_input_radio(
                     option_id,
-                    .label        = data->options[i].label,
+                    .label        = data->options.values[i].label,
                     .storage      = data->storage,
                     .storage_size = sizeof(size_t),
-                    .value        = &data->options[i].value,
+                    .value        = &data->options.values[i].value,
                     .on_select    = &tui_widget_overlay_close
                 );
             }
@@ -124,30 +124,23 @@ private void tui_widget_select_overlay(Widget *widget){
 void tui_widget_select_(const char *widget_id, WidgetSelectParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
-    assert(params->options != nullptr);
-    assert(params->options_count > 0);
+    assert(params->options.count > 0);
 
     WidgetSelectData *widget_data = (WidgetSelectData *)arena_alloc(
         LAYOUT_STATE.arena_frame, sizeof(WidgetSelectData)
     );
-    widget_data->label         = params->label;
-    widget_data->storage       = params->storage;
-    widget_data->options       = params->options;
-    widget_data->options_count = params->options_count;
-    widget_data->label_width   = utf8_str_display_width(params->label);
-    widget_data->option_width  = 0;
+    widget_data->storage        = params->storage;
+    widget_data->label          = params->label;
+    widget_data->label_width    = utf8_str_display_width(params->label);
+    widget_data->options        = params->options;
 
-    for(size_t i = 0; i < params->options_count; i++){
-        size_t option_width = utf8_str_display_width(params->options[i].label);
-        if(option_width > widget_data->option_width){
-            widget_data->option_width = option_width;
-        }
-    }
+    auto selected_label   = tui_widget_select_label(widget_data);
+    size_t selected_width = utf8_str_display_width(selected_label);
 
     Widget new_widget = {
         .id        = widget_id,
         .data      = widget_data,
-        .size.w    = widget_data->label_width + widget_data->option_width + 2,
+        .size.w    = widget_data->label_width + selected_width + 2,
         .size.h    = 1 + PADDING,
         .focusable = true,
         .is_inline = params->is_inline,

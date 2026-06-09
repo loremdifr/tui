@@ -57,8 +57,11 @@
 #define TUI_WIDGET_SELECT_IMPL
 #include "tui_widget_select.h"
 
-#define TUI_WIDGET_SELECT_AUTOCOMPLETE_IMPL
-#include "tui_widget_select_autocomplete.h"
+#define TUI_WIDGET_SELECT_FILTER_IMPL
+#include "tui_widget_select_filter.h"
+
+#define TUI_WIDGET_CANVAS_IMPL
+#include "tui_widget_canvas.h"
 
 // Pages and nav ---------------------------------------------------------------
 
@@ -528,6 +531,10 @@ void tui_run_loop(void){
 		//before the input processing pass!
 		tui_layout_prepare(&APP_STATE.next_screen, active_page->layout);
 		active_page->render(); // <- this actually creates the widgets
+
+		//NOTE: we HAVE to call this here because they must exists
+		//      because hotkey registration time
+		tui_layout_build_widget_overlays();
 
 		// RESET HOTKEYS:
 		// we do this every frame to make it more convenient to the user

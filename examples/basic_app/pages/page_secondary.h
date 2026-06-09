@@ -40,6 +40,69 @@ private void page_secondary_process(float delta_time){
     (void)delta_time;
 }
 
+private void page_secondary_canvas_render(Screen *screen, vec2i position){
+    // Test tui_draw_box
+    tui_draw_box(screen, (rect2i){
+        .pos = position,
+        .size = {.w = 10, .h = 5}
+    });
+
+    // Test tui_draw_box_connected
+    tui_draw_box_connected(screen, (rect2i){
+        .pos = {.x = position.x + 12, .y = position.y},
+        .size = {.w = 10, .h = 5}
+    });
+    // Add another box to test connection
+    tui_draw_box_connected(screen, (rect2i){
+        .pos = {.x = position.x + 17, .y = position.y + 2},
+        .size = {.w = 10, .h = 5}
+    });
+
+    // Test tui_draw_line
+    screen_format(NORMAL, COLOR_RED, COLOR_BLACK);
+    tui_draw_line(screen, (uint8_t *)u8"*",
+        (vec2i){.x = position.x, .y = position.y + 6},
+        (vec2i){.x = position.x + 20, .y = position.y + 6}
+    );
+
+    // Test tui_draw_line_bresenham (diagonal)
+    screen_format(NORMAL, COLOR_GREEN, COLOR_BLACK);
+    tui_draw_line_bresenham(screen, (uint8_t *)u8"x",
+        (vec2i){.x = position.x, .y = position.y + 7},
+        (vec2i){.x = position.x + 10, .y = position.y + 12}
+    );
+
+    // Test tui_draw_rect
+    screen_format(NORMAL, COLOR_YELLOW, COLOR_BLACK);
+    tui_draw_rect(screen, (uint8_t *)u8"█", (rect2i){
+        .pos = {.x = position.x + 15, .y = position.y + 8},
+        .size = {.w = 4, .h = 3}
+    });
+
+    // Test tui_draw_circ
+    screen_format(NORMAL, COLOR_CYAN, COLOR_BLACK);
+    tui_draw_circ(screen, (uint8_t *)u8"o", (rect2i){
+        .pos = {.x = position.x + 22, .y = position.y + 10},
+        .size = {.w = 8, .h = 5}
+    });
+
+    // Test tui_draw_line_braille
+    screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
+    tui_draw_line_braille(screen,
+        (vec2i){.x = position.x + 35, .y = position.y + 2},
+        (vec2i){.x = position.x + 55, .y = position.y + 10}
+    );
+
+    // Test tui_draw_box_title
+    rect2i box_with_title = {
+        .pos = {.x = position.x + 40, .y = position.y + 12},
+        .size = {.w = 15, .h = 3}
+    };
+    tui_draw_box(screen, box_with_title);
+    auto title = string_from((uint8_t *)u8"Title", 5);
+    tui_draw_box_title(screen, box_with_title, &title, BOX_TITLE_TOP_LEFT);
+}
+
 private void page_secondary_render(void){
 	tui_panel_begin(SLOT_SIDEBAR);
 		tui_widget_label(u8"SIDEBAR");
@@ -52,6 +115,11 @@ private void page_secondary_render(void){
 
 		tui_widget_label(u8"Welcome to the Secondary Page!");
 		tui_widget_label(u8"Press [P] to toggle popup");
+
+        tui_widget_canvas("CANVAS_TEST",
+            .size = {.w = 60, .h = 15},
+            .on_render = &page_secondary_canvas_render
+        );
 
 		tui_widget_button("BACK_BUTTON",
 			.label=u8"Back",

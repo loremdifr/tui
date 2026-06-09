@@ -98,6 +98,7 @@ void *tui_widget_state(const char *widget_id, size_t data_size);
 //used in the actual rendering process by tui.h
 void tui_layout_prepare(Screen *screen, PageLayout layout);
 bool tui_widget_focused_input(InputEvent input_event);
+void tui_layout_build_widget_overlays(void);
 void tui_layout_render(void); //actually rendering to the screen
 void tui_layout_reset(void);
 
@@ -726,7 +727,7 @@ private void tui_layout_evaluate_layer_focused(void){
     }
 }
 
-void tui_layout_render(){
+void tui_layout_build_widget_overlays(void){
     //first of all we build the widget overlays, very important!
      for(PageLayerKind layer_idx = LAYER_BASE; layer_idx < LAYER_COUNT; layer_idx++){
         PageLayer *layer = &LAYOUT_STATE.layers[layer_idx];
@@ -744,7 +745,9 @@ void tui_layout_render(){
 
     //evaluate focused layer
     tui_layout_evaluate_layer_focused();
+}
 
+void tui_layout_render(){
     //render layers from bottom to top
     for(PageLayerKind layer_idx = 0; layer_idx < LAYER_COUNT; layer_idx++){
         PageLayer *layer = &LAYOUT_STATE.layers[layer_idx];
@@ -759,7 +762,7 @@ void tui_layout_render(){
                 //TODO: to make this work nicely with multipanel layouts we should
                 //     instead: shrink all panels first, then shrink the layer, and
                 //     then expand the panels back up to fill the layer.
-                tui_panel_shrink_to_widgets(panel);
+                // tui_panel_shrink_to_widgets(panel);
             }
 
             //clear panel background
