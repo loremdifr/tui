@@ -227,8 +227,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
 
     bool inline_row = false;
     int inline_row_width = 0;
-    // int inline_row_total = 0;
-    // int inline_row_index = 0;
+    int inline_row_height = 0;
 
     for (int i = 0; i < panel->widget_count; i++){
         Widget *widget = &panel->widgets[i];
@@ -241,8 +240,9 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
             for(int j = i; j < panel->widget_count; j++){
                 Widget *next_widget = &panel->widgets[j];
                 if(!next_widget->is_inline) break;
-                // inline_row_total++;
                 inline_row_width += next_widget->size.x;
+                if(next_widget->size.h > inline_row_height)
+                    inline_row_height = next_widget->size.h;
             }
 
             //centrar row horizontally
@@ -258,9 +258,8 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
         if(!widget->is_inline){
             inline_row = false;
             inline_row_width = 0;
-            // inline_row_total = 0;
-            // inline_row_index = 0;
-            //immediately move cursor down
+            //immediately move the cursor down
+            inline_row_height = 0;
 
             // center next widget horizontally
             cursor_pos.x = center_in_container(
@@ -270,10 +269,14 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
             );
         }
 
+        //center inline widgets vertically between them
+        int render_y = widget->is_inline
+            ? center_in_container(cursor_pos.y, widget->size.h, inline_row_height)
+            : cursor_pos.y;
         //render current widget INSIDE panel boundaires
-        if(cursor_pos.y >= panel->inner_rect.pos.y
-        && cursor_pos.y < panel->inner_rect.pos.y + panel->inner_rect.size.h){
-            tui_render_widget(widget, cursor_pos);
+        if(render_y >= panel->inner_rect.pos.y
+        && render_y < panel->inner_rect.pos.y + panel->inner_rect.size.h){
+            tui_render_widget(widget, (vec2i){.x = cursor_pos.x, .y = render_y});
         }
 
         if (i >= panel->widget_count - 1) break; //no more panels, break early
@@ -291,7 +294,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
         }else{
             //move cursror below the widget we just rendered
             cursor_pos.x = BASE_X;
-            cursor_pos.y += widget->size.y;
+            cursor_pos.y += widget->is_inline ? inline_row_height : widget->size.y;
         }
 
     }
