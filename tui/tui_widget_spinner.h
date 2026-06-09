@@ -103,8 +103,8 @@ void tui_widget_spinner_(const uint8_t *text){
 	    .id        = widget_id,
 	    .data      = widget_data,
         .state     = widget_state,
-	    .size.w    = utf8_str_length(text)
-    				+ PADDING * 2 + 1,
+	    .size.w    = utf8_str_display_width(text)
+    				+ PADDING * 2 + 2,
 	    .size.h    = 1 + PADDING,
 	    .focusable = false,
 	    .render    = &tui_widget_spinner_render,

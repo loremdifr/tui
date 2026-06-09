@@ -42,12 +42,12 @@ void tui_widget_label_(const uint8_t *text){
     widget_data->text = text;
     String text_str = string_from((uint8_t *)text, strlen((char *)text));
     widget_data->lines = string_split_into_lines(&text_str, max_width - 1);
-    size_t text_length = utf8_str_length(text);
+    size_t text_display_width = utf8_str_display_width(text);
 
     Widget new_widget  = {
         .id        = tui_create_widget_id(),
         .data      = widget_data,
-        .size.w    = min(text_length, max_width),
+        .size.w    = min(text_display_width, max_width),
         .size.h    = max(1, widget_data->lines.count + PADDING),
         .focusable = false,
         .render    = &tui_widget_label_render,

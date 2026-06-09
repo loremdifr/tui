@@ -75,7 +75,7 @@ void tui_widget_button_(const char *widget_id, WidgetButtonParams *params){
     Widget new_widget      = {
 	    .id        = widget_id,
 	    .data      = widget_data,
-	    .size.w    = utf8_str_length(params->label)
+	    .size.w    = utf8_str_display_width(params->label)
     				+ BORDER * 2
     				+ PADDING * 2,
 	    .size.h    = 1 + BORDER * 2,

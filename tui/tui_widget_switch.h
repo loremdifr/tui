@@ -92,7 +92,7 @@ private void tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
     screen_format(BOLD, COLOR_WHITE, frame->bg_color);
     screen_set_utf8_str(
         screen,
-        position.x + PADDING + utf8_str_length(widget_data->label),
+        position.x + PADDING + utf8_str_display_width(widget_data->label),
         position.y,
         frame->text
     );
@@ -142,7 +142,7 @@ void tui_widget_switch_(const char *widget_id, WidgetSwitchParams *params){
 	    .id        = widget_id,
 	    .data      = widget_data,
         .state     = widget_state,
-	    .size.w    = utf8_str_length(params->label)
+	    .size.w    = utf8_str_display_width(params->label)
     				+ PADDING * 2 + 4,
 	    .size.h    = 1 + PADDING,
 	    .focusable = true,

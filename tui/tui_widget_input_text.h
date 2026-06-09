@@ -308,12 +308,12 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
 		LAYOUT_STATE.arena_frame, sizeof(WidgetInputTextData)
 	);
     widget_data->label       = params->label;
-    widget_data->label_width = utf8_str_length(params->label);
+    widget_data->label_width = utf8_str_display_width(params->label);
     widget_data->placeholder = params->placeholder;
     widget_data->string      = string_from(params->storage, params->capacity);
 
     // change size based on placeholder
-    size_t placeholder_len = utf8_str_length(params->placeholder);
+    size_t placeholder_len = utf8_str_display_width(params->placeholder);
     widget_data->input_width = max(16, (int)placeholder_len + 1);
 
     //widget state persist across frames
