@@ -63,6 +63,9 @@
 #define TUI_WIDGET_CANVAS_IMPL
 #include "tui_widget_canvas.h"
 
+#define TUI_WIDGET_VIRTUAL_LIST_IMPL
+#include "tui_widget_virtual_list.h"
+
 // Pages and nav ---------------------------------------------------------------
 
 typedef void (*InitFunction   )(void);

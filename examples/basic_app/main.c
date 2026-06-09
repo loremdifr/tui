@@ -13,6 +13,9 @@
 #define TUI_IMPL
 #include "tui/tui.h"
 
+#define PAGE_VIRTUAL_LIST_IMPL
+#include "pages/page_virtual_list.h"
+
 #define PAGE_SECONDARY_IMPL
 #include "pages/page_secondary.h"
 
@@ -24,6 +27,7 @@ int main(void)
 	//setup de la app
 	tui_register_page(PAGE_EXAMPLE_ID, &PAGE_EXAMPLE);
 	tui_register_page(PAGE_SECONDARY_ID, &PAGE_SECONDARY);
+	tui_register_page(PAGE_VIRTUAL_LIST_ID, &PAGE_VIRTUAL_LIST);
 
 	//comienzo de la app
 	tui_navigate_to(PAGE_EXAMPLE_ID); //definimos la primera pagina o home

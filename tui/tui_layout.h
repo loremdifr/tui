@@ -161,7 +161,7 @@ typedef struct {
     Screen      *screen;
     Arena       *arena_frame;
     bool         widget_overlay_active; //because the widgets are encapsulated,
-                                        // we have to manage their overlay state from here.
+                                         // we have to manage their overlay state from here.
 } LayoutState;
 
 private LayoutState LAYOUT_STATE = {
@@ -270,7 +270,8 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
             ? center_in_container(cursor_pos.y, widget->size.h, inline_row_height)
             : cursor_pos.y;
         //render current widget INSIDE panel boundaires
-        if(render_y >= panel->inner_rect.pos.y
+        int render_bottom = render_y + widget->size.h;
+        if(render_bottom > panel->inner_rect.pos.y
         && render_y < panel->inner_rect.pos.y + panel->inner_rect.size.h){
             tui_render_widget(widget, (vec2i){.x = cursor_pos.x, .y = render_y});
         }

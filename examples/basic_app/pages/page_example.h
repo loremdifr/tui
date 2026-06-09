@@ -2,6 +2,7 @@
 #define PAGE_EXAMPLE_H
 
 #include "tui/tui.h"
+#include "page_virtual_list.h"
 #include <string.h>
 
 #define PAGE_EXAMPLE_ID "PAGE_EXAMPLE_1"
@@ -79,6 +80,10 @@ private void close_example_popup(void){
 
 private void navigate_to_secondary(void){
 	tui_navigate_to(PAGE_SECONDARY_ID);
+}
+
+private void navigate_to_virtual_list(void){
+	tui_navigate_to(PAGE_VIRTUAL_LIST_ID);
 }
 
 private void page_example_init(void){
@@ -207,6 +212,11 @@ private void page_example_render(void){
 		tui_widget_button("BUTTON_GO_SECONDARY",
 			.label=u8"Go to Page 2",
 			.on_click=&navigate_to_secondary,
+			.is_inline=true,
+		);
+		tui_widget_button("BUTTON_GO_VIRTUAL_LIST",
+			.label=u8"Virtual List Demo",
+			.on_click=&navigate_to_virtual_list,
 			.is_inline=true,
 		);
 		tui_widget_button("BUTTON_2",
