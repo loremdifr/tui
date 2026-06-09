@@ -365,8 +365,8 @@ private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot, int base_w, int
     //panel size is based on the slot it occupies in the type of layout
 
     int sidebar_w = min(30, 0.4 * base_w);
-    int header_h  = 6;
-    int footer_h  = 6;
+    int header_h  = 8;
+    int footer_h  = 8;
 
     switch(layout){
     case LAYOUT_SINGLE_PANEL: return (rect2i){.size = {base_w, base_h}};
