@@ -33,6 +33,7 @@ typedef struct {
     FunctionPointer        on_select;
     FunctionPointer        on_click;
     size_t                 max_label_width;
+    Panel                 *panel;
 } WidgetVirtualListData;
 
 typedef struct {
@@ -63,8 +64,7 @@ private void tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2
     state->last_render_y = position.y;
     state->has_rendered  = true;
 
-    Panel *panel   = tui_get_panel_focused();
-    rect2i visible = panel->inner_rect;
+    rect2i visible = data->panel->inner_rect;
     int first      = max(0, visible.pos.y - position.y);
     int last       = min(data->items.count, visible.pos.y + visible.size.h - position.y);
 
@@ -136,6 +136,7 @@ void tui_widget_virtual_list_(const char *widget_id, WidgetVirtualListParams *pa
     data->items     = params->items;
     data->on_select = params->on_select;
     data->on_click  = params->on_click;
+    data->panel     = tui_get_panel_building();
 
     size_t max_label_width = 0;
     for(size_t i = 0; i < params->items.count; i++){
