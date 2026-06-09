@@ -202,8 +202,8 @@ private void tui_render_widget(Widget *widget, vec2i position){
 }
 
 private void tui_render_panel(Panel *panel, int scroll_offset){
-    const int BASE_X = panel->outer_rect.pos.x + BORDER + PADDING + 1;
-    const int BASE_Y = panel->outer_rect.pos.y + BORDER + PADDING;
+    const int BASE_X = panel->outer_rect.pos.x + BORDER + PADDING;
+    const int BASE_Y = panel->outer_rect.pos.y + BORDER;// + PADDING;
     vec2i cursor_pos = {.x = BASE_X, .y = BASE_Y};
 
     //in case there was still an open inline row from the definition pass

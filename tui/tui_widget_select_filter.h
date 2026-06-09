@@ -50,6 +50,17 @@ private void tui_widget_select_filter_overlay(Widget *widget){
                 .capacity=sizeof(state->query),
             );
         tui_panel_end();
+        // direct LAYOUT_STATE access: auto-focus text input and enter editing mode
+        {
+            PageLayer *overlay_layer = &LAYOUT_STATE.layers[LAYER_WIDGETS_OVERLAY_DO_NOT_USE];
+            overlay_layer->widget_focused[0] = state->query_widget_id;
+            overlay_layer->panel_focused = 0;
+            Panel *top_panel = &overlay_layer->panels[0];
+            WidgetInputTextState *text_state = top_panel->widgets[top_panel->widget_count - 1].state;
+            text_state->editing = true;
+            text_state->caret_show = true;
+            text_state->caret_last_shown = get_curr_time();
+        }
         tui_panel_begin(SLOT_MAIN);
             if(state->options.count > 0){
                 for(size_t i = 0; i < state->options.count; i++){
@@ -123,13 +134,17 @@ private bool tui_widget_select_filter_input(Widget *widget, InputEvent input_eve
             }else{
                 tui_widget_overlay_open();
                 state->query[0] = '\0';
-                //TODO: start editing the query widget immediately
             }
             return true;
         case KEY_ESCAPE:
             if(!tui_widget_overlay_is_open()) break;
             tui_widget_overlay_close();
             return true;
+        case KEY_UP:
+        case KEY_DOWN:
+            // let these bubble to hotkeys for cross-panel navigation while overlay is open
+            if(!tui_widget_overlay_is_open()) break;
+            return false;
         case KEY_NONE:
         default:
             break;

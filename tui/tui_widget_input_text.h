@@ -267,6 +267,10 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
             tui_widget_input_text_reset_cursor(widget);
             tui_widget_input_text_delete(widget);
             break;
+        case KEY_UP:
+        case KEY_DOWN:
+            // don't consume, let bubble to hotkeys for widget navigation
+            return false;
         case KEY_ENTER:
             widget_state->editing = !widget_state->editing;
             if(widget_state->editing) tui_widget_input_text_reset_cursor(widget);
