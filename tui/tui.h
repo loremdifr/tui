@@ -36,6 +36,9 @@
 #define TUI_WIDGET_LABEL_IMPL
 #include "tui_widget_label.h"
 
+#define TUI_WIDGET_FIGLET_IMPL
+#include "tui_widget_figlet.h"
+
 #define TUI_WIDGET_SWITCH_IMPL
 #include "tui_widget_switch.h"
 
