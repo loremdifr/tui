@@ -27,12 +27,13 @@ String string_from_substr(const uint8_t *storage, size_t start_index, size_t end
 void   string_insert_at(String *str, size_t index, uint32_t new_char);
 void   string_delete_at(String *str, size_t index);
 Lines  string_split_into_lines(String *str, size_t max_width);
+size_t string_byte_pos_from_index(const String *str, size_t index);
 
 // IMPLEMENTATION BELOW
 #ifdef TUI_STRING_IMPL
 
 //TODO: could this be utf8_pos_at() ?
-private size_t string_byte_pos_from_index(const String *str, size_t index){
+size_t string_byte_pos_from_index(const String *str, size_t index){
     // in utf8 strings the amount of bytes does not correspond to the amount
     // of characters. characters in utf8 are variable length.
     if (index == 0) return 0;

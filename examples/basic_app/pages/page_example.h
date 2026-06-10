@@ -201,6 +201,8 @@ private void page_example_render(void){
 			.label=u8"Autocomplete: ",
 			.storage=&selected_option2,
 			.options_function=&filter_options,
+			.placeholder=u8"Type to filter...",
+			.empty_options_label=u8"No options found",
 			// .options_capacity=arr_size(SELECT_OPTIONS2)
 		);
 

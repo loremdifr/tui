@@ -6,7 +6,7 @@
 #include "tui_screen.h"
 #include <string.h>
 // #include <stdlib.h>
-#include "tui_string.h"
+#include "tui_utils.h"
 
 typedef struct {
     //base widget params
@@ -22,6 +22,15 @@ typedef struct {
         tui_widget_input_text_((widget_id), &(WidgetInputTextParams){__VA_ARGS__})
 
 void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params);
+
+//text edit
+void tui_text_edit_reset_cursor(bool *caret_show, double *caret_last_shown);
+void tui_text_edit_move_cursor(size_t *cursor, int move, size_t length);
+void tui_text_edit_tick_caret(double *caret_last_shown, bool *caret_show, double interval);
+void tui_text_edit_insert(String *str, size_t *cursor, uint32_t unicode);
+void tui_text_edit_delete(String *str, size_t cursor);
+void tui_text_edit_backspace(String *str, size_t *cursor);
+
 
 #ifdef TUI_WIDGET_INPUT_TEXT_IMPL
 
@@ -44,9 +53,8 @@ typedef struct {
 
 
 private void tui_widget_input_text_reset_cursor(Widget *widget){
-    WidgetInputTextState *widget_state = widget->state;
-    widget_state->caret_show = true;
-    widget_state->caret_last_shown = get_curr_time();
+    WidgetInputTextState *s = widget->state;
+    tui_text_edit_reset_cursor(&s->caret_show, &s->caret_last_shown);
 }
 
 private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
@@ -65,11 +73,7 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     }
 
     //caret logic
-    double now = get_curr_time();
-    if(now - state->caret_last_shown > state->caret_interval){
-        state->caret_show = !state->caret_show;
-        state->caret_last_shown = now;
-    }
+    tui_text_edit_tick_caret(&state->caret_last_shown, &state->caret_show, state->caret_interval);
 
     screen_set_utf8_str(
         screen,
@@ -149,14 +153,9 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
 }
 
 private inline void tui_widget_input_text_move_cursor(Widget *widget, int move){
-    if(move == 0) return;
-    WidgetInputTextData  *widget_data  = widget->data;
-    WidgetInputTextState *widget_state = widget->state;
-    widget_state->cursor = (size_t)clamp(
-        (int)widget_state->cursor + move,
-        0,
-        (int)widget_data->string.length
-    );
+    WidgetInputTextData  *d = widget->data;
+    WidgetInputTextState *s = widget->state;
+    tui_text_edit_move_cursor(&s->cursor, move, d->string.length);
 }
 
 private void tui_widget_input_text_move_word(Widget *widget, int direction){
@@ -200,24 +199,21 @@ private void tui_widget_input_text_move_word(Widget *widget, int direction){
 }
 
 private void tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
-    WidgetInputTextData  *widget_data  = widget->data;
-    WidgetInputTextState *widget_state = widget->state;
-
-    string_insert_at(&widget_data->string, widget_state->cursor, unicode);
-    tui_widget_input_text_move_cursor(widget, +1);
+    WidgetInputTextData  *d = widget->data;
+    WidgetInputTextState *s = widget->state;
+    tui_text_edit_insert(&d->string, &s->cursor, unicode);
 }
 
 private void tui_widget_input_text_delete(Widget *widget){
-    WidgetInputTextData  *widget_data  = widget->data;
-    WidgetInputTextState *widget_state = widget->state;
-    string_delete_at(&widget_data->string, widget_state->cursor);
+    WidgetInputTextData  *d = widget->data;
+    WidgetInputTextState *s = widget->state;
+    tui_text_edit_delete(&d->string, s->cursor);
 }
 
 private void tui_widget_input_text_backspace(Widget *widget){
-    WidgetInputTextState *widget_state = widget->state;
-    if(widget_state->cursor == 0) return;
-    tui_widget_input_text_move_cursor(widget, -1);
-    tui_widget_input_text_delete(widget);
+    WidgetInputTextData  *d = widget->data;
+    WidgetInputTextState *s = widget->state;
+    tui_text_edit_backspace(&d->string, &s->cursor);
 }
 
 private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event){
@@ -356,6 +352,40 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
         .render    = &tui_widget_input_text_render,
     };
     tui_widget_push(new_widget);
+}
+
+//text edit helpers
+void tui_text_edit_reset_cursor(bool *caret_show, double *caret_last_shown){
+    *caret_show = true;
+    *caret_last_shown = get_curr_time();
+}
+
+void tui_text_edit_move_cursor(size_t *cursor, int move, size_t length){
+    if(move == 0) return;
+    *cursor = (size_t)clamp((int)*cursor + move, 0, (int)length);
+}
+
+void tui_text_edit_tick_caret(double *caret_last_shown, bool *caret_show, double interval){
+    double now = get_curr_time();
+    if(now - *caret_last_shown > interval){
+        *caret_show = !*caret_show;
+        *caret_last_shown = now;
+    }
+}
+
+void tui_text_edit_insert(String *str, size_t *cursor, uint32_t unicode){
+    string_insert_at(str, *cursor, unicode);
+    tui_text_edit_move_cursor(cursor, +1, str->length);
+}
+
+void tui_text_edit_delete(String *str, size_t cursor){
+    string_delete_at(str, cursor);
+}
+
+void tui_text_edit_backspace(String *str, size_t *cursor){
+    if(*cursor == 0) return;
+    tui_text_edit_move_cursor(cursor, -1, str->length);
+    tui_text_edit_delete(str, *cursor);
 }
 
 #endif //TUI_WIDGET_INPUT_TEXT_IMPL

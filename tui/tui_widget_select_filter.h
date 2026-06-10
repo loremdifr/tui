@@ -7,8 +7,7 @@
 #include "tui_widget_select.h"
 #include <string.h>
 // #include <stdlib.h>
-#include "tui_string.h"
-#include "tui_text_edit.h"
+#include "tui_utils.h"
 
 //TODO: right now we're duplicating A LOT of code from the text input
 //      might wanna see if we can refactor that out into helpers
