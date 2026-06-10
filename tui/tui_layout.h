@@ -62,6 +62,7 @@ struct Widget {
     WidgetInputFunction   input;
     WidgetRenderFunction  render;
     WidgetOverlayFunction overlay;
+    const uint8_t        *overlay_title;
 };
 
 private constexpr int TUI_WIDGETS_IN_PANEL_MAX = 64;
@@ -162,6 +163,7 @@ typedef struct {
     Arena       *arena_frame;
     bool         widget_overlay_active; //because the widgets are encapsulated,
                                          // we have to manage their overlay state from here.
+    const uint8_t *widget_overlay_title; //temporary, set during overlay build for title rendering
 } LayoutState;
 
 private LayoutState LAYOUT_STATE = {
@@ -736,6 +738,7 @@ private void tui_layout_evaluate_layer_focused(void){
 
 void tui_layout_build_widget_overlays(void){
     //first of all we build the widget overlays, very important!
+    LAYOUT_STATE.widget_overlay_title = NULL;
      for(PageLayerKind layer_idx = LAYER_BASE; layer_idx < LAYER_COUNT; layer_idx++){
         PageLayer *layer = &LAYOUT_STATE.layers[layer_idx];
         for(int i = 0; i < layer->panel_count; i++){
@@ -745,6 +748,7 @@ void tui_layout_build_widget_overlays(void){
                 if(!widget->overlay) continue;
                 if(!widget->focused) continue;
                 if(!LAYOUT_STATE.widget_overlay_active) continue;
+                LAYOUT_STATE.widget_overlay_title = widget->overlay_title;
                 widget->overlay(widget);
             }
         }
@@ -776,6 +780,23 @@ void tui_layout_render(){
             //render
             int scroll_offset = layer->panel_scroll_offset[i];
             tui_render_panel(panel, scroll_offset);
+        }
+
+        //draw overlay title on the box of the last overlay panel
+        if(layer_idx == LAYER_WIDGETS_OVERLAY_DO_NOT_USE
+        && LAYOUT_STATE.widget_overlay_title != NULL
+        && layer->panel_count > 0){
+            Panel *panel = &layer->panels[layer->panel_count - 1];
+            String title_str = string_from(
+                (uint8_t *)LAYOUT_STATE.widget_overlay_title,
+                strlen((const char *)LAYOUT_STATE.widget_overlay_title)
+            );
+            tui_draw_box_title(
+                LAYOUT_STATE.screen,
+                panel->outer_rect,
+                &title_str,
+                BOX_TITLE_TOP_LEFT
+            );
         }
 
         //reset the layer state for next frame

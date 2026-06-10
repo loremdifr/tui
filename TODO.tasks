@@ -10,7 +10,7 @@ REFACTOR:
 	[ ]	overlay layer
 		[x]	ability to actually close the subwidget @done (26-06-09 02:52)
 		[ ]	ability to autoselect a widget, or even auto-enable it (filtering for example)
-		[ ]	window title?
+		[x]	window title? @done (26-06-09 23:16)
 	[x]	bug: SEGFAULT while going to another page @done (26-06-09 02:52)
 	[x]	bug: shift+tab does not cycle properly, it goes to negative one somehow @done (26-06-09 03:03)
 	[ ] task: radio buttons have too much vertical padding
