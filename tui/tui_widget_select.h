@@ -18,6 +18,7 @@ typedef struct {
     const uint8_t       *label;
     size_t              *storage;
     WidgetSelectOptions   options;
+    const uint8_t       *overlay_title;
 } WidgetSelectParams;
 
 #define tui_widget_select(widget_id, ...) \
@@ -147,6 +148,7 @@ void tui_widget_select_(const char *widget_id, WidgetSelectParams *params){
         .input     = &tui_widget_select_input,
         .render    = &tui_widget_select_render,
         .overlay   = &tui_widget_select_overlay,
+        .overlay_title = params->overlay_title ? params->overlay_title : params->label,
     };
     tui_widget_push(new_widget);
 }

@@ -12,6 +12,7 @@ typedef struct {
     const uint8_t          *label;
     size_t                 *storage;
     WidgetOptionsFunction   options_function;
+    const uint8_t          *overlay_title;
 } WidgetSelectFilterParams;
 
 #define tui_widget_select_filter(widget_id, ...) \
@@ -194,6 +195,7 @@ void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *
         .input     = &tui_widget_select_filter_input,
         .render    = &tui_widget_select_filter_render,
         .overlay   = &tui_widget_select_filter_overlay,
+        .overlay_title = params->overlay_title ? params->overlay_title : params->label,
     };
     tui_widget_push(new_widget);
 }
