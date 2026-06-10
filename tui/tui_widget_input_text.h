@@ -269,7 +269,9 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
             break;
         case KEY_UP:
         case KEY_DOWN:
-            // don't consume, let bubble to hotkeys for widget navigation
+        case KEY_TAB:
+        case KEY_BACKTAB:
+            // don't consume, let bubble to hotkeys for widget/panel navigation
             return false;
         case KEY_ENTER:
             widget_state->editing = !widget_state->editing;
@@ -277,8 +279,9 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
             return true; //important! otherwise it bubbles up!
             break;
         case KEY_ESCAPE:
+            if(!widget_state->editing) return false;
             widget_state->editing = false;
-            return true; //important! otherwise it bubbles up!
+            return true;
             break;
         //any way to differentiate key from special key?
         case KEY_NONE:

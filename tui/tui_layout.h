@@ -138,6 +138,7 @@ struct PageLayer {
     const char  *widget_focused[TUI_PANELS_MAX]; //one id per panel
     uint8_t      widget_auto_id; //IDs are global to the layer,
                                  //in case the user wants to move widgest around
+    rect2i       rect;          //bounding box of the layer, set after layout
 };
 
 typedef struct {
@@ -482,6 +483,8 @@ private void tui_layer_shrink(PageLayer *layer) {
         total_rect.size.h = bottom - total_rect.pos.y;
     }
 
+    layer->rect = total_rect;
+
     //center
     int offset_x = (LAYOUT_STATE.base_size.w - total_rect.size.w) / 2 - total_rect.pos.x;
     int offset_y = (LAYOUT_STATE.base_size.h - total_rect.size.h) / 2 - total_rect.pos.y;
@@ -492,6 +495,9 @@ private void tui_layer_shrink(PageLayer *layer) {
         layer->panels[i].inner_rect.pos.x += offset_x;
         layer->panels[i].inner_rect.pos.y += offset_y;
     }
+
+    layer->rect.pos.x += offset_x;
+    layer->rect.pos.y += offset_y;
 }
 
 void tui_layer_begin(PageLayerKind layer, PageLayout layout){
@@ -773,6 +779,13 @@ void tui_layout_render(){
             Panel *panel = &layer->panels[i];
             panel->focused = layer->focused && (layer->panel_focused == i);
 
+            //unfocus all widgets in non-focused panels so they
+            //render normally while preserving focus history
+            if(!panel->focused){
+                for(int j = 0; j < panel->widget_count; j++){
+                    panel->widgets[j].focused = false;
+                }
+            }
 
             //clear panel background
             tui_draw_rect(LAYOUT_STATE.screen, u8" ", panel->outer_rect);
@@ -782,18 +795,17 @@ void tui_layout_render(){
             tui_render_panel(panel, scroll_offset);
         }
 
-        //draw overlay title on the box of the last overlay panel
+        //draw overlay title on the top-most border of the overlay
         if(layer_idx == LAYER_WIDGETS_OVERLAY_DO_NOT_USE
         && LAYOUT_STATE.widget_overlay_title != NULL
         && layer->panel_count > 0){
-            Panel *panel = &layer->panels[layer->panel_count - 1];
             String title_str = string_from(
                 (uint8_t *)LAYOUT_STATE.widget_overlay_title,
                 strlen((const char *)LAYOUT_STATE.widget_overlay_title)
             );
             tui_draw_box_title(
                 LAYOUT_STATE.screen,
-                panel->outer_rect,
+                layer->rect,
                 &title_str,
                 BOX_TITLE_TOP_LEFT
             );

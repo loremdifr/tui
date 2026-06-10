@@ -15,7 +15,7 @@ BUILD_DIR := $(addprefix $(CURDIR)/, build)
 EXEC_NAME  = $(BUILD_DIR)$(DS)main$(EXT)
 INCLUDES_DIR := $(addprefix $(CURDIR)/, ../..)
 
-CFLAGS = -fdiagnostics-color=always -W -Werror -Wextra -pedantic -g -std=gnu23
+CFLAGS = -fdiagnostics-color=always -W -Werror -Wextra -pedantic -g -std=gnu23 -Wno-missing-field-initializers
 CFLAGS+= -I$(INCLUDES_DIR)
 
 LD_LIBS = -lm
