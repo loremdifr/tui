@@ -11,8 +11,14 @@ typedef struct {
     Lines          lines;
 } WidgetLabelData;
 
-#define tui_widget_label(text) tui_widget_label_((const uint8_t*)(text))
-void tui_widget_label_(const uint8_t *text);
+typedef struct {
+	const void    *text;
+	bool           is_inline;
+} WidgetLabelParams;
+
+#define tui_widget_label(...) \
+    tui_widget_label_(&(WidgetLabelParams){__VA_ARGS__})
+void tui_widget_label_(WidgetLabelParams *params);
 
 #ifdef TUI_WIDGET_LABEL_IMPL
 
@@ -32,17 +38,17 @@ private void tui_widget_label_render(Widget *widget, Screen *screen, vec2i posit
 }
 
 //public
-void tui_widget_label_(const uint8_t *text){
+void tui_widget_label_(WidgetLabelParams *params){
     Panel *panel = tui_get_panel_building();
     auto max_width = max(0, panel->inner_rect.size.width);
 
 	WidgetLabelData *widget_data = (WidgetLabelData *)arena_alloc(
 		LAYOUT_STATE.arena_frame, sizeof(WidgetLabelData)
 	);
-    widget_data->text = text;
-    String text_str = string_from((uint8_t *)text, strlen((char *)text));
+    widget_data->text = (const uint8_t*)params->text;
+    String text_str = string_from((uint8_t *)params->text, strlen(params->text));
     widget_data->lines = string_split_into_lines(&text_str, max_width - 1);
-    size_t text_display_width = utf8_str_display_width(text);
+    size_t text_display_width = utf8_str_display_width((const uint8_t*)params->text);
 
     Widget new_widget  = {
         .id        = tui_create_widget_id(),
@@ -50,6 +56,7 @@ void tui_widget_label_(const uint8_t *text){
         .size.w    = min(text_display_width, max_width),
         .size.h    = max(1, widget_data->lines.count + PADDING),
         .focusable = false,
+        .is_inline = params->is_inline,
         .render    = &tui_widget_label_render,
     };
     tui_widget_push(new_widget);
