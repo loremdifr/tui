@@ -66,6 +66,12 @@
 #define TUI_WIDGET_VIRTUAL_LIST_IMPL
 #include "tui_widget_virtual_list.h"
 
+#define TUI_WIDGET_TABLE_IMPL
+#include "tui_widget_table.h"
+
+#define TUI_WIDGET_TABS_IMPL
+#include "tui_widget_tabs.h"
+
 // Pages and nav ---------------------------------------------------------------
 
 typedef void (*InitFunction   )(void);
@@ -504,7 +510,9 @@ void tui_run_loop(void){
 	//init pages
 	for(int i = 0; i < PAGE_ROUTES.routes_count; i++){
 		//TODO: possible optimization, delay until first page visit
-		PAGE_ROUTES.routes[i].page->init();
+		if(PAGE_ROUTES.routes[i].page->init != nullptr){
+			PAGE_ROUTES.routes[i].page->init();
+		}
 	}
 
 #ifdef TUI_WINDOWS
@@ -527,7 +535,9 @@ void tui_run_loop(void){
 		APP_STATE.prev_frame_time = APP_STATE.curr_frame_time;
 
 		Page *active_page = tui_get_curr_page();
-		active_page->process(APP_STATE.frame_delta);
+		if(active_page->process != nullptr){
+			active_page->process(APP_STATE.frame_delta);
+		}
 
 		//prepare page render and create widgets,
 		//this is done here because widgets need to exist
@@ -547,7 +557,9 @@ void tui_run_loop(void){
 		//      Any of those functions returning true will consume the event
 		//      And it won't be passed to the next "layer"
 		tui_input_process(&tui_widget_focused_input);
-		tui_input_process(active_page->input);
+		if(active_page->input != nullptr){
+			tui_input_process(active_page->input);
+		}
 		tui_input_process(&tui_process_input_hotkeys);
 
 		screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK); //reset format

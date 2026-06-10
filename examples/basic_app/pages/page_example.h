@@ -3,6 +3,7 @@
 
 #include "tui/tui.h"
 #include "page_virtual_list.h"
+#include "page_table.h"
 #include <string.h>
 
 #define PAGE_EXAMPLE_ID "PAGE_EXAMPLE_1"
@@ -45,6 +46,14 @@ static WidgetSelectOption SELECT_OPTIONS2[] = {
 constexpr size_t name_length_max = 255;
 uint8_t *name;
 
+//tabs
+size_t TAB_SELECTED = 0;
+static WidgetTabOption TAB_OPTIONS[] = {
+    {.label = u8"Info",     .value = 0},
+    {.label = u8"Settings", .value = 1},
+    {.label = u8"About",    .value = 2},
+};
+
 private WidgetSelectOptions filter_options(const uint8_t *query){
 	const size_t max_options = 16;
 	WidgetSelectOptions opts = {
@@ -84,6 +93,10 @@ private void navigate_to_secondary(void){
 
 private void navigate_to_virtual_list(void){
 	tui_navigate_to(PAGE_VIRTUAL_LIST_ID);
+}
+
+private void navigate_to_table(void){
+	tui_navigate_to(PAGE_TABLE_ID);
 }
 
 private void page_example_init(void){
@@ -221,10 +234,23 @@ private void page_example_render(void){
 			.on_click=&navigate_to_virtual_list,
 			.is_inline=true,
 		);
+		tui_widget_button("BUTTON_GO_TABLE",
+			.label=u8"Table Demo",
+			.on_click=&navigate_to_table,
+			.is_inline=true,
+		);
 		tui_widget_button("BUTTON_2",
 			.label=u8"Salir",
 			.on_click=&tui_quit,
 			.is_inline=true,
+		);
+
+		tui_widget_tabs("TABS_1",
+			.storage = &TAB_SELECTED,
+			.tabs = {
+				.values = TAB_OPTIONS,
+				.count = arr_size(TAB_OPTIONS),
+			},
 		);
 
 		tui_widget_label("Press [Q] to quit");
