@@ -51,19 +51,21 @@ private void tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
         int tab_w   = max(TUI_TAB_MIN_WIDTH, label_w + 4);
         bool active = (int)i == selected_index;
 
+        //draw left side of tab
         auto fg_color = COLOR_BLACK;
-        auto bg_color = COLOR_GRAY;
+        auto bg_color = COLOR_DARK_WHITE;
+        if(active){
+            fg_color = (widget->focused) ? COLOR_MAGENTA : COLOR_WHITE;
+            bg_color = COLOR_DARK_MAGENTA;
+         }
 
-        if(!active){
-            auto fg_color = COLOR_WHITE;
-            auto bg_color = COLOR_DARK_WHITE;
-        }
-
-        if(widget->focused){
-            fg_color = COLOR_MAGENTA;
-        }
         screen_format(NORMAL, fg_color, bg_color);
-        screen_set_utf8(screen, tab_x, position.y, u8"⎸");
+        if(i != 0){
+            screen_set_utf8(screen, tab_x, position.y, u8"│");
+        }
+
+        //draw tab
+
         for(int x = tab_x + 1; x < tab_x + tab_w; x++){
             screen_set_char(screen, x, position.y, ' ');
         }
