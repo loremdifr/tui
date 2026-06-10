@@ -3,15 +3,15 @@
 
 #include "tui_layout.h"
 
+#define tui_widget_canvas(widget_id, ...) \
+        tui_widget_canvas_((widget_id), &(WidgetCanvasParams){__VA_ARGS__})
+
 typedef void (*CanvasRenderFunction)(Screen *screen, vec2i position);
 
 typedef struct {
     vec2i size;
     CanvasRenderFunction on_render;
 } WidgetCanvasData;
-
-#define tui_widget_canvas(widget_id, ...) \
-        tui_widget_canvas_((widget_id), &(WidgetCanvasParams){__VA_ARGS__})
 
 typedef struct {
     vec2i size;
@@ -24,7 +24,7 @@ void tui_widget_canvas_(const char *widget_id, WidgetCanvasParams *params);
 
 private void tui_widget_canvas_render(Widget *widget, Screen *screen, vec2i position){
     WidgetCanvasData *widget_data = widget->data;
-    if (widget_data->on_render) {
+    if(widget_data->on_render){
         widget_data->on_render(screen, position);
     }
 }

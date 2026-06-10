@@ -11,6 +11,9 @@ typedef struct {
     Lines          lines;
 } WidgetLabelData;
 
+//NOTE: because of how this is structured, it allows to be used like
+//      this with the macro below: tui_widget_label(u8"test")
+//      this is because in the expansion the order matters, so the *text must remain the first one!
 typedef struct {
 	const void    *text;
 	bool           is_inline;

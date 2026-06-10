@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define tui_widget_input_number(widget_id, ...) \
+        tui_widget_input_number_((widget_id), &(WidgetInputNumberParams){__VA_ARGS__})
+
 typedef struct {
     bool           is_inline;
     const uint8_t *label;
@@ -14,10 +17,9 @@ typedef struct {
     int            step;
 } WidgetInputNumberParams;
 
-#define tui_widget_input_number(widget_id, ...) \
-        tui_widget_input_number_((widget_id), &(WidgetInputNumberParams){__VA_ARGS__})
-
 void tui_widget_input_number_(const char *widget_id, WidgetInputNumberParams *params);
+
+//TODO: ideally we should be able to reuse a bit of the editing from the input_text somehow..
 
 #ifdef TUI_WIDGET_INPUT_NUMBER_IMPL
 
@@ -212,7 +214,12 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
         }
     }
 
-    screen_format(widget->focused ? BOLD : NORMAL, widget->focused ? COLOR_MAGENTA : COLOR_GRAY, COLOR_BLACK);
+    if(widget->focused){
+        screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
+    }else{
+        screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+    }
+
     tui_draw_line(
         screen,
         u8"‾",
