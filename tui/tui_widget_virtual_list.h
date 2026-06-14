@@ -3,6 +3,7 @@
 
 #include "tui_layout.h"
 
+//TODO: these are public so we should move them somewhere else and standardize this sort of stuff
 typedef struct {
     const uint8_t *label;
 } WidgetVirtualListItem;
@@ -18,12 +19,12 @@ typedef struct {
     WidgetVirtualListItems  items;
     FunctionPointer         on_select;
     FunctionPointer         on_click;
-} WidgetVirtualListParams;
+} _WidgetVirtualListParams;
 
 #define tui_widget_virtual_list(widget_id, ...) \
-        tui_widget_virtual_list_((widget_id), &(WidgetVirtualListParams){__VA_ARGS__})
+        tui_widget_virtual_list_((widget_id), &(_WidgetVirtualListParams){__VA_ARGS__})
 
-void tui_widget_virtual_list_(const char *widget_id, WidgetVirtualListParams *params);
+void tui_widget_virtual_list_(const char *widget_id, _WidgetVirtualListParams *params);
 
 #ifdef TUI_WIDGET_VIRTUAL_LIST_IMPL
 
@@ -34,15 +35,15 @@ typedef struct {
     FunctionPointer        on_click;
     size_t                 max_label_width;
     Panel                 *panel;
-} WidgetVirtualListData;
+} _WidgetVirtualListData;
 
 typedef struct {
     size_t selected_index;
     int    last_render_y;
     bool   has_rendered;
-} WidgetVirtualListState;
+} _WidgetVirtualListState;
 
-static void _tui_widget_virtual_list_auto_scroll(WidgetVirtualListState *state){
+static void _tui_widget_virtual_list_auto_scroll(_WidgetVirtualListState *state){
     if(!state->has_rendered) return;
 
     Panel *panel      = tui_get_panel_focused();
@@ -58,8 +59,8 @@ static void _tui_widget_virtual_list_auto_scroll(WidgetVirtualListState *state){
 }
 
 static void _tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetVirtualListData  *data  = widget->data;
-    WidgetVirtualListState *state = widget->state;
+    _WidgetVirtualListData  *data  = widget->data;
+    _WidgetVirtualListState *state = widget->state;
 
     state->last_render_y = position.y;
     state->has_rendered  = true;
@@ -87,8 +88,8 @@ static void _tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2
 }
 
 static bool _tui_widget_virtual_list_input(Widget *widget, InputEvent input_event){
-    WidgetVirtualListData  *data  = widget->data;
-    WidgetVirtualListState *state = widget->state;
+    _WidgetVirtualListData  *data  = widget->data;
+    _WidgetVirtualListState *state = widget->state;
 
     switch(input_event.input_type){
     case INPUT_KEY:
@@ -124,13 +125,13 @@ static bool _tui_widget_virtual_list_input(Widget *widget, InputEvent input_even
     return false;
 }
 
-void tui_widget_virtual_list_(const char *widget_id, WidgetVirtualListParams *params){
+void tui_widget_virtual_list_(const char *widget_id, _WidgetVirtualListParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
     assert(params->items.count > 0);
 
-    WidgetVirtualListData *data = (WidgetVirtualListData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetVirtualListData)
+    _WidgetVirtualListData *data = (_WidgetVirtualListData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetVirtualListData)
     );
     data->storage   = params->storage;
     data->items     = params->items;
@@ -145,8 +146,8 @@ void tui_widget_virtual_list_(const char *widget_id, WidgetVirtualListParams *pa
     }
     data->max_label_width = max_label_width;
 
-    WidgetVirtualListState *state = (WidgetVirtualListState *)tui_widget_state(
-        widget_id, sizeof(WidgetVirtualListState)
+    _WidgetVirtualListState *state = (_WidgetVirtualListState *)tui_widget_state(
+        widget_id, sizeof(_WidgetVirtualListState)
     );
     state->selected_index = *params->storage;
     //NOTE: last_render_y and has_rendered persist from render calls, do NOT reset here!!

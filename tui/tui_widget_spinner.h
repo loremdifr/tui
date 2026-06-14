@@ -11,7 +11,7 @@ void tui_widget_spinner_(const uint8_t *text);
 
 typedef struct {
 	const uint8_t  *label;
-} WidgetSpinnerData;
+} _WidgetSpinnerData;
 
 typedef struct {
     double  animation_started;
@@ -19,11 +19,11 @@ typedef struct {
     uint8_t frame_target;
     uint8_t frame_start;
     int8_t  frame_step;
-} WidgetSpinnerState;
+} _WidgetSpinnerState;
 
 static void _tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetSpinnerState *widget_state = widget->state;
-    WidgetSpinnerData *widget_data   = widget->data;
+    _WidgetSpinnerState *widget_state = widget->state;
+    _WidgetSpinnerData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {
         {.text=u8"⣇⠀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
         {.text=u8"⡏⠀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
@@ -86,17 +86,17 @@ static void _tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i pos
 
 //public
 void tui_widget_spinner_(const uint8_t *text){
-	WidgetSpinnerData *widget_data = (WidgetSpinnerData *)arena_alloc(
-		LAYOUT_STATE.arena_frame, sizeof(WidgetSpinnerData)
+	_WidgetSpinnerData *widget_data = (_WidgetSpinnerData *)arena_alloc(
+		LAYOUT_STATE.arena_frame, sizeof(_WidgetSpinnerData)
 	);
     widget_data->label = text;
 
     auto widget_id = tui_create_widget_id();
 
     //widget state persist across frames
-    auto widget_state = (WidgetSpinnerState *)tui_widget_state(
+    auto widget_state = (_WidgetSpinnerState *)tui_widget_state(
         widget_id,
-        sizeof(WidgetSpinnerState)
+        sizeof(_WidgetSpinnerState)
     );
 
     Widget new_widget = {

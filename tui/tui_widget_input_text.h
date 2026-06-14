@@ -16,12 +16,12 @@ typedef struct {
     const uint8_t *placeholder;
     uint8_t       *storage;
     size_t         capacity;
-} WidgetInputTextParams;
+} _WidgetInputTextParams;
 
 #define tui_widget_input_text(widget_id, ...) \
-        tui_widget_input_text_((widget_id), &(WidgetInputTextParams){__VA_ARGS__})
+        tui_widget_input_text_((widget_id), &(_WidgetInputTextParams){__VA_ARGS__})
 
-void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params);
+void tui_widget_input_text_(const char *widget_id, _WidgetInputTextParams *params);
 
 //text edit
 void tui_text_edit_reset_cursor(bool *caret_show, double *caret_last_shown);
@@ -40,7 +40,7 @@ typedef struct {
     size_t         input_width;
     const uint8_t *placeholder;
     String         string;
-} WidgetInputTextData;
+} _WidgetInputTextData;
 
 typedef struct {
     size_t cursor; // char index
@@ -49,17 +49,17 @@ typedef struct {
     bool   caret_show;
     double caret_interval;
     double caret_last_shown;
-} WidgetInputTextState;
+} _WidgetInputTextState;
 
 
 static void _tui_widget_input_text_reset_cursor(Widget *widget){
-    WidgetInputTextState *s = widget->state;
+    _WidgetInputTextState *s = widget->state;
     tui_text_edit_reset_cursor(&s->caret_show, &s->caret_last_shown);
 }
 
 static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetInputTextData  *data  = widget->data;
-    WidgetInputTextState *state = widget->state;
+    _WidgetInputTextData  *data  = widget->data;
+    _WidgetInputTextState *state = widget->state;
 
     // assert(state->cursor >= 0);
     // assert(state->scroll >= 0);
@@ -153,14 +153,14 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
 }
 
 static inline void _tui_widget_input_text_move_cursor(Widget *widget, int move){
-    WidgetInputTextData  *d = widget->data;
-    WidgetInputTextState *s = widget->state;
+    _WidgetInputTextData  *d = widget->data;
+    _WidgetInputTextState *s = widget->state;
     tui_text_edit_move_cursor(&s->cursor, move, d->string.length);
 }
 
 static void _tui_widget_input_text_move_word(Widget *widget, int direction){
-    WidgetInputTextData  *widget_data  = widget->data;
-    WidgetInputTextState *widget_state = widget->state;
+    _WidgetInputTextData  *widget_data  = widget->data;
+    _WidgetInputTextState *widget_state = widget->state;
 
     if(direction == 0) return;
     if(widget_data->string.length == 0) return;
@@ -199,26 +199,26 @@ static void _tui_widget_input_text_move_word(Widget *widget, int direction){
 }
 
 static void _tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
-    WidgetInputTextData  *d = widget->data;
-    WidgetInputTextState *s = widget->state;
+    _WidgetInputTextData  *d = widget->data;
+    _WidgetInputTextState *s = widget->state;
     tui_text_edit_insert(&d->string, &s->cursor, unicode);
 }
 
 static void _tui_widget_input_text_delete(Widget *widget){
-    WidgetInputTextData  *d = widget->data;
-    WidgetInputTextState *s = widget->state;
+    _WidgetInputTextData  *d = widget->data;
+    _WidgetInputTextState *s = widget->state;
     tui_text_edit_delete(&d->string, s->cursor);
 }
 
 static void _tui_widget_input_text_backspace(Widget *widget){
-    WidgetInputTextData  *d = widget->data;
-    WidgetInputTextState *s = widget->state;
+    _WidgetInputTextData  *d = widget->data;
+    _WidgetInputTextState *s = widget->state;
     tui_text_edit_backspace(&d->string, &s->cursor);
 }
 
 static bool _tui_widget_input_text_input(Widget *widget, InputEvent input_event){
-    WidgetInputTextData  *widget_data  = widget->data;
-    WidgetInputTextState *widget_state = widget->state;
+    _WidgetInputTextData  *widget_data  = widget->data;
+    _WidgetInputTextState *widget_state = widget->state;
     switch (input_event.input_type) {
     case INPUT_KEY:
         auto key = input_event.key_event;
@@ -304,12 +304,12 @@ static bool _tui_widget_input_text_input(Widget *widget, InputEvent input_event)
 }
 
 //public
-void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params){
+void tui_widget_input_text_(const char *widget_id, _WidgetInputTextParams *params){
     Panel *panel = tui_get_panel_building();
 
     //widget data
-	WidgetInputTextData *widget_data = (WidgetInputTextData *)arena_alloc(
-		LAYOUT_STATE.arena_frame, sizeof(WidgetInputTextData)
+	_WidgetInputTextData *widget_data = (_WidgetInputTextData *)arena_alloc(
+		LAYOUT_STATE.arena_frame, sizeof(_WidgetInputTextData)
 	);
     widget_data->label       = params->label;
     widget_data->label_width = utf8_str_display_width(params->label);
@@ -321,9 +321,9 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
     widget_data->input_width = max(16, (int)placeholder_len + 1);
 
     //widget state persist across frames
-    auto widget_state = (WidgetInputTextState *)tui_widget_state(
+    auto widget_state = (_WidgetInputTextState *)tui_widget_state(
         widget_id,
-        sizeof(WidgetInputTextState)
+        sizeof(_WidgetInputTextState)
     );
     if(widget_state->caret_interval == 0.0){
         widget_state->caret_interval = 0.5;

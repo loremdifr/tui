@@ -22,12 +22,12 @@ typedef struct {
     const uint8_t          *overlay_title;
     const uint8_t          *placeholder;
     const uint8_t          *empty_options_label;
-} WidgetSelectFilterParams;
+} _WidgetSelectFilterParams;
 
 #define tui_widget_select_filter(widget_id, ...) \
-        tui_widget_select_filter_((widget_id), &(WidgetSelectFilterParams){__VA_ARGS__})
+        tui_widget_select_filter_((widget_id), &(_WidgetSelectFilterParams){__VA_ARGS__})
 
-void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *params);
+void tui_widget_select_filter_(const char *widget_id, _WidgetSelectFilterParams *params);
 
 #ifdef TUI_WIDGET_SELECT_FILTER_IMPL
 
@@ -39,7 +39,7 @@ typedef struct {
     const uint8_t         *placeholder;
     const uint8_t         *empty_options_label;
     WidgetOptionsFunction  options_function;
-} WidgetSelectFilterData;
+} _WidgetSelectFilterData;
 
 typedef struct {
     uint8_t             query_buffer[128];
@@ -51,9 +51,9 @@ typedef struct {
     double              caret_last_shown;
     WidgetSelectOptions current_options;
     int                 selected_index;
-} WidgetSelectFilterState;
+} _WidgetSelectFilterState;
 
-static void _tui_widget_select_filter_update_options(WidgetSelectFilterData *data, WidgetSelectFilterState *state){
+static void _tui_widget_select_filter_update_options(_WidgetSelectFilterData *data, _WidgetSelectFilterState *state){
     if(data->options_function == nullptr) return;
     state->current_options = data->options_function(state->query.data);
     if(state->selected_index >= (int)state->current_options.count){
@@ -65,7 +65,7 @@ static void _tui_widget_select_filter_update_options(WidgetSelectFilterData *dat
     state->scroll = 0;
 }
 
-static void _tui_widget_select_filter_auto_scroll(WidgetSelectFilterState *state, int visible_rows){
+static void _tui_widget_select_filter_auto_scroll(_WidgetSelectFilterState *state, int visible_rows){
     if(state->selected_index < 0) return;
     if((int)state->scroll > state->selected_index){
         state->scroll = (size_t)state->selected_index;
@@ -76,8 +76,8 @@ static void _tui_widget_select_filter_auto_scroll(WidgetSelectFilterState *state
 }
 
 static void _tui_widget_select_filter_dropdown_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetSelectFilterData  *data  = widget->data;
-    WidgetSelectFilterState *state = widget->state;
+    _WidgetSelectFilterData  *data  = widget->data;
+    _WidgetSelectFilterState *state = widget->state;
 
     //scroll based on cursor location
     if(state->cursor > data->input_width){
@@ -151,8 +151,8 @@ static void _tui_widget_select_filter_dropdown_render(Widget *widget, Screen *sc
 }
 
 static bool _tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent input_event){
-    WidgetSelectFilterData  *data  = widget->data;
-    WidgetSelectFilterState *state = widget->state;
+    _WidgetSelectFilterData  *data  = widget->data;
+    _WidgetSelectFilterState *state = widget->state;
     bool text_changed = false;
 
     switch (input_event.input_type) {
@@ -239,8 +239,8 @@ static bool _tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent 
 }
 
 static void _tui_widget_select_filter_overlay(Widget *widget){
-    WidgetSelectFilterData  *data  = widget->data;
-    WidgetSelectFilterState *state = widget->state;
+    _WidgetSelectFilterData  *data  = widget->data;
+    _WidgetSelectFilterState *state = widget->state;
 
     //QUERY AGAIN!!!
     _tui_widget_select_filter_update_options(data, state);
@@ -292,7 +292,7 @@ static void _tui_widget_select_filter_overlay(Widget *widget){
     tui_layer_end();
 }
 
-static const uint8_t* _tui_widget_select_filter_label(WidgetSelectFilterData *data, WidgetSelectFilterState *state){
+static const uint8_t* _tui_widget_select_filter_label(_WidgetSelectFilterData *data, _WidgetSelectFilterState *state){
     if(state == nullptr) return u8"";
     if(state->current_options.count == 0) return u8"";
 
@@ -311,8 +311,8 @@ static const uint8_t* _tui_widget_select_filter_label(WidgetSelectFilterData *da
 }
 
 static void _tui_widget_select_filter_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetSelectFilterData  *data  = widget->data;
-    WidgetSelectFilterState *state = widget->state;
+    _WidgetSelectFilterData  *data  = widget->data;
+    _WidgetSelectFilterState *state = widget->state;
 
     auto selected_label  = _tui_widget_select_filter_label(data, state);
     size_t selected_width = utf8_str_display_width(selected_label);
@@ -334,7 +334,7 @@ static void _tui_widget_select_filter_render(Widget *widget, Screen *screen, vec
 }
 
 static bool _tui_widget_select_filter_input(Widget *widget, InputEvent input_event){
-    WidgetSelectFilterState *state = widget->state;
+    _WidgetSelectFilterState *state = widget->state;
 
     switch(input_event.input_type){
     case INPUT_KEY:
@@ -371,7 +371,7 @@ static bool _tui_widget_select_filter_input(Widget *widget, InputEvent input_eve
     return tui_widget_overlay_is_open();
 }
 
-void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *params){
+void tui_widget_select_filter_(const char *widget_id, _WidgetSelectFilterParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
     assert(params->placeholder != nullptr);
@@ -379,8 +379,8 @@ void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *
 
     int placeholder_len = (int)utf8_str_display_width(params->placeholder);
 
-    WidgetSelectFilterData *widget_data = (WidgetSelectFilterData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetSelectFilterData)
+    _WidgetSelectFilterData *widget_data = (_WidgetSelectFilterData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetSelectFilterData)
     );
     widget_data->storage             = params->storage;
     widget_data->label               = params->label;
@@ -390,9 +390,9 @@ void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *
     widget_data->empty_options_label = params->empty_options_label;
     widget_data->input_width         = max(16, placeholder_len + 1);
 
-    auto widget_state = (WidgetSelectFilterState *)tui_widget_state(
+    auto widget_state = (_WidgetSelectFilterState *)tui_widget_state(
         widget_id,
-        sizeof(WidgetSelectFilterState)
+        sizeof(_WidgetSelectFilterState)
     );
     if(widget_state->caret_interval == 0.0){
         widget_state->caret_interval = 0.5;

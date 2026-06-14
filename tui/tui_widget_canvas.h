@@ -4,34 +4,34 @@
 #include "tui_layout.h"
 
 #define tui_widget_canvas(widget_id, ...) \
-        tui_widget_canvas_((widget_id), &(WidgetCanvasParams){__VA_ARGS__})
+        tui_widget_canvas_((widget_id), &(_WidgetCanvasParams){__VA_ARGS__})
 
 typedef void (*CanvasRenderFunction)(Screen *screen, vec2i position);
 
 typedef struct {
     vec2i size;
     CanvasRenderFunction on_render;
-} WidgetCanvasData;
+} _WidgetCanvasData;
 
 typedef struct {
     vec2i size;
     CanvasRenderFunction on_render;
-} WidgetCanvasParams;
+} _WidgetCanvasParams;
 
-void tui_widget_canvas_(const char *widget_id, WidgetCanvasParams *params);
+void tui_widget_canvas_(const char *widget_id, _WidgetCanvasParams *params);
 
 #ifdef TUI_WIDGET_CANVAS_IMPL
 
 static void _tui_widget_canvas_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetCanvasData *widget_data = widget->data;
+    _WidgetCanvasData *widget_data = widget->data;
     if(widget_data->on_render){
         widget_data->on_render(screen, position);
     }
 }
 
-void tui_widget_canvas_(const char *widget_id, WidgetCanvasParams *params){
-    WidgetCanvasData *widget_data = (WidgetCanvasData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetCanvasData)
+void tui_widget_canvas_(const char *widget_id, _WidgetCanvasParams *params){
+    _WidgetCanvasData *widget_data = (_WidgetCanvasData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetCanvasData)
     );
     widget_data->size      = params->size;
     widget_data->on_render = params->on_render;

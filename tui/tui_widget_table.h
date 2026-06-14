@@ -3,6 +3,7 @@
 
 #include "tui_layout.h"
 
+//TODO: this is public so we should move it somewhere else and standardize this sort of stuff
 typedef struct {
     const uint8_t *label;
 } WidgetTableCell;
@@ -12,32 +13,32 @@ typedef struct {
     WidgetTableCell *cells;       // [row_count * column_count] flat row-major
     size_t           row_count;
     size_t           column_count;
-} WidgetTableData;
+} _WidgetTableData;
 
 typedef struct {
     bool               is_inline;
     size_t            *storage;
-    WidgetTableData    table;
+    _WidgetTableData    table;
     FunctionPointer    on_select;
     FunctionPointer    on_click;
-} WidgetTableParams;
+} _WidgetTableParams;
 
 #define tui_widget_table(widget_id, ...) \
-        tui_widget_table_((widget_id), &(WidgetTableParams){__VA_ARGS__})
+        tui_widget_table_((widget_id), &(_WidgetTableParams){__VA_ARGS__})
 
-void tui_widget_table_(const char *widget_id, WidgetTableParams *params);
+void tui_widget_table_(const char *widget_id, _WidgetTableParams *params);
 
 #ifdef TUI_WIDGET_TABLE_IMPL
 
 typedef struct {
     size_t            *storage;
-    WidgetTableData    table;
+    _WidgetTableData    table;
     FunctionPointer    on_select;
     FunctionPointer    on_click;
     int               *column_widths; // [column_count] computed display widths
     int                total_width;
     Panel             *panel;
-} WidgetTableDataInternal;
+} _WidgetTableDataInternal;
 
 typedef struct {
     size_t selected_index;
@@ -45,7 +46,7 @@ typedef struct {
     bool   has_rendered;
 } WidgetTableState;
 
-static int _tui_widget_table_compute_column_widths(WidgetTableDataInternal *data){
+static int _tui_widget_table_compute_column_widths(_WidgetTableDataInternal *data){
     int total = 0;
     for(size_t col = 0; col < data->table.column_count; col++){
         int max_w = (int)utf8_str_display_width(data->table.headers[col]);
@@ -77,7 +78,7 @@ static void _tui_widget_table_auto_scroll(WidgetTableState *state){
 }
 
 static void _tui_widget_table_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetTableDataInternal *data  = widget->data;
+    _WidgetTableDataInternal *data  = widget->data;
     WidgetTableState        *state = widget->state;
 
     state->last_render_y = position.y;
@@ -159,7 +160,7 @@ static void _tui_widget_table_render(Widget *widget, Screen *screen, vec2i posit
 }
 
 static bool _tui_widget_table_input(Widget *widget, InputEvent input_event){
-    WidgetTableDataInternal *data  = widget->data;
+    _WidgetTableDataInternal *data  = widget->data;
     WidgetTableState        *state = widget->state;
 
     switch(input_event.input_type){
@@ -196,14 +197,14 @@ static bool _tui_widget_table_input(Widget *widget, InputEvent input_event){
     return false;
 }
 
-void tui_widget_table_(const char *widget_id, WidgetTableParams *params){
+void tui_widget_table_(const char *widget_id, _WidgetTableParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
     assert(params->table.column_count > 0);
     assert(params->table.row_count > 0);
 
-    WidgetTableDataInternal *data = (WidgetTableDataInternal *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetTableDataInternal)
+    _WidgetTableDataInternal *data = (_WidgetTableDataInternal *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetTableDataInternal)
     );
     data->storage   = params->storage;
     data->table     = params->table;

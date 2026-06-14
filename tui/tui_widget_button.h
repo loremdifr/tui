@@ -8,22 +8,22 @@ typedef struct {
     bool            is_inline; //base widget param
     const uint8_t  *label;
     FunctionPointer on_click;
-} WidgetButtonParams;
+} _WidgetButtonParams;
 
 #define tui_widget_button(widget_id, ...) \
-        tui_widget_button_((widget_id), &(WidgetButtonParams){__VA_ARGS__})
+        tui_widget_button_((widget_id), &(_WidgetButtonParams){__VA_ARGS__})
 
-void tui_widget_button_(const char *widget_id, WidgetButtonParams *params);
+void tui_widget_button_(const char *widget_id, _WidgetButtonParams *params);
 
 #ifdef TUI_WIDGET_BUTTON_IMPL
 
 typedef struct {
 	const uint8_t  *label;
 	FunctionPointer on_click;
-} WidgetButtonData;
+} _WidgetButtonData;
 
 static void _tui_widget_button_render(Widget *widget, Screen *screen, vec2i position){
-	WidgetButtonData *widget_data = widget->data;
+	_WidgetButtonData *widget_data = widget->data;
 
 	//any processing would be done here if needed
 
@@ -43,7 +43,7 @@ static void _tui_widget_button_render(Widget *widget, Screen *screen, vec2i posi
 }
 
 static bool _tui_widget_button_input(Widget *widget, InputEvent input_event){
-	WidgetButtonData  *widget_data  = widget->data;
+	_WidgetButtonData  *widget_data  = widget->data;
 	switch (input_event.input_type) {
     case INPUT_KEY:
         switch (input_event.key_event.key) {
@@ -66,9 +66,9 @@ static bool _tui_widget_button_input(Widget *widget, InputEvent input_event){
 
 
 //public
-void tui_widget_button_(const char *widget_id, WidgetButtonParams *params){
-	WidgetButtonData *widget_data = (WidgetButtonData *)arena_alloc(
-		LAYOUT_STATE.arena_frame, sizeof(WidgetButtonData)
+void tui_widget_button_(const char *widget_id, _WidgetButtonParams *params){
+	_WidgetButtonData *widget_data = (_WidgetButtonData *)arena_alloc(
+		LAYOUT_STATE.arena_frame, sizeof(_WidgetButtonData)
 	);
     widget_data->label    = params->label;
     widget_data->on_click = params->on_click;

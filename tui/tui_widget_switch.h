@@ -9,12 +9,12 @@ typedef struct {
     const uint8_t  *label;
     bool           *storage;
     FunctionPointer on_toggle; //this is optional, and it's a callback!
-} WidgetSwitchParams;
+} _WidgetSwitchParams;
 
 #define tui_widget_switch(widget_id, ...) \
-        tui_widget_switch_((widget_id), &(WidgetSwitchParams){__VA_ARGS__})
+        tui_widget_switch_((widget_id), &(_WidgetSwitchParams){__VA_ARGS__})
 
-void tui_widget_switch_(const char *widget_id, WidgetSwitchParams *params);
+void tui_widget_switch_(const char *widget_id, _WidgetSwitchParams *params);
 
 #ifdef TUI_WIDGET_SWITCH_IMPL
 
@@ -22,7 +22,7 @@ typedef struct {
 	const uint8_t  *label;
     bool           *storage;
 	FunctionPointer on_toggle;
-} WidgetSwitchData;
+} _WidgetSwitchData;
 
 typedef struct {
     bool    animation_playing;
@@ -31,11 +31,11 @@ typedef struct {
     uint8_t frame_target;
     uint8_t frame_start;
     int8_t  frame_step;
-} WidgetSwitchState;
+} _WidgetSwitchState;
 
 static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetSwitchState *widget_state = widget->state;
-    WidgetSwitchData *widget_data   = widget->data;
+    _WidgetSwitchState *widget_state = widget->state;
+    _WidgetSwitchData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {
         {.text=u8"██  ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
         {.text=u8"▐█▌ ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
@@ -99,7 +99,7 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
 }
 
 static bool _tui_widget_switch_input(Widget *widget, InputEvent input_event){
-	WidgetSwitchData *widget_data = widget->data;
+	_WidgetSwitchData *widget_data = widget->data;
 	switch (input_event.input_type) {
     case INPUT_KEY:
         switch (input_event.key_event.key) {
@@ -124,18 +124,18 @@ static bool _tui_widget_switch_input(Widget *widget, InputEvent input_event){
 
 
 //public
-void tui_widget_switch_(const char *widget_id, WidgetSwitchParams *params){
-	WidgetSwitchData *widget_data = (WidgetSwitchData *)arena_alloc(
-		LAYOUT_STATE.arena_frame, sizeof(WidgetSwitchData)
+void tui_widget_switch_(const char *widget_id, _WidgetSwitchParams *params){
+	_WidgetSwitchData *widget_data = (_WidgetSwitchData *)arena_alloc(
+		LAYOUT_STATE.arena_frame, sizeof(_WidgetSwitchData)
 	);
     widget_data->storage   = params->storage;
     widget_data->label     = params->label;
     widget_data->on_toggle = params->on_toggle;
 
     //widget state persist across frames
-    auto widget_state = (WidgetSwitchState *)tui_widget_state(
+    auto widget_state = (_WidgetSwitchState *)tui_widget_state(
         widget_id,
-        sizeof(WidgetSwitchState)
+        sizeof(_WidgetSwitchState)
     );
 
     Widget new_widget      = {

@@ -10,12 +10,12 @@ typedef struct {
     size_t         storage_size;
     const void    *value;
     FunctionPointer on_select;
-} WidgetInputRadioParams;
+} _WidgetInputRadioParams;
 
 #define tui_widget_input_radio(widget_id, ...) \
-        tui_widget_input_radio_((widget_id), &(WidgetInputRadioParams){__VA_ARGS__})
+        tui_widget_input_radio_((widget_id), &(_WidgetInputRadioParams){__VA_ARGS__})
 
-void tui_widget_input_radio_(const char *widget_id, WidgetInputRadioParams *params);
+void tui_widget_input_radio_(const char *widget_id, _WidgetInputRadioParams *params);
 
 #ifdef TUI_WIDGET_INPUT_RADIO_IMPL
 
@@ -27,9 +27,9 @@ typedef struct {
     size_t          storage_size;
     const void     *value;
     FunctionPointer on_select;
-} WidgetInputRadioData;
+} _WidgetInputRadioData;
 
-static bool _tui_widget_input_radio_is_selected(WidgetInputRadioData *widget_data){
+static bool _tui_widget_input_radio_is_selected(_WidgetInputRadioData *widget_data){
     assert(widget_data != nullptr);
     assert(widget_data->storage != nullptr);
     assert(widget_data->value != nullptr);
@@ -43,7 +43,7 @@ static bool _tui_widget_input_radio_is_selected(WidgetInputRadioData *widget_dat
 }
 
 static void _tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetInputRadioData *widget_data = widget->data;
+    _WidgetInputRadioData *widget_data = widget->data;
     bool is_selected = _tui_widget_input_radio_is_selected(widget_data);
 
     static const uint8_t RADIO_ON[4]  = u8"◉";
@@ -71,7 +71,7 @@ static void _tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i
 }
 
 static bool _tui_widget_input_radio_input(Widget *widget, InputEvent input_event){
-    WidgetInputRadioData *widget_data = widget->data;
+    _WidgetInputRadioData *widget_data = widget->data;
 
     switch (input_event.input_type) {
     case INPUT_KEY:
@@ -99,14 +99,14 @@ static bool _tui_widget_input_radio_input(Widget *widget, InputEvent input_event
     return false;
 }
 
-void tui_widget_input_radio_(const char *widget_id, WidgetInputRadioParams *params){
+void tui_widget_input_radio_(const char *widget_id, _WidgetInputRadioParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
     assert(params->value != nullptr);
     assert(params->storage_size > 0);
 
-    WidgetInputRadioData *widget_data = (WidgetInputRadioData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetInputRadioData)
+    _WidgetInputRadioData *widget_data = (_WidgetInputRadioData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetInputRadioData)
     );
     widget_data->label        = params->label;
     widget_data->storage      = params->storage;

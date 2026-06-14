@@ -8,12 +8,12 @@ typedef struct {
     const uint8_t  *label;
     bool           *storage;
     FunctionPointer on_toggle;
-} WidgetInputCheckboxParams;
+} _WidgetInputCheckboxParams;
 
 #define tui_widget_input_checkbox(widget_id, ...) \
-        tui_widget_input_checkbox_((widget_id), &(WidgetInputCheckboxParams){__VA_ARGS__})
+        tui_widget_input_checkbox_((widget_id), &(_WidgetInputCheckboxParams){__VA_ARGS__})
 
-void tui_widget_input_checkbox_(const char *widget_id, WidgetInputCheckboxParams *params);
+void tui_widget_input_checkbox_(const char *widget_id, _WidgetInputCheckboxParams *params);
 
 #ifdef TUI_WIDGET_INPUT_CHECKBOX_IMPL
 
@@ -23,10 +23,10 @@ typedef struct {
     const uint8_t  *label;
     bool           *storage;
     FunctionPointer on_toggle;
-} WidgetInputCheckboxData;
+} _WidgetInputCheckboxData;
 
 static void _tui_widget_input_checkbox_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetInputCheckboxData *widget_data = widget->data;
+    _WidgetInputCheckboxData *widget_data = widget->data;
 
     static const uint8_t CHECKBOX_ON[4]  = u8"[x]";
     static const uint8_t CHECKBOX_OFF[4] = u8"[ ]";
@@ -50,7 +50,7 @@ static void _tui_widget_input_checkbox_render(Widget *widget, Screen *screen, ve
 }
 
 static bool _tui_widget_input_checkbox_input(Widget *widget, InputEvent input_event){
-    WidgetInputCheckboxData *widget_data = widget->data;
+    _WidgetInputCheckboxData *widget_data = widget->data;
 
     switch (input_event.input_type) {
     case INPUT_KEY:
@@ -74,9 +74,9 @@ static bool _tui_widget_input_checkbox_input(Widget *widget, InputEvent input_ev
     return false;
 }
 
-void tui_widget_input_checkbox_(const char *widget_id, WidgetInputCheckboxParams *params){
-    WidgetInputCheckboxData *widget_data = (WidgetInputCheckboxData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetInputCheckboxData)
+void tui_widget_input_checkbox_(const char *widget_id, _WidgetInputCheckboxParams *params){
+    _WidgetInputCheckboxData *widget_data = (_WidgetInputCheckboxData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetInputCheckboxData)
     );
     widget_data->label     = params->label;
     widget_data->storage   = params->storage;

@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define tui_widget_input_number(widget_id, ...) \
-        tui_widget_input_number_((widget_id), &(WidgetInputNumberParams){__VA_ARGS__})
+        tui_widget_input_number_((widget_id), &(_WidgetInputNumberParams){__VA_ARGS__})
 
 typedef struct {
     bool           is_inline;
@@ -15,9 +15,9 @@ typedef struct {
     int            min_value;
     int            max_value;
     int            step;
-} WidgetInputNumberParams;
+} _WidgetInputNumberParams;
 
-void tui_widget_input_number_(const char *widget_id, WidgetInputNumberParams *params);
+void tui_widget_input_number_(const char *widget_id, _WidgetInputNumberParams *params);
 
 //TODO: ideally we should be able to reuse a bit of the editing from the input_text somehow..
 
@@ -31,7 +31,7 @@ typedef struct {
     int            step;
     size_t         label_width;
     size_t         value_width;
-} WidgetInputNumberData;
+} _WidgetInputNumberData;
 
 typedef struct {
     size_t cursor;
@@ -41,9 +41,9 @@ typedef struct {
     double caret_last_shown;
     char   buffer[32];
     size_t buffer_len;
-} WidgetInputNumberState;
+} _WidgetInputNumberState;
 
-static void _tui_widget_input_number_sync_buffer(WidgetInputNumberState *state, int value){
+static void _tui_widget_input_number_sync_buffer(_WidgetInputNumberState *state, int value){
     int written = snprintf(state->buffer, sizeof(state->buffer), "%d", value);
     assert(written > 0);
     assert((size_t)written < sizeof(state->buffer));
@@ -51,7 +51,7 @@ static void _tui_widget_input_number_sync_buffer(WidgetInputNumberState *state, 
     state->cursor = state->buffer_len;
 }
 
-static int _tui_widget_input_number_parse_buffer(WidgetInputNumberState *state, bool *valid){
+static int _tui_widget_input_number_parse_buffer(_WidgetInputNumberState *state, bool *valid){
     char *end = nullptr;
     long parsed = strtol(state->buffer, &end, 10);
     if(end == state->buffer || *end != '\0'){
@@ -63,8 +63,8 @@ static int _tui_widget_input_number_parse_buffer(WidgetInputNumberState *state, 
 }
 
 static void _tui_widget_input_number_apply_buffer(Widget *widget){
-    WidgetInputNumberData  *data  = widget->data;
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberData  *data  = widget->data;
+    _WidgetInputNumberState *state = widget->state;
     bool valid = false;
     int value = _tui_widget_input_number_parse_buffer(state, &valid);
     if(!valid) return;
@@ -73,13 +73,13 @@ static void _tui_widget_input_number_apply_buffer(Widget *widget){
 }
 
 static void _tui_widget_input_number_move_cursor(Widget *widget, int move){
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberState *state = widget->state;
     int next = (int)state->cursor + move;
     state->cursor = (size_t)clamp(next, 0, (int)state->buffer_len);
 }
 
 static void _tui_widget_input_number_delete_before_cursor(Widget *widget){
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberState *state = widget->state;
     if(state->cursor == 0) return;
     memmove(
         &state->buffer[state->cursor - 1],
@@ -92,7 +92,7 @@ static void _tui_widget_input_number_delete_before_cursor(Widget *widget){
 }
 
 static void _tui_widget_input_number_delete_at_cursor(Widget *widget){
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberState *state = widget->state;
     if(state->cursor >= state->buffer_len) return;
     memmove(
         &state->buffer[state->cursor],
@@ -104,8 +104,8 @@ static void _tui_widget_input_number_delete_at_cursor(Widget *widget){
 }
 
 static void _tui_widget_input_number_insert_char(Widget *widget, char chr){
-    WidgetInputNumberData  *data  = widget->data;
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberData  *data  = widget->data;
+    _WidgetInputNumberState *state = widget->state;
 
     if(state->buffer_len + 1 >= sizeof(state->buffer)) return;
     if(chr == '-' && state->cursor != 0) return;
@@ -125,8 +125,8 @@ static void _tui_widget_input_number_insert_char(Widget *widget, char chr){
 }
 
 static void _tui_widget_input_number_step(Widget *widget, int direction){
-    WidgetInputNumberData  *data  = widget->data;
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberData  *data  = widget->data;
+    _WidgetInputNumberState *state = widget->state;
     int value = *data->storage;
     value += direction * data->step;
     value = clamp(value, data->min_value, data->max_value);
@@ -135,8 +135,8 @@ static void _tui_widget_input_number_step(Widget *widget, int direction){
 }
 
 static void _tui_widget_input_number_begin_edit(Widget *widget){
-    WidgetInputNumberData  *data  = widget->data;
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberData  *data  = widget->data;
+    _WidgetInputNumberState *state = widget->state;
     state->editing = true;
     _tui_widget_input_number_sync_buffer(state, *data->storage);
     state->caret_show = true;
@@ -144,8 +144,8 @@ static void _tui_widget_input_number_begin_edit(Widget *widget){
 }
 
 static void _tui_widget_input_number_end_edit(Widget *widget, bool commit){
-    WidgetInputNumberData  *data  = widget->data;
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberData  *data  = widget->data;
+    _WidgetInputNumberState *state = widget->state;
     if(commit){
         _tui_widget_input_number_apply_buffer(widget);
     }else{
@@ -156,8 +156,8 @@ static void _tui_widget_input_number_end_edit(Widget *widget, bool commit){
 }
 
 static void _tui_widget_input_number_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetInputNumberData  *data  = widget->data;
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberData  *data  = widget->data;
+    _WidgetInputNumberState *state = widget->state;
 
     if(state->editing){
         double now = get_curr_time();
@@ -235,7 +235,7 @@ static void _tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
 }
 
 static bool _tui_widget_input_number_input(Widget *widget, InputEvent input_event){
-    WidgetInputNumberState *state = widget->state;
+    _WidgetInputNumberState *state = widget->state;
 
     switch (input_event.input_type) {
     case INPUT_KEY:
@@ -300,14 +300,14 @@ static bool _tui_widget_input_number_input(Widget *widget, InputEvent input_even
     return state->editing;
 }
 
-void tui_widget_input_number_(const char *widget_id, WidgetInputNumberParams *params){
+void tui_widget_input_number_(const char *widget_id, _WidgetInputNumberParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
     assert(params->step > 0);
     assert(params->min_value <= params->max_value);
 
-    WidgetInputNumberData *widget_data = (WidgetInputNumberData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetInputNumberData)
+    _WidgetInputNumberData *widget_data = (_WidgetInputNumberData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetInputNumberData)
     );
     widget_data->label        = params->label ? params->label : (const uint8_t*)"";
     widget_data->storage      = params->storage;
@@ -327,9 +327,9 @@ void tui_widget_input_number_(const char *widget_id, WidgetInputNumberParams *pa
         (int)strlen(curr_buffer)
     );
 
-    WidgetInputNumberState *widget_state = (WidgetInputNumberState *)tui_widget_state(
+    _WidgetInputNumberState *widget_state = (_WidgetInputNumberState *)tui_widget_state(
         widget_id,
-        sizeof(WidgetInputNumberState)
+        sizeof(_WidgetInputNumberState)
     );
     if (!widget_state) return;
     if(widget_state->caret_interval == 0.0){

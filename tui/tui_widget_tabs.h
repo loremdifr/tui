@@ -3,6 +3,7 @@
 
 #include "tui_layout.h"
 
+//TODO: these are public so we should move them somewhere else and standardize this sort of stuff
 typedef struct {
     const uint8_t *label;
     size_t         value;
@@ -14,27 +15,27 @@ typedef struct {
 } WidgetTabOptions;
 
 typedef struct {
-    bool            is_inline;
-    size_t         *storage;
+    bool             is_inline;
+    size_t          *storage;
     WidgetTabOptions tabs;
-} WidgetTabsParams;
+} _WidgetTabsParams;
 
 #define tui_widget_tabs(widget_id, ...) \
-        tui_widget_tabs_((widget_id), &(WidgetTabsParams){__VA_ARGS__})
+        tui_widget_tabs_((widget_id), &(_WidgetTabsParams){__VA_ARGS__})
 
-void tui_widget_tabs_(const char *widget_id, WidgetTabsParams *params);
+void tui_widget_tabs_(const char *widget_id, _WidgetTabsParams *params);
 
 #ifdef TUI_WIDGET_TABS_IMPL
 
 typedef struct {
-    size_t         *storage;
+    size_t          *storage;
     WidgetTabOptions tabs;
-} WidgetTabsData;
+} _WidgetTabsData;
 
 static constexpr int TUI_TAB_MIN_WIDTH = 12;
 
 static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetTabsData *data = widget->data;
+    _WidgetTabsData *data = widget->data;
 
     size_t curr_value = data->storage ? *data->storage : 0;
     int selected_index = 0;
@@ -80,7 +81,7 @@ static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
 }
 
 static bool _tui_widget_tabs_input(Widget *widget, InputEvent input_event){
-    WidgetTabsData *data = widget->data;
+    _WidgetTabsData *data = widget->data;
 
     switch(input_event.input_type){
     case INPUT_KEY:
@@ -112,13 +113,13 @@ static bool _tui_widget_tabs_input(Widget *widget, InputEvent input_event){
     return false;
 }
 
-void tui_widget_tabs_(const char *widget_id, WidgetTabsParams *params){
+void tui_widget_tabs_(const char *widget_id, _WidgetTabsParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
     assert(params->tabs.count > 0);
 
-    WidgetTabsData *data = (WidgetTabsData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetTabsData)
+    _WidgetTabsData *data = (_WidgetTabsData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetTabsData)
     );
     data->storage = params->storage;
     data->tabs    = params->tabs;

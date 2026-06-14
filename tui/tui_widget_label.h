@@ -16,11 +16,11 @@ typedef struct {
 typedef struct {
 	const void    *text;
 	bool           is_inline;
-} WidgetLabelParams;
+} _WidgetLabelParams;
 
 #define tui_widget_label(...) \
-    tui_widget_label_(&(WidgetLabelParams){__VA_ARGS__})
-void tui_widget_label_(WidgetLabelParams *params);
+    tui_widget_label_(&(_WidgetLabelParams){__VA_ARGS__})
+void tui_widget_label_(_WidgetLabelParams *params);
 
 #ifdef TUI_WIDGET_LABEL_IMPL
 
@@ -39,7 +39,7 @@ static void _tui_widget_label_render(Widget *widget, Screen *screen, vec2i posit
 }
 
 //public
-void tui_widget_label_(WidgetLabelParams *params){
+void tui_widget_label_(_WidgetLabelParams *params){
     Panel *panel = tui_get_panel_building();
     auto max_width = max(0, panel->inner_rect.size.width);
 

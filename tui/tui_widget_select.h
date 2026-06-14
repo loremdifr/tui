@@ -3,6 +3,7 @@
 
 #include "tui_layout.h"
 
+//TODO: these are public so we could maybe move them somewhere else?
 typedef struct {
     size_t         value;
     const uint8_t *label;
@@ -17,14 +18,14 @@ typedef struct {
     bool                 is_inline;
     const uint8_t       *label;
     size_t              *storage;
-    WidgetSelectOptions   options;
+    WidgetSelectOptions  options;
     const uint8_t       *overlay_title;
-} WidgetSelectParams;
+} _WidgetSelectParams;
 
 #define tui_widget_select(widget_id, ...) \
-        tui_widget_select_((widget_id), &(WidgetSelectParams){__VA_ARGS__})
+        tui_widget_select_((widget_id), &(_WidgetSelectParams){__VA_ARGS__})
 
-void tui_widget_select_(const char *widget_id, WidgetSelectParams *params);
+void tui_widget_select_(const char *widget_id, _WidgetSelectParams *params);
 
 #ifdef TUI_WIDGET_SELECT_IMPL
 
@@ -33,9 +34,9 @@ typedef struct {
     const uint8_t       *label;
     size_t               label_width;
     WidgetSelectOptions   options;
-} WidgetSelectData;
+} _WidgetSelectData;
 
-static const uint8_t* _tui_widget_select_label(WidgetSelectData *data){
+static const uint8_t* _tui_widget_select_label(_WidgetSelectData *data){
     if(data == nullptr) return u8"";
     if(data->options.count == 0) return u8"";
     size_t selected_index = 0;
@@ -51,7 +52,7 @@ static const uint8_t* _tui_widget_select_label(WidgetSelectData *data){
 }
 
 static void _tui_widget_select_render(Widget *widget, Screen *screen, vec2i position){
-    WidgetSelectData  *data = widget->data;
+    _WidgetSelectData  *data = widget->data;
 
     auto selected_label   = _tui_widget_select_label(data);
     size_t selected_width = utf8_str_display_width(selected_label);
@@ -74,7 +75,7 @@ static void _tui_widget_select_render(Widget *widget, Screen *screen, vec2i posi
 }
 
 static bool _tui_widget_select_input(Widget *widget, InputEvent input_event){
-    WidgetSelectData *data = widget->data;
+    _WidgetSelectData *data = widget->data;
 
     switch (input_event.input_type) {
     case INPUT_KEY:
@@ -103,7 +104,7 @@ static bool _tui_widget_select_input(Widget *widget, InputEvent input_event){
 }
 
 static void _tui_widget_select_overlay(Widget *widget){
-    WidgetSelectData *data = widget->data;
+    _WidgetSelectData *data = widget->data;
 
     tui_layer_begin(LAYER_WIDGETS_OVERLAY_DO_NOT_USE, LAYOUT_SINGLE_PANEL);
         tui_panel_begin(SLOT_MAIN);
@@ -122,13 +123,13 @@ static void _tui_widget_select_overlay(Widget *widget){
     tui_layer_end();
 }
 
-void tui_widget_select_(const char *widget_id, WidgetSelectParams *params){
+void tui_widget_select_(const char *widget_id, _WidgetSelectParams *params){
     assert(params != nullptr);
     assert(params->storage != nullptr);
     assert(params->options.count > 0);
 
-    WidgetSelectData *widget_data = (WidgetSelectData *)arena_alloc(
-        LAYOUT_STATE.arena_frame, sizeof(WidgetSelectData)
+    _WidgetSelectData *widget_data = (_WidgetSelectData *)arena_alloc(
+        LAYOUT_STATE.arena_frame, sizeof(_WidgetSelectData)
     );
     widget_data->storage        = params->storage;
     widget_data->label          = params->label;
