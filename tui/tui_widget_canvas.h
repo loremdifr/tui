@@ -22,7 +22,7 @@ void tui_widget_canvas_(const char *widget_id, WidgetCanvasParams *params);
 
 #ifdef TUI_WIDGET_CANVAS_IMPL
 
-private void tui_widget_canvas_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_canvas_render(Widget *widget, Screen *screen, vec2i position){
     WidgetCanvasData *widget_data = widget->data;
     if(widget_data->on_render){
         widget_data->on_render(screen, position);
@@ -41,7 +41,7 @@ void tui_widget_canvas_(const char *widget_id, WidgetCanvasParams *params){
         .data      = widget_data,
         .size      = params->size,
         .focusable = false,
-        .render    = &tui_widget_canvas_render,
+        .render    = &_tui_widget_canvas_render,
     };
     tui_widget_push(new_widget);
 }

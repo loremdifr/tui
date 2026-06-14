@@ -31,9 +31,9 @@ typedef struct {
     WidgetTabOptions tabs;
 } WidgetTabsData;
 
-private constexpr int TUI_TAB_MIN_WIDTH = 12;
+static constexpr int TUI_TAB_MIN_WIDTH = 12;
 
-private void tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i position){
     WidgetTabsData *data = widget->data;
 
     size_t curr_value = data->storage ? *data->storage : 0;
@@ -79,7 +79,7 @@ private void tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 }
 
-private bool tui_widget_tabs_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_tabs_input(Widget *widget, InputEvent input_event){
     WidgetTabsData *data = widget->data;
 
     switch(input_event.input_type){
@@ -136,8 +136,8 @@ void tui_widget_tabs_(const char *widget_id, WidgetTabsParams *params){
         .size.h    = 1 + PADDING,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_tabs_input,
-        .render    = &tui_widget_tabs_render,
+        .input     = &_tui_widget_tabs_input,
+        .render    = &_tui_widget_tabs_render,
     };
     tui_widget_push(new_widget);
 }

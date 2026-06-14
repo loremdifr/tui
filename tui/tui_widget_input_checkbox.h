@@ -25,7 +25,7 @@ typedef struct {
     FunctionPointer on_toggle;
 } WidgetInputCheckboxData;
 
-private void tui_widget_input_checkbox_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_input_checkbox_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputCheckboxData *widget_data = widget->data;
 
     static const uint8_t CHECKBOX_ON[4]  = u8"[x]";
@@ -49,7 +49,7 @@ private void tui_widget_input_checkbox_render(Widget *widget, Screen *screen, ve
     );
 }
 
-private bool tui_widget_input_checkbox_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_input_checkbox_input(Widget *widget, InputEvent input_event){
     WidgetInputCheckboxData *widget_data = widget->data;
 
     switch (input_event.input_type) {
@@ -97,8 +97,8 @@ void tui_widget_input_checkbox_(const char *widget_id, WidgetInputCheckboxParams
         .size.h    = 1 + PADDING,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_input_checkbox_input,
-        .render    = &tui_widget_input_checkbox_render,
+        .input     = &_tui_widget_input_checkbox_input,
+        .render    = &_tui_widget_input_checkbox_render,
     };
     tui_widget_push(new_widget);
 }

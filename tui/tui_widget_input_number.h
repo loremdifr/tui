@@ -43,7 +43,7 @@ typedef struct {
     size_t buffer_len;
 } WidgetInputNumberState;
 
-private void tui_widget_input_number_sync_buffer(WidgetInputNumberState *state, int value){
+static void _tui_widget_input_number_sync_buffer(WidgetInputNumberState *state, int value){
     int written = snprintf(state->buffer, sizeof(state->buffer), "%d", value);
     assert(written > 0);
     assert((size_t)written < sizeof(state->buffer));
@@ -51,7 +51,7 @@ private void tui_widget_input_number_sync_buffer(WidgetInputNumberState *state, 
     state->cursor = state->buffer_len;
 }
 
-private int tui_widget_input_number_parse_buffer(WidgetInputNumberState *state, bool *valid){
+static int _tui_widget_input_number_parse_buffer(WidgetInputNumberState *state, bool *valid){
     char *end = nullptr;
     long parsed = strtol(state->buffer, &end, 10);
     if(end == state->buffer || *end != '\0'){
@@ -62,23 +62,23 @@ private int tui_widget_input_number_parse_buffer(WidgetInputNumberState *state, 
     return (int)parsed;
 }
 
-private void tui_widget_input_number_apply_buffer(Widget *widget){
+static void _tui_widget_input_number_apply_buffer(Widget *widget){
     WidgetInputNumberData  *data  = widget->data;
     WidgetInputNumberState *state = widget->state;
     bool valid = false;
-    int value = tui_widget_input_number_parse_buffer(state, &valid);
+    int value = _tui_widget_input_number_parse_buffer(state, &valid);
     if(!valid) return;
     *data->storage = clamp(value, data->min_value, data->max_value);
-    tui_widget_input_number_sync_buffer(state, *data->storage);
+    _tui_widget_input_number_sync_buffer(state, *data->storage);
 }
 
-private void tui_widget_input_number_move_cursor(Widget *widget, int move){
+static void _tui_widget_input_number_move_cursor(Widget *widget, int move){
     WidgetInputNumberState *state = widget->state;
     int next = (int)state->cursor + move;
     state->cursor = (size_t)clamp(next, 0, (int)state->buffer_len);
 }
 
-private void tui_widget_input_number_delete_before_cursor(Widget *widget){
+static void _tui_widget_input_number_delete_before_cursor(Widget *widget){
     WidgetInputNumberState *state = widget->state;
     if(state->cursor == 0) return;
     memmove(
@@ -88,10 +88,10 @@ private void tui_widget_input_number_delete_before_cursor(Widget *widget){
     );
     state->cursor--;
     state->buffer_len--;
-    tui_widget_input_number_apply_buffer(widget);
+    _tui_widget_input_number_apply_buffer(widget);
 }
 
-private void tui_widget_input_number_delete_at_cursor(Widget *widget){
+static void _tui_widget_input_number_delete_at_cursor(Widget *widget){
     WidgetInputNumberState *state = widget->state;
     if(state->cursor >= state->buffer_len) return;
     memmove(
@@ -100,10 +100,10 @@ private void tui_widget_input_number_delete_at_cursor(Widget *widget){
         state->buffer_len - state->cursor
     );
     state->buffer_len--;
-    tui_widget_input_number_apply_buffer(widget);
+    _tui_widget_input_number_apply_buffer(widget);
 }
 
-private void tui_widget_input_number_insert_char(Widget *widget, char chr){
+static void _tui_widget_input_number_insert_char(Widget *widget, char chr){
     WidgetInputNumberData  *data  = widget->data;
     WidgetInputNumberState *state = widget->state;
 
@@ -121,41 +121,41 @@ private void tui_widget_input_number_insert_char(Widget *widget, char chr){
     state->buffer[state->cursor] = chr;
     state->cursor++;
     state->buffer_len++;
-    tui_widget_input_number_apply_buffer(widget);
+    _tui_widget_input_number_apply_buffer(widget);
 }
 
-private void tui_widget_input_number_step(Widget *widget, int direction){
+static void _tui_widget_input_number_step(Widget *widget, int direction){
     WidgetInputNumberData  *data  = widget->data;
     WidgetInputNumberState *state = widget->state;
     int value = *data->storage;
     value += direction * data->step;
     value = clamp(value, data->min_value, data->max_value);
     *data->storage = value;
-    tui_widget_input_number_sync_buffer(state, value);
+    _tui_widget_input_number_sync_buffer(state, value);
 }
 
-private void tui_widget_input_number_begin_edit(Widget *widget){
+static void _tui_widget_input_number_begin_edit(Widget *widget){
     WidgetInputNumberData  *data  = widget->data;
     WidgetInputNumberState *state = widget->state;
     state->editing = true;
-    tui_widget_input_number_sync_buffer(state, *data->storage);
+    _tui_widget_input_number_sync_buffer(state, *data->storage);
     state->caret_show = true;
     state->caret_last_shown = get_curr_time();
 }
 
-private void tui_widget_input_number_end_edit(Widget *widget, bool commit){
+static void _tui_widget_input_number_end_edit(Widget *widget, bool commit){
     WidgetInputNumberData  *data  = widget->data;
     WidgetInputNumberState *state = widget->state;
     if(commit){
-        tui_widget_input_number_apply_buffer(widget);
+        _tui_widget_input_number_apply_buffer(widget);
     }else{
-        tui_widget_input_number_sync_buffer(state, *data->storage);
+        _tui_widget_input_number_sync_buffer(state, *data->storage);
     }
     state->editing = false;
     state->caret_show = true;
 }
 
-private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_input_number_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputNumberData  *data  = widget->data;
     WidgetInputNumberState *state = widget->state;
 
@@ -234,7 +234,7 @@ private void tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
     );
 }
 
-private bool tui_widget_input_number_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_input_number_input(Widget *widget, InputEvent input_event){
     WidgetInputNumberState *state = widget->state;
 
     switch (input_event.input_type) {
@@ -252,44 +252,44 @@ private bool tui_widget_input_number_input(Widget *widget, InputEvent input_even
             break;
         case KEY_LEFT:
             if(!state->editing) break;
-            tui_widget_input_number_move_cursor(widget, -1);
+            _tui_widget_input_number_move_cursor(widget, -1);
             break;
         case KEY_RIGHT:
             if(!state->editing) break;
-            tui_widget_input_number_move_cursor(widget, +1);
+            _tui_widget_input_number_move_cursor(widget, +1);
             break;
         case KEY_BACKSPACE:
             if(!state->editing) break;
-            tui_widget_input_number_delete_before_cursor(widget);
+            _tui_widget_input_number_delete_before_cursor(widget);
             break;
         case KEY_DELETE:
             if(!state->editing) break;
-            tui_widget_input_number_delete_at_cursor(widget);
+            _tui_widget_input_number_delete_at_cursor(widget);
             break;
         case KEY_UP:
             if(!state->editing) break;
-            tui_widget_input_number_step(widget, +1);
+            _tui_widget_input_number_step(widget, +1);
             return true;
         case KEY_DOWN:
             if(!state->editing) break;
-            tui_widget_input_number_step(widget, -1);
+            _tui_widget_input_number_step(widget, -1);
             return true;
         case KEY_ENTER:
             if(state->editing){
-                tui_widget_input_number_end_edit(widget, true);
+                _tui_widget_input_number_end_edit(widget, true);
             }else{
-                tui_widget_input_number_begin_edit(widget);
+                _tui_widget_input_number_begin_edit(widget);
             }
             return true;
         case KEY_ESCAPE:
             if(!state->editing) break;
-            tui_widget_input_number_end_edit(widget, false);
+            _tui_widget_input_number_end_edit(widget, false);
             return true;
         case KEY_NONE:
         default:
             if(!state->editing) break;
             if(input_event.key_event.unicode == 0) break;
-            tui_widget_input_number_insert_char(widget, (char)input_event.key_event.unicode);
+            _tui_widget_input_number_insert_char(widget, (char)input_event.key_event.unicode);
             return true;
         }
     case INPUT_NONE:
@@ -347,8 +347,8 @@ void tui_widget_input_number_(const char *widget_id, WidgetInputNumberParams *pa
         .size.h    = 2,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_input_number_input,
-        .render    = &tui_widget_input_number_render,
+        .input     = &_tui_widget_input_number_input,
+        .render    = &_tui_widget_input_number_render,
     };
     tui_widget_push(new_widget);
 }

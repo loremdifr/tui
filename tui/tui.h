@@ -122,7 +122,7 @@ typedef struct {
 	int routes_count;
 } PageRoutes;
 
-private PageRoutes PAGE_ROUTES = {};
+static PageRoutes PAGE_ROUTES = {};
 
 void tui_register_page(const char *page_id, Page *page) {
 	//TODO: might wanna assert here the app has not started yet
@@ -150,7 +150,7 @@ typedef struct {
 	uint8_t total;
 } Hotkeys;
 
-private Hotkeys HOTKEYS = {};
+static Hotkeys HOTKEYS = {};
 
 void tui_register_key(Key key, ModKeys mod_keys, FunctionPointer action){
 	assert(HOTKEYS.total <= TUI_HOTKEYS_MAX);
@@ -171,7 +171,7 @@ typedef struct {
 	uint8_t    total;
 } HotkeyHints;
 
-private HotkeyHints HOTKEY_HINTS = {};
+static HotkeyHints HOTKEY_HINTS = {};
 
 void tui_register_key_hint(const uint8_t *key, const uint8_t *hint){
 	HOTKEY_HINTS.hints[HOTKEY_HINTS.total++] = (HotkeyHint){
@@ -182,14 +182,14 @@ void tui_register_key_hint(const uint8_t *key, const uint8_t *hint){
 
 // nav stuff -------------------------------------------------------------------
 
-private constexpr int TUI_NAV_HISTORY_MAX = 64;
+static constexpr int TUI_NAV_HISTORY_MAX = 64;
 
 typedef struct {
 	int stack[TUI_NAV_HISTORY_MAX];
 	int count;
 } NavigationHistory;
 
-private NavigationHistory NAV_HISTORY;
+static NavigationHistory NAV_HISTORY;
 
 //app state --------------------------------------------------------------------
 
@@ -207,16 +207,16 @@ AppState APP_STATE = {};
 //TUI loop ---------------------------------------------------------------------
 // TUI HOTKEY KEYS PANEL
 //TODO: not sure if this merits its own file
-private bool HOTKEY_HELP_SHOW    = false;
-private bool HOTKEY_HELP_ENABLED = false;
-private void tui_toggle_help(void){
+static bool HOTKEY_HELP_SHOW    = false;
+static bool HOTKEY_HELP_ENABLED = false;
+static void _tui_toggle_help(void){
 	if(HOTKEY_HELP_ENABLED){
     	HOTKEY_HELP_SHOW = !HOTKEY_HELP_SHOW;
 	}else {
 		HOTKEY_HELP_SHOW = false;
 	}
 }
-private void tui_reset_hotkeys(void){
+static void _tui_reset_hotkeys(void){
 	HOTKEYS.total = 0;
 	HOTKEY_HINTS.total = 0;
 
@@ -262,10 +262,10 @@ private void tui_reset_hotkeys(void){
 	//NOTE: registered here instead of tui_render_hotkeys because hotkeys
 	//      are reset every frame BEFORE input processing.
 	//      we register the hint conditionally later.
-	tui_register_key((Key)'?', KEY_MOD_NONE, &tui_toggle_help);
+	tui_register_key((Key)'?', KEY_MOD_NONE, &_tui_toggle_help);
 }
 
-private void tui_render_header(Screen *screen){
+static void _tui_render_header(Screen *screen){
 	screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 
 	if (NAV_HISTORY.count <= 0) return;
@@ -291,7 +291,7 @@ private void tui_render_header(Screen *screen){
     screen_set_utf8_str(screen, 1, 0, header_str);
 }
 
-private void tui_render_hotkeys(Screen *screen){
+static void _tui_render_hotkeys(Screen *screen){
     screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
     auto separator = u8" • ";
 
@@ -419,7 +419,7 @@ private void tui_render_hotkeys(Screen *screen){
 }
 
 
-private void tui_render(void){
+static void _tui_render(void){
 	//display diff of screen buffers
 	for(int x = 0; x < APP_STATE.curr_screen.size.x; x++){
 		for(int y = 0; y < APP_STATE.curr_screen.size.y; y++){
@@ -437,7 +437,7 @@ private void tui_render(void){
 			if(is_second_column_of_wide_char) continue;
 
 			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
-			tui_write_color(next_cell->text_format, next_cell->fg_color, next_cell->bg_color);
+			_tui_write_color(next_cell->text_format, next_cell->fg_color, next_cell->bg_color);
 			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
 				tui_write(" ");
 			}else{
@@ -455,7 +455,7 @@ private void tui_render(void){
 	screen_clear(&APP_STATE.next_screen);
 }
 
-private bool tui_process_input_hotkeys(InputEvent input_event){
+static bool _tui_process_input_hotkeys(InputEvent input_event){
 	//process hotkeys
 	if(input_event.input_type != INPUT_KEY) return false;
 	//check if key is registered and execute its action
@@ -479,7 +479,7 @@ private bool tui_process_input_hotkeys(InputEvent input_event){
 	return false;
 }
 
-private bool tui_process_input_resize(InputEvent input_event){
+static bool _tui_process_input_resize(InputEvent input_event){
 	if(input_event.input_type != INPUT_WINDOW_RESIZE) return false;
 
 	auto terminal_size = tui_size();
@@ -551,7 +551,7 @@ void tui_run_loop(void){
 
 		// RESET HOTKEYS:
 		// we do this every frame to make it more convenient to the user
-		tui_reset_hotkeys();
+		_tui_reset_hotkeys();
 
 		//NOTE: The order is important! it is from deeper control upwards.
 		//      Any of those functions returning true will consume the event
@@ -560,19 +560,19 @@ void tui_run_loop(void){
 		if(active_page->input != nullptr){
 			tui_input_process(active_page->input);
 		}
-		tui_input_process(&tui_process_input_hotkeys);
+		tui_input_process(&_tui_process_input_hotkeys);
 
 		screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK); //reset format
 
 		tui_layout_render();
-		tui_render_header(&APP_STATE.next_screen);
-		tui_render_hotkeys(&APP_STATE.next_screen);
+		_tui_render_header(&APP_STATE.next_screen);
+		_tui_render_hotkeys(&APP_STATE.next_screen);
 
 		//render the TUI diff to the screen
-		tui_render();
+		_tui_render();
 
 		//NOTE: we handle this at the end because it can destroy the screens!
-		tui_input_process(&tui_process_input_resize);
+		tui_input_process(&_tui_process_input_resize);
 	}
 	screen_free(&APP_STATE.curr_screen);
 	screen_free(&APP_STATE.next_screen);

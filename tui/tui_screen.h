@@ -96,11 +96,12 @@ void screen_clear(Screen *screen){
     );
 }
 
-private struct {
+typedef struct {
     TextFormat text_format;
     Color      fg_color;
     Color      bg_color;
-} FORMAT_CURR = {};
+} CurrentCellFormat;
+static CurrentCellFormat FORMAT_CURR = {};
 
 void screen_format(TextFormat text_format, Color fg_color, Color bg_color){
     FORMAT_CURR.text_format = text_format;
@@ -236,81 +237,81 @@ typedef struct{
     char    str[80];
     uint8_t used;
 } FormatParams;
-private FormatParams FORMAT_PARAMS = {};
-private inline void format_params_push(uint8_t param){
+static FormatParams FORMAT_PARAMS = {};
+static inline void _tui_format_params_push(uint8_t param){
     FORMAT_PARAMS.params[FORMAT_PARAMS.used++] = param;
 }
-private inline void format_params_reset(){
+static inline void _tui_format_params_reset(){
     FORMAT_PARAMS.str[0] = '\0';
     FORMAT_PARAMS.used = 0;
 }
 
-private inline void tui_write_color(TextFormat text_format, Color fg_color, Color bg_color){
+static inline void _tui_write_color(TextFormat text_format, Color fg_color, Color bg_color){
     static const char start[]     = "\033[";
     static const char separator[] = ";";
     static const char end[]       = "m";
 
     //formato
     if(text_format == NORMAL){
-        format_params_push(0);
+        _tui_format_params_push(0);
     }else{
-        if(text_format & BOLD)      format_params_push(1);
-        if(text_format & ITALIC)    format_params_push(3);
-        if(text_format & UNDERLINE) format_params_push(4);
-        if(text_format & BLINKING)  format_params_push(5);
+        if(text_format & BOLD)      _tui_format_params_push(1);
+        if(text_format & ITALIC)    _tui_format_params_push(3);
+        if(text_format & UNDERLINE) _tui_format_params_push(4);
+        if(text_format & BLINKING)  _tui_format_params_push(5);
     }
 
     //color frente
     switch (fg_color) {
-        case COLOR_DEFAULT:        format_params_push(39); break;
-        case COLOR_BLACK:          format_params_push(30); break;
-        case COLOR_RED:            format_params_push(31); break;
-        case COLOR_GREEN:          format_params_push(32); break;
-        case COLOR_YELLOW:         format_params_push(33); break;
-        case COLOR_BLUE:           format_params_push(34); break;
-        case COLOR_MAGENTA:        format_params_push(35); break;
-        case COLOR_CYAN:           format_params_push(36); break;
-        case COLOR_WHITE:          format_params_push(37); break;
-        case COLOR_BRIGHT_BLACK:   format_params_push(90); break;
-        case COLOR_BRIGHT_RED:     format_params_push(91); break;
-        case COLOR_BRIGHT_GREEN:   format_params_push(92); break;
-        case COLOR_BRIGHT_YELLOW:  format_params_push(93); break;
-        case COLOR_BRIGHT_BLUE:    format_params_push(94); break;
-        case COLOR_BRIGHT_MAGENTA: format_params_push(95); break;
-        case COLOR_BRIGHT_CYAN:    format_params_push(96); break;
-        case COLOR_BRIGHT_WHITE:   format_params_push(97); break;
+        case COLOR_DEFAULT:        _tui_format_params_push(39); break;
+        case COLOR_BLACK:          _tui_format_params_push(30); break;
+        case COLOR_RED:            _tui_format_params_push(31); break;
+        case COLOR_GREEN:          _tui_format_params_push(32); break;
+        case COLOR_YELLOW:         _tui_format_params_push(33); break;
+        case COLOR_BLUE:           _tui_format_params_push(34); break;
+        case COLOR_MAGENTA:        _tui_format_params_push(35); break;
+        case COLOR_CYAN:           _tui_format_params_push(36); break;
+        case COLOR_WHITE:          _tui_format_params_push(37); break;
+        case COLOR_BRIGHT_BLACK:   _tui_format_params_push(90); break;
+        case COLOR_BRIGHT_RED:     _tui_format_params_push(91); break;
+        case COLOR_BRIGHT_GREEN:   _tui_format_params_push(92); break;
+        case COLOR_BRIGHT_YELLOW:  _tui_format_params_push(93); break;
+        case COLOR_BRIGHT_BLUE:    _tui_format_params_push(94); break;
+        case COLOR_BRIGHT_MAGENTA: _tui_format_params_push(95); break;
+        case COLOR_BRIGHT_CYAN:    _tui_format_params_push(96); break;
+        case COLOR_BRIGHT_WHITE:   _tui_format_params_push(97); break;
 
-        case COLOR_DARK_BLACK:     format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(232);
+        case COLOR_DARK_BLACK:     _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(232);
                                    break;
-        case COLOR_DARK_RED:       format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(88);
+        case COLOR_DARK_RED:       _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(88);
                                     break;
-        case COLOR_DARK_GREEN:     format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(22);
+        case COLOR_DARK_GREEN:     _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(22);
                                     break;
-        case COLOR_DARK_YELLOW:    format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(58);
+        case COLOR_DARK_YELLOW:    _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(58);
                                     break;
-        case COLOR_DARK_BLUE:      format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(18);
+        case COLOR_DARK_BLUE:      _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(18);
                                     break;
-        case COLOR_DARK_MAGENTA:   format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(90);
+        case COLOR_DARK_MAGENTA:   _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(90);
                                     break;
-        case COLOR_DARK_CYAN:      format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(23);
+        case COLOR_DARK_CYAN:      _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(23);
                                     break;
-        case COLOR_DARK_WHITE:     format_params_push(38);
-                                   format_params_push(5);
-                                   format_params_push(244);
+        case COLOR_DARK_WHITE:     _tui_format_params_push(38);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(244);
                                    break;
 
         default: assert(false);
@@ -318,55 +319,55 @@ private inline void tui_write_color(TextFormat text_format, Color fg_color, Colo
 
     //color fondo
     switch (bg_color) {
-        case COLOR_DEFAULT:        format_params_push(49);  break;
-        case COLOR_BLACK:          format_params_push(40);  break;
-        case COLOR_RED:            format_params_push(41);  break;
-        case COLOR_GREEN:          format_params_push(42);  break;
-        case COLOR_YELLOW:         format_params_push(43);  break;
-        case COLOR_BLUE:           format_params_push(44);  break;
-        case COLOR_MAGENTA:        format_params_push(45);  break;
-        case COLOR_CYAN:           format_params_push(46);  break;
-        case COLOR_WHITE:          format_params_push(47);  break;
-        case COLOR_BRIGHT_BLACK:   format_params_push(100); break;
-        case COLOR_BRIGHT_RED:     format_params_push(101); break;
-        case COLOR_BRIGHT_GREEN:   format_params_push(102); break;
-        case COLOR_BRIGHT_YELLOW:  format_params_push(103); break;
-        case COLOR_BRIGHT_BLUE:    format_params_push(104); break;
-        case COLOR_BRIGHT_MAGENTA: format_params_push(105); break;
-        case COLOR_BRIGHT_CYAN:    format_params_push(106); break;
-        case COLOR_BRIGHT_WHITE:   format_params_push(107); break;
+        case COLOR_DEFAULT:        _tui_format_params_push(49);  break;
+        case COLOR_BLACK:          _tui_format_params_push(40);  break;
+        case COLOR_RED:            _tui_format_params_push(41);  break;
+        case COLOR_GREEN:          _tui_format_params_push(42);  break;
+        case COLOR_YELLOW:         _tui_format_params_push(43);  break;
+        case COLOR_BLUE:           _tui_format_params_push(44);  break;
+        case COLOR_MAGENTA:        _tui_format_params_push(45);  break;
+        case COLOR_CYAN:           _tui_format_params_push(46);  break;
+        case COLOR_WHITE:          _tui_format_params_push(47);  break;
+        case COLOR_BRIGHT_BLACK:   _tui_format_params_push(100); break;
+        case COLOR_BRIGHT_RED:     _tui_format_params_push(101); break;
+        case COLOR_BRIGHT_GREEN:   _tui_format_params_push(102); break;
+        case COLOR_BRIGHT_YELLOW:  _tui_format_params_push(103); break;
+        case COLOR_BRIGHT_BLUE:    _tui_format_params_push(104); break;
+        case COLOR_BRIGHT_MAGENTA: _tui_format_params_push(105); break;
+        case COLOR_BRIGHT_CYAN:    _tui_format_params_push(106); break;
+        case COLOR_BRIGHT_WHITE:   _tui_format_params_push(107); break;
 
-        case COLOR_DARK_BLACK:     format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(232);
+        case COLOR_DARK_BLACK:     _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(232);
                                    break;
-        case COLOR_DARK_RED:       format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(88);
+        case COLOR_DARK_RED:       _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(88);
                                    break;
-        case COLOR_DARK_GREEN:     format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(22);
+        case COLOR_DARK_GREEN:     _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(22);
                                    break;
-        case COLOR_DARK_YELLOW:    format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(58);
+        case COLOR_DARK_YELLOW:    _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(58);
                                    break;
-        case COLOR_DARK_BLUE:      format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(18);
+        case COLOR_DARK_BLUE:      _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(18);
                                    break;
-        case COLOR_DARK_MAGENTA:   format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(90);
+        case COLOR_DARK_MAGENTA:   _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(90);
                                    break;
-        case COLOR_DARK_CYAN:      format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(23);
+        case COLOR_DARK_CYAN:      _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(23);
                                    break;
-        case COLOR_DARK_WHITE:     format_params_push(48);
-                                   format_params_push(5);
-                                   format_params_push(244);
+        case COLOR_DARK_WHITE:     _tui_format_params_push(48);
+                                   _tui_format_params_push(5);
+                                   _tui_format_params_push(244);
                                    break;
 
         default: assert(false);
@@ -385,7 +386,7 @@ private inline void tui_write_color(TextFormat text_format, Color fg_color, Colo
     }
 
     tui_write(FORMAT_PARAMS.str);
-    format_params_reset();
+    _tui_format_params_reset();
 }
 
 

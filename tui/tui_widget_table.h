@@ -45,7 +45,7 @@ typedef struct {
     bool   has_rendered;
 } WidgetTableState;
 
-private int tui_widget_table_compute_column_widths(WidgetTableDataInternal *data){
+static int _tui_widget_table_compute_column_widths(WidgetTableDataInternal *data){
     int total = 0;
     for(size_t col = 0; col < data->table.column_count; col++){
         int max_w = (int)utf8_str_display_width(data->table.headers[col]);
@@ -60,7 +60,7 @@ private int tui_widget_table_compute_column_widths(WidgetTableDataInternal *data
     return total + (int)(data->table.column_count - 1); // separators
 }
 
-private void tui_widget_table_auto_scroll(WidgetTableState *state){
+static void _tui_widget_table_auto_scroll(WidgetTableState *state){
     if(!state->has_rendered) return;
 
     Panel *panel   = tui_get_panel_focused();
@@ -76,7 +76,7 @@ private void tui_widget_table_auto_scroll(WidgetTableState *state){
     }
 }
 
-private void tui_widget_table_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_table_render(Widget *widget, Screen *screen, vec2i position){
     WidgetTableDataInternal *data  = widget->data;
     WidgetTableState        *state = widget->state;
 
@@ -158,7 +158,7 @@ private void tui_widget_table_render(Widget *widget, Screen *screen, vec2i posit
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 }
 
-private bool tui_widget_table_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_table_input(Widget *widget, InputEvent input_event){
     WidgetTableDataInternal *data  = widget->data;
     WidgetTableState        *state = widget->state;
 
@@ -173,13 +173,13 @@ private bool tui_widget_table_input(Widget *widget, InputEvent input_event){
             }
             memcpy(data->storage, &state->selected_index, sizeof(size_t));
             if(data->on_select != nullptr) data->on_select();
-            tui_widget_table_auto_scroll(state);
+            _tui_widget_table_auto_scroll(state);
             return true;
         case KEY_DOWN:
             state->selected_index = (state->selected_index + 1) % data->table.row_count;
             memcpy(data->storage, &state->selected_index, sizeof(size_t));
             if(data->on_select != nullptr) data->on_select();
-            tui_widget_table_auto_scroll(state);
+            _tui_widget_table_auto_scroll(state);
             return true;
         case KEY_ENTER:
             if(data->on_click != nullptr){
@@ -215,7 +215,7 @@ void tui_widget_table_(const char *widget_id, WidgetTableParams *params){
     data->column_widths = (int *)arena_alloc(
         LAYOUT_STATE.arena_frame, (size_t)col_widths_size
     );
-    data->total_width = tui_widget_table_compute_column_widths(data);
+    data->total_width = _tui_widget_table_compute_column_widths(data);
 
     WidgetTableState *state = (WidgetTableState *)tui_widget_state(
         widget_id, sizeof(WidgetTableState)
@@ -230,8 +230,8 @@ void tui_widget_table_(const char *widget_id, WidgetTableParams *params){
         .size.h    = 1 + (int)params->table.row_count,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_table_input,
-        .render    = &tui_widget_table_render,
+        .input     = &_tui_widget_table_input,
+        .render    = &_tui_widget_table_render,
     };
     tui_widget_push(new_widget);
 }

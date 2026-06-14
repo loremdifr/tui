@@ -34,20 +34,20 @@ static WidgetTableCell TABLE_CELLS[] = {
     {.label = u8"Sara"},    {.label = u8"39"}, {.label = u8"Brussels"},
 };
 
-private void page_table_init(void){
+static void page_table_init(void){
     TABLE_SELECTED = 0;
 }
 
-private bool page_table_input(InputEvent input_event){
+static bool page_table_input(InputEvent input_event){
     (void)input_event;
     return false;
 }
 
-private void page_table_process(float delta_time){
+static void page_table_process(float delta_time){
     (void)delta_time;
 }
 
-private void page_table_render(void){
+static void page_table_render(void){
     tui_panel_begin(SLOT_MAIN);
         tui_widget_table("TABLE_1",
             .storage = &TABLE_SELECTED,

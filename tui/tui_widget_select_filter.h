@@ -53,7 +53,7 @@ typedef struct {
     int                 selected_index;
 } WidgetSelectFilterState;
 
-private void tui_widget_select_filter_update_options(WidgetSelectFilterData *data, WidgetSelectFilterState *state){
+static void _tui_widget_select_filter_update_options(WidgetSelectFilterData *data, WidgetSelectFilterState *state){
     if(data->options_function == nullptr) return;
     state->current_options = data->options_function(state->query.data);
     if(state->selected_index >= (int)state->current_options.count){
@@ -65,7 +65,7 @@ private void tui_widget_select_filter_update_options(WidgetSelectFilterData *dat
     state->scroll = 0;
 }
 
-private void tui_widget_select_filter_auto_scroll(WidgetSelectFilterState *state, int visible_rows){
+static void _tui_widget_select_filter_auto_scroll(WidgetSelectFilterState *state, int visible_rows){
     if(state->selected_index < 0) return;
     if((int)state->scroll > state->selected_index){
         state->scroll = (size_t)state->selected_index;
@@ -75,7 +75,7 @@ private void tui_widget_select_filter_auto_scroll(WidgetSelectFilterState *state
     }
 }
 
-private void tui_widget_select_filter_dropdown_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_select_filter_dropdown_render(Widget *widget, Screen *screen, vec2i position){
     WidgetSelectFilterData  *data  = widget->data;
     WidgetSelectFilterState *state = widget->state;
 
@@ -150,7 +150,7 @@ private void tui_widget_select_filter_dropdown_render(Widget *widget, Screen *sc
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 }
 
-private bool tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent input_event){
     WidgetSelectFilterData  *data  = widget->data;
     WidgetSelectFilterState *state = widget->state;
     bool text_changed = false;
@@ -232,18 +232,18 @@ private bool tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent 
 
     if(text_changed){
         state->query.data[state->query.bytes] = '\0';
-        tui_widget_select_filter_update_options(data, state);
+        _tui_widget_select_filter_update_options(data, state);
     }
 
     return true;
 }
 
-private void tui_widget_select_filter_overlay(Widget *widget){
+static void _tui_widget_select_filter_overlay(Widget *widget){
     WidgetSelectFilterData  *data  = widget->data;
     WidgetSelectFilterState *state = widget->state;
 
     //QUERY AGAIN!!!
-    tui_widget_select_filter_update_options(data, state);
+    _tui_widget_select_filter_update_options(data, state);
 
     //size of dropdown
     int max_opt_width = 0;
@@ -267,7 +267,7 @@ private void tui_widget_select_filter_overlay(Widget *widget){
 
     //scroll
     int visible_rows = height - (2 + PADDING);
-    tui_widget_select_filter_auto_scroll(state, visible_rows);
+    _tui_widget_select_filter_auto_scroll(state, visible_rows);
 
     tui_layer_begin(LAYER_WIDGETS_OVERLAY_DO_NOT_USE, LAYOUT_SINGLE_PANEL);
         tui_panel_begin(SLOT_MAIN);
@@ -279,8 +279,8 @@ private void tui_widget_select_filter_overlay(Widget *widget){
                 .size      = {.w = width, .h = height},
                 .focusable = true,
                 .is_inline = false,
-                .input     = &tui_widget_select_filter_dropdown_input,
-                .render    = &tui_widget_select_filter_dropdown_render,
+                .input     = &_tui_widget_select_filter_dropdown_input,
+                .render    = &_tui_widget_select_filter_dropdown_render,
             };
             tui_widget_push(dropdown);
 
@@ -292,7 +292,7 @@ private void tui_widget_select_filter_overlay(Widget *widget){
     tui_layer_end();
 }
 
-private const uint8_t *tui_widget_select_filter_label(WidgetSelectFilterData *data, WidgetSelectFilterState *state){
+static const uint8_t* _tui_widget_select_filter_label(WidgetSelectFilterData *data, WidgetSelectFilterState *state){
     if(state == nullptr) return u8"";
     if(state->current_options.count == 0) return u8"";
 
@@ -310,11 +310,11 @@ private const uint8_t *tui_widget_select_filter_label(WidgetSelectFilterData *da
     return state->current_options.values[selected_index].label;
 }
 
-private void tui_widget_select_filter_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_select_filter_render(Widget *widget, Screen *screen, vec2i position){
     WidgetSelectFilterData  *data  = widget->data;
     WidgetSelectFilterState *state = widget->state;
 
-    auto selected_label  = tui_widget_select_filter_label(data, state);
+    auto selected_label  = _tui_widget_select_filter_label(data, state);
     size_t selected_width = utf8_str_display_width(selected_label);
 
     if(widget->focused){
@@ -333,7 +333,7 @@ private void tui_widget_select_filter_render(Widget *widget, Screen *screen, vec
     );
 }
 
-private bool tui_widget_select_filter_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_select_filter_input(Widget *widget, InputEvent input_event){
     WidgetSelectFilterState *state = widget->state;
 
     switch(input_event.input_type){
@@ -403,7 +403,7 @@ void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *
         widget_state->current_options = params->options_function(widget_state->query.data);
     }
 
-    auto selected_label   = tui_widget_select_filter_label(widget_data, widget_state);
+    auto selected_label   = _tui_widget_select_filter_label(widget_data, widget_state);
     size_t selected_width = utf8_str_display_width(selected_label);
 
     Widget new_widget = {
@@ -414,9 +414,9 @@ void tui_widget_select_filter_(const char *widget_id, WidgetSelectFilterParams *
         .size.h    = 1 + PADDING,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_select_filter_input,
-        .render    = &tui_widget_select_filter_render,
-        .overlay   = &tui_widget_select_filter_overlay,
+        .input     = &_tui_widget_select_filter_input,
+        .render    = &_tui_widget_select_filter_render,
+        .overlay   = &_tui_widget_select_filter_overlay,
         .overlay_title = params->overlay_title ? params->overlay_title : params->label,
     };
     tui_widget_push(new_widget);

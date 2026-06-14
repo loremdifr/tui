@@ -22,7 +22,7 @@ typedef struct {
 	FunctionPointer on_click;
 } WidgetButtonData;
 
-private void tui_widget_button_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_button_render(Widget *widget, Screen *screen, vec2i position){
 	WidgetButtonData *widget_data = widget->data;
 
 	//any processing would be done here if needed
@@ -42,7 +42,7 @@ private void tui_widget_button_render(Widget *widget, Screen *screen, vec2i posi
     );
 }
 
-private bool tui_widget_button_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_button_input(Widget *widget, InputEvent input_event){
 	WidgetButtonData  *widget_data  = widget->data;
 	switch (input_event.input_type) {
     case INPUT_KEY:
@@ -81,8 +81,8 @@ void tui_widget_button_(const char *widget_id, WidgetButtonParams *params){
 	    .size.h    = 1 + BORDER * 2,
 	    .focusable = true,
 	    .is_inline = params->is_inline,
-	    .input     = &tui_widget_button_input,
-	    .render    = &tui_widget_button_render,
+	    .input     = &_tui_widget_button_input,
+	    .render    = &_tui_widget_button_render,
     };
     tui_widget_push(new_widget);
 }

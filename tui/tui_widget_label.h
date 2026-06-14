@@ -4,7 +4,6 @@
 #include "tui_string.h"
 #include "tui_layout.h"
 #include "tui_screen.h"
-// #include <stdlib.h>
 
 typedef struct {
 	const uint8_t *text;
@@ -25,8 +24,7 @@ void tui_widget_label_(WidgetLabelParams *params);
 
 #ifdef TUI_WIDGET_LABEL_IMPL
 
-
-private void tui_widget_label_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_label_render(Widget *widget, Screen *screen, vec2i position){
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 	WidgetLabelData *widget_data = widget->data;
 
@@ -60,7 +58,7 @@ void tui_widget_label_(WidgetLabelParams *params){
         .size.h    = max(1, widget_data->lines.count + PADDING),
         .focusable = false,
         .is_inline = params->is_inline,
-        .render    = &tui_widget_label_render,
+        .render    = &_tui_widget_label_render,
     };
     tui_widget_push(new_widget);
 }

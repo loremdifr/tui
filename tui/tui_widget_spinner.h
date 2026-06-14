@@ -21,7 +21,7 @@ typedef struct {
     int8_t  frame_step;
 } WidgetSpinnerState;
 
-private void tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i position){
     WidgetSpinnerState *widget_state = widget->state;
     WidgetSpinnerData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {
@@ -107,7 +107,7 @@ void tui_widget_spinner_(const uint8_t *text){
     				+ PADDING * 2 + 2,
 	    .size.h    = 1 + PADDING,
 	    .focusable = false,
-	    .render    = &tui_widget_spinner_render,
+	    .render    = &_tui_widget_spinner_render,
     };
     tui_widget_push(new_widget);
 }

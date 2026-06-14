@@ -52,12 +52,12 @@ typedef struct {
 } WidgetInputTextState;
 
 
-private void tui_widget_input_text_reset_cursor(Widget *widget){
+static void _tui_widget_input_text_reset_cursor(Widget *widget){
     WidgetInputTextState *s = widget->state;
     tui_text_edit_reset_cursor(&s->caret_show, &s->caret_last_shown);
 }
 
-private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputTextData  *data  = widget->data;
     WidgetInputTextState *state = widget->state;
 
@@ -152,13 +152,13 @@ private void tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     );
 }
 
-private inline void tui_widget_input_text_move_cursor(Widget *widget, int move){
+static inline void _tui_widget_input_text_move_cursor(Widget *widget, int move){
     WidgetInputTextData  *d = widget->data;
     WidgetInputTextState *s = widget->state;
     tui_text_edit_move_cursor(&s->cursor, move, d->string.length);
 }
 
-private void tui_widget_input_text_move_word(Widget *widget, int direction){
+static void _tui_widget_input_text_move_word(Widget *widget, int direction){
     WidgetInputTextData  *widget_data  = widget->data;
     WidgetInputTextState *widget_state = widget->state;
 
@@ -198,25 +198,25 @@ private void tui_widget_input_text_move_word(Widget *widget, int direction){
     widget_state->cursor = curr;
 }
 
-private void tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
+static void _tui_widget_input_text_insert(Widget *widget, uint32_t unicode){
     WidgetInputTextData  *d = widget->data;
     WidgetInputTextState *s = widget->state;
     tui_text_edit_insert(&d->string, &s->cursor, unicode);
 }
 
-private void tui_widget_input_text_delete(Widget *widget){
+static void _tui_widget_input_text_delete(Widget *widget){
     WidgetInputTextData  *d = widget->data;
     WidgetInputTextState *s = widget->state;
     tui_text_edit_delete(&d->string, s->cursor);
 }
 
-private void tui_widget_input_text_backspace(Widget *widget){
+static void _tui_widget_input_text_backspace(Widget *widget){
     WidgetInputTextData  *d = widget->data;
     WidgetInputTextState *s = widget->state;
     tui_text_edit_backspace(&d->string, &s->cursor);
 }
 
-private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_input_text_input(Widget *widget, InputEvent input_event){
     WidgetInputTextData  *widget_data  = widget->data;
     WidgetInputTextState *widget_state = widget->state;
     switch (input_event.input_type) {
@@ -226,42 +226,42 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
         case KEY_F1:
         case KEY_HOME:
             if(!widget_state->editing) break;
-            tui_widget_input_text_reset_cursor(widget);
+            _tui_widget_input_text_reset_cursor(widget);
             widget_state->cursor = 0;
             break;
         case KEY_F2:
         case KEY_END:
             if(!widget_state->editing) break;
-            tui_widget_input_text_reset_cursor(widget);
+            _tui_widget_input_text_reset_cursor(widget);
             widget_state->cursor = widget_data->string.length;
             break;
         case KEY_LEFT:
             if(!widget_state->editing) break;
-            tui_widget_input_text_reset_cursor(widget);
+            _tui_widget_input_text_reset_cursor(widget);
             if(key.ctrl){
-                tui_widget_input_text_move_word(widget, -1);
+                _tui_widget_input_text_move_word(widget, -1);
             }else{
-                tui_widget_input_text_move_cursor(widget, -1);
+                _tui_widget_input_text_move_cursor(widget, -1);
             }
             break;
         case KEY_RIGHT:
             if(!widget_state->editing) break;
-            tui_widget_input_text_reset_cursor(widget);
+            _tui_widget_input_text_reset_cursor(widget);
             if(key.ctrl){
-                tui_widget_input_text_move_word(widget, +1);
+                _tui_widget_input_text_move_word(widget, +1);
             }else{
-                tui_widget_input_text_move_cursor(widget, +1);
+                _tui_widget_input_text_move_cursor(widget, +1);
             }
             break;
         case KEY_BACKSPACE:
             if(!widget_state->editing) break;
-            tui_widget_input_text_reset_cursor(widget);
-            tui_widget_input_text_backspace(widget);
+            _tui_widget_input_text_reset_cursor(widget);
+            _tui_widget_input_text_backspace(widget);
             break;
         case KEY_DELETE:
             if(!widget_state->editing) break;
-            tui_widget_input_text_reset_cursor(widget);
-            tui_widget_input_text_delete(widget);
+            _tui_widget_input_text_reset_cursor(widget);
+            _tui_widget_input_text_delete(widget);
             break;
         case KEY_UP:
         case KEY_DOWN:
@@ -271,7 +271,7 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
             return false;
         case KEY_ENTER:
             widget_state->editing = !widget_state->editing;
-            if(widget_state->editing) tui_widget_input_text_reset_cursor(widget);
+            if(widget_state->editing) _tui_widget_input_text_reset_cursor(widget);
             return true; //important! otherwise it bubbles up!
             break;
         case KEY_ESCAPE:
@@ -290,7 +290,7 @@ private bool tui_widget_input_text_input(Widget *widget, InputEvent input_event)
                 break;
             }
             //at this point, we're dealing with a printable key!
-            tui_widget_input_text_insert(widget, key.unicode);
+            _tui_widget_input_text_insert(widget, key.unicode);
         break;
         }
     case INPUT_NONE:
@@ -348,8 +348,8 @@ void tui_widget_input_text_(const char *widget_id, WidgetInputTextParams *params
         .size.h    = 2,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_input_text_input,
-        .render    = &tui_widget_input_text_render,
+        .input     = &_tui_widget_input_text_input,
+        .render    = &_tui_widget_input_text_render,
     };
     tui_widget_push(new_widget);
 }

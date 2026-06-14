@@ -65,7 +65,7 @@ struct Widget {
     const uint8_t        *overlay_title;
 };
 
-private constexpr int TUI_WIDGETS_IN_PANEL_MAX = 64;
+static constexpr int TUI_WIDGETS_IN_PANEL_MAX = 64;
 typedef struct {
     PanelSlot slot;
     bool      focused;
@@ -121,10 +121,10 @@ Panel *tui_get_panel_building(void);
 
 #ifdef TUI_LAYOUT_IMPL
 
-private constexpr int PADDING = 1;
-private constexpr int BORDER = 1;
-private constexpr int TUI_PANELS_MAX = 12;
-private constexpr int TUI_WIDGET_STATES_MAX = TUI_PANELS_MAX * TUI_WIDGETS_IN_PANEL_MAX;
+static constexpr int PADDING = 1;
+static constexpr int BORDER = 1;
+static constexpr int TUI_PANELS_MAX = 12;
+static constexpr int TUI_WIDGET_STATES_MAX = TUI_PANELS_MAX * TUI_WIDGETS_IN_PANEL_MAX;
 
 struct PageLayer {
     PageLayout   layout;
@@ -153,7 +153,7 @@ typedef struct {
     Arena       *arena;
 } WidgetStateRegistry;
 
-private WidgetStateRegistry WIDGET_REGISTRY = {.arena  = nullptr};
+static WidgetStateRegistry WIDGET_REGISTRY = {.arena  = nullptr};
 
 typedef struct {
     vec2i         base_size;
@@ -167,7 +167,7 @@ typedef struct {
     const uint8_t *widget_overlay_title; //temporary, set during overlay build for title rendering
 } LayoutState;
 
-private LayoutState LAYOUT_STATE = {
+static LayoutState LAYOUT_STATE = {
     .layers = {
         [LAYER_BASE]                       = {.panel_building = -1, .shrink = false},
         [LAYER_OVERLAY]                    = {.panel_building = -1, .shrink = true},
@@ -189,28 +189,28 @@ bool tui_widget_overlay_is_open(void) {
     return LAYOUT_STATE.widget_overlay_active;
 }
 
-private void tui_widget_row_begin(Panel *panel);
-private void tui_widget_row_push(Panel *panel, Widget *widget);
-private void tui_widget_row_end(Panel *panel);
+static void _tui_widget_row_begin(Panel *panel);
+static void _tui_widget_row_push(Panel *panel, Widget *widget);
+static void _tui_widget_row_end(Panel *panel);
 
-private inline int center_in_container(int base, int length, int container_length){
+static inline int _tui_center_in_container(int base, int length, int container_length){
     base += (container_length - length + 1) / 2;
     return base;
 }
 
-private void tui_render_widget(Widget *widget, vec2i position){
+static void _tui_render_widget(Widget *widget, vec2i position){
     widget->render(widget, LAYOUT_STATE.screen, position);
     //always reset color after a widget!
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
 }
 
-private void tui_render_panel(Panel *panel, int scroll_offset){
+static void _tui_render_panel(Panel *panel, int scroll_offset){
     const int BASE_X = panel->outer_rect.pos.x + BORDER + PADDING;
     const int BASE_Y = panel->outer_rect.pos.y + BORDER;// + PADDING;
     vec2i cursor_pos = {.x = BASE_X, .y = BASE_Y};
 
     //in case there was still an open inline row from the definition pass
-    tui_widget_row_end(panel);
+    _tui_widget_row_end(panel);
 
     //panels always render their content centered vertically
     //widget heights are precomputed
@@ -245,7 +245,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
             }
 
             //centrar row horizontally
-            auto centered_row = center_in_container(
+            auto centered_row = _tui_center_in_container(
                 cursor_pos.x,
                 inline_row_width,
                 panel->inner_rect.size.w
@@ -261,7 +261,7 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
             inline_row_height = 0;
 
             // center next widget horizontally
-            cursor_pos.x = center_in_container(
+            cursor_pos.x = _tui_center_in_container(
                 cursor_pos.x,
                 widget->size.w,
                 panel->inner_rect.size.w
@@ -270,13 +270,13 @@ private void tui_render_panel(Panel *panel, int scroll_offset){
 
         //center inline widgets vertically between them
         int render_y = widget->is_inline
-            ? center_in_container(cursor_pos.y, widget->size.h, inline_row_height)
+            ? _tui_center_in_container(cursor_pos.y, widget->size.h, inline_row_height)
             : cursor_pos.y;
         //render current widget INSIDE panel boundaires
         int render_bottom = render_y + widget->size.h;
         if(render_bottom > panel->inner_rect.pos.y
         && render_y < panel->inner_rect.pos.y + panel->inner_rect.size.h){
-            tui_render_widget(widget, (vec2i){.x = cursor_pos.x, .y = render_y});
+            _tui_render_widget(widget, (vec2i){.x = cursor_pos.x, .y = render_y});
         }
 
         if (i >= panel->widget_count - 1) break; //no more panels, break early
@@ -346,7 +346,7 @@ Panel *tui_get_panel_building(){
     return &(layer_building->panels[layer_building->panel_building]);
 }
 
-private Widget *tui_get_widget_focused(){
+static Widget* _tui_get_widget_focused(){
     PageLayer *layer_focused = tui_get_layer_focused();
     auto widget_focused_id = layer_focused->widget_focused[layer_focused->panel_focused];
     if(widget_focused_id == nullptr){
@@ -364,7 +364,7 @@ private Widget *tui_get_widget_focused(){
     return nullptr;
 }
 
-private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot, int base_w, int base_h){
+static rect2i _tui_panel_rect(PageLayout layout, PanelSlot slot, int base_w, int base_h){
     //panel size is based on the slot it occupies in the type of layout
 
     int sidebar_w = min(30, 0.4 * base_w);
@@ -423,7 +423,7 @@ private rect2i tui_panel_rect(PageLayout layout, PanelSlot slot, int base_w, int
     return (rect2i){ .size = {base_w, base_h} };
 }
 
-private void tui_panel_shrink_to_widgets(Panel *panel){
+static void _tui_panel_shrink_to_widgets(Panel *panel){
     //achicar panel al tamaño de los widgets
     panel->inner_rect.size = panel->widgets_rect.size;
     panel->outer_rect.size = panel->widgets_rect.size;
@@ -439,10 +439,10 @@ private void tui_panel_shrink_to_widgets(Panel *panel){
     panel->inner_rect.size.h = panel->outer_rect.size.h - PADDING * 2 - BORDER * 2;
 }
 
-private void tui_layer_shrink(PageLayer *layer) {
+static void _tui_layer_shrink(PageLayer *layer) {
     // ffirst shrink all the panel to the widgets
     for(int i = 0; i < layer->panel_count; i++){
-        tui_panel_shrink_to_widgets(&layer->panels[i]);
+        _tui_panel_shrink_to_widgets(&layer->panels[i]);
     }
 
     //then fix panel gaps
@@ -518,7 +518,7 @@ void tui_panel_begin(PanelSlot slot){
     assert(layer_building->panel_building == -1); //close the prev panel first!
     assert(layer_building->panel_count < TUI_PANELS_MAX);
 
-    auto panel_rect = tui_panel_rect(
+    auto panel_rect = _tui_panel_rect(
         layer_building->layout, slot,
         LAYOUT_STATE.base_size.w, LAYOUT_STATE.base_size.h
     );
@@ -577,14 +577,14 @@ char *tui_create_widget_id(){
     return new_id;
 }
 
-private inline Widget *get_latest_widget(){
+static inline Widget* _tui_get_latest_widget(){
     PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
     Panel *panel = &layer_building->panels[layer_building->panel_building];
     if(panel->widget_count == 0) return nullptr;
     return &panel->widgets[panel->widget_count - 1];
 }
 
-private inline Widget *get_new_widget(char const *widget_id){
+static inline Widget* _tui_get_new_widget(char const *widget_id){
     PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
     assert(layer_building->panel_building != -1); //must be used inside a tui_panel_begin!
     Panel *panel = &layer_building->panels[layer_building->panel_building];
@@ -628,12 +628,12 @@ void *tui_widget_state(const char *widget_id, size_t data_size){
     return state->state_data;
 }
 
-private void tui_widget_row_begin(Panel *panel){
+static void _tui_widget_row_begin(Panel *panel){
     //reset row
     panel->curr_row_size = (vec2i){.w = 0, .h = 0};
 }
 
-private void tui_widget_row_push(Panel *panel, Widget *widget){
+static void _tui_widget_row_push(Panel *panel, Widget *widget){
     //pushes widget to row
     //should NOT modify the widgets_rect !
 
@@ -646,7 +646,7 @@ private void tui_widget_row_push(Panel *panel, Widget *widget){
     panel->curr_row_size.w += widget->size.w;
 }
 
-private void tui_widget_row_end(Panel *panel){
+static void _tui_widget_row_end(Panel *panel){
     //push row if exists to widget rect
     if(panel->curr_row_size.w == 0 && panel->curr_row_size.h == 0){
         //nothing to commit
@@ -665,8 +665,8 @@ private void tui_widget_row_end(Panel *panel){
 void tui_widget_push(Widget widget){
     PageLayer *layer_building = &LAYOUT_STATE.layers[LAYOUT_STATE.layer_building];
     assert(layer_building->panel_building != -1); //must be used inside a tui_panel_begin!
-    Widget *last_widget = get_latest_widget();
-    Widget *new_widget  = get_new_widget(widget.id);
+    Widget *last_widget = _tui_get_latest_widget();
+    Widget *new_widget  = _tui_get_new_widget(widget.id);
     memcpy(new_widget, &widget, sizeof(Widget));
 
     //widget focus
@@ -678,17 +678,17 @@ void tui_widget_push(Widget widget){
     bool inside_row = (last_widget == nullptr || last_widget->is_inline);
     if(new_widget->is_inline && !inside_row){
         //comienza nueva row inline
-        tui_widget_row_begin(panel);
-        tui_widget_row_push(panel, new_widget);
+        _tui_widget_row_begin(panel);
+        _tui_widget_row_push(panel, new_widget);
     }else if(new_widget->is_inline && inside_row){
         //ya estaba en una row inline y la continuo
-        tui_widget_row_push(panel, new_widget);
+        _tui_widget_row_push(panel, new_widget);
     }else{ //widget not inline
-        tui_widget_row_end(panel); //ten case de que haya habido una row abierta
+        _tui_widget_row_end(panel); //ten case de que haya habido una row abierta
         //widgets not inline have their own row
-        tui_widget_row_begin(panel);
-        tui_widget_row_push(panel, new_widget);
-        tui_widget_row_end(panel);
+        _tui_widget_row_begin(panel);
+        _tui_widget_row_push(panel, new_widget);
+        _tui_widget_row_end(panel);
     }
 }
 
@@ -719,13 +719,13 @@ void tui_layout_prepare(Screen *screen, PageLayout layout){
 }
 
 bool tui_widget_focused_input(InputEvent input_event){
-    Widget *widget = tui_get_widget_focused();
+    Widget *widget = _tui_get_widget_focused();
     if(widget == nullptr) return false;
     if(widget->input == nullptr) return false;
     return widget->input(widget, input_event);
 }
 
-private void tui_layout_evaluate_layer_focused(void){
+static void _tui_layout_evaluate_layer_focused(void){
     //decide focused layer first, from top to bottom
     // for(PageLayerKind layer_idx = LAYER_WIDGETS_OVERLAY_DO_NOT_USE; layer_idx >= 0; layer_idx--){
     for(int layer_idx = 2; layer_idx >= 0; layer_idx--){
@@ -761,7 +761,7 @@ void tui_layout_build_widget_overlays(void){
     }
 
     //evaluate focused layer
-    tui_layout_evaluate_layer_focused();
+    _tui_layout_evaluate_layer_focused();
 }
 
 void tui_layout_render(){
@@ -772,7 +772,7 @@ void tui_layout_render(){
 
         //render panels of layer
         if(layer->shrink){
-            tui_layer_shrink(layer);
+            _tui_layer_shrink(layer);
         }
 
         for(int i = 0; i < layer->panel_count; i++){
@@ -792,7 +792,7 @@ void tui_layout_render(){
 
             //render
             int scroll_offset = layer->panel_scroll_offset[i];
-            tui_render_panel(panel, scroll_offset);
+            _tui_render_panel(panel, scroll_offset);
         }
 
         //draw overlay title on the top-most border of the overlay

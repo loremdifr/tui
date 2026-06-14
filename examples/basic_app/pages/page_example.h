@@ -54,7 +54,7 @@ static WidgetTabOption TAB_OPTIONS[] = {
     {.label = u8"About",    .value = 2},
 };
 
-private WidgetSelectOptions filter_options(const uint8_t *query){
+static WidgetSelectOptions filter_options(const uint8_t *query){
 	const size_t max_options = 16;
 	WidgetSelectOptions opts = {
 		.values = (WidgetSelectOption *)arena_alloc(
@@ -77,34 +77,34 @@ private WidgetSelectOptions filter_options(const uint8_t *query){
 	return opts;
 }
 
-private void show_example_popup(void){
+static void show_example_popup(void){
 	show_popup = true;
 	// name = utf8_str_concat(name, u8"Another Name!");
 }
 
-private void close_example_popup(void){
+static void close_example_popup(void){
 	show_popup = false;
 	// memset(name, '\0', name_length_max * sizeof(uint8_t));
 }
 
-private void navigate_to_secondary(void){
+static void navigate_to_secondary(void){
 	tui_navigate_to(PAGE_SECONDARY_ID);
 }
 
-private void navigate_to_virtual_list(void){
+static void navigate_to_virtual_list(void){
 	tui_navigate_to(PAGE_VIRTUAL_LIST_ID);
 }
 
-private void navigate_to_table(void){
+static void navigate_to_table(void){
 	tui_navigate_to(PAGE_TABLE_ID);
 }
 
-private void page_example_init(void){
+static void page_example_init(void){
 	name = (uint8_t *)calloc(name_length_max, sizeof(uint8_t));
 	// name = utf8_str_concat(name, u8"Mr. Smith");
 }
 
-private bool page_example_input(InputEvent input_event){
+static bool page_example_input(InputEvent input_event){
 	//we don't need this for now, but we can have access
 	//to direct user input if needed
 
@@ -125,7 +125,7 @@ private bool page_example_input(InputEvent input_event){
     return false; //<- does not capture input
 }
 
-private void page_example_process(float delta_time){
+static void page_example_process(float delta_time){
 	assert(delta_time > -1);
 	//register hotkeys
 	tui_register_key(KEY_T, KEY_MOD_NONE, &show_example_popup);
@@ -138,7 +138,7 @@ private void page_example_process(float delta_time){
 	// printf("DELTA TIME: %.2f", delta_time);
 }
 
-private void page_example_render(void){
+static void page_example_render(void){
 	tui_panel_begin(SLOT_MAIN);
 
 		tui_widget_spinner("Cargando...");

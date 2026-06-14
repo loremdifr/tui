@@ -87,7 +87,7 @@ void tui_draw_box_connected(Screen *screen, rect2i rect){
     }
 }
 
-private bool is_box_character(Screen *screen, int x, int y){
+static bool _tui_is_box_character(Screen *screen, int x, int y){
     Cell *cell = screen_get(screen, x, y);
     uint8_t *bytes = cell->bytes;
     static const uint8_t *box_chars[] = {
@@ -120,10 +120,10 @@ void tui_draw_box_connected_cell(Screen *screen, int x, int y){
     constexpr uint8_t LEFT  = 0b0100;
     constexpr uint8_t RIGHT = 0b1000;
 
-    bool has_up    = y > 0                && is_box_character(screen,x, y-1);
-    bool has_down  = y < screen->size.h-1 && is_box_character(screen,x, y+1);
-    bool has_left  = x > 0                && is_box_character(screen,x-1, y);
-    bool has_right = x < screen->size.w-1 && is_box_character(screen,x+1, y);
+    bool has_up    = y > 0                && _tui_is_box_character(screen,x, y-1);
+    bool has_down  = y < screen->size.h-1 && _tui_is_box_character(screen,x, y+1);
+    bool has_left  = x > 0                && _tui_is_box_character(screen,x-1, y);
+    bool has_right = x < screen->size.w-1 && _tui_is_box_character(screen,x+1, y);
 
     uint8_t neighbors = 0b0000;
     if(has_up)    neighbors |= UP;
@@ -362,7 +362,7 @@ void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int tot
 constexpr int     BRAILLE_W = 2;
 constexpr int     BRAILLE_H = 4;
 
-private void braille_plot_dot(Screen *screen, int dot_x, int dot_y){
+static void _tui_braille_plot_dot(Screen *screen, int dot_x, int dot_y){
     static const uint8_t braille_bit_map[2][4] = { //transpuesta?
         {0, 1, 2, 6},
         {3, 4, 5, 7},
@@ -394,7 +394,7 @@ private void braille_plot_dot(Screen *screen, int dot_x, int dot_y){
     screen_set_utf8(screen, cell_x, cell_y, bytes);
 }
 
-private void braille_set_center(Screen *screen, int cell_x, int cell_y){
+static void _tui_braille_set_center(Screen *screen, int cell_x, int cell_y){
     constexpr uint8_t BRAILLE_CENTER_DOTS = 0x36; //bits 1,2,4,5 = 2+4+16+32 = 54 = 0x36
 
     uint8_t mask = BRAILLE_CENTER_DOTS;
@@ -435,7 +435,7 @@ void tui_draw_line_braille(Screen *screen, vec2i from, vec2i to){
     if(steep){
         int err = delta.x / 2;
         for(; current.x != to_dot.x; current.x += step.x){
-            braille_plot_dot(screen, current.x, current.y);
+            _tui_braille_plot_dot(screen, current.x, current.y);
             err -= delta.y;
             if(err < 0){
                 current.y += step.y;
@@ -445,7 +445,7 @@ void tui_draw_line_braille(Screen *screen, vec2i from, vec2i to){
     }else{
         int err = delta.y / 2;
         for(; current.y != to_dot.y; current.y += step.y){
-            braille_plot_dot(screen, current.x, current.y);
+            _tui_braille_plot_dot(screen, current.x, current.y);
             err -= delta.x;
             if(err < 0){
                 current.x += step.x;
@@ -453,11 +453,11 @@ void tui_draw_line_braille(Screen *screen, vec2i from, vec2i to){
             }
         }
     }
-    braille_plot_dot(screen, current.x, current.y);
+    _tui_braille_plot_dot(screen, current.x, current.y);
 
     //ensure four central dots at starting and ending cell
-    braille_set_center(screen, from.x, from.y);
-    braille_set_center(screen, to.x,   to.y);
+    _tui_braille_set_center(screen, from.x, from.y);
+    _tui_braille_set_center(screen, to.x,   to.y);
 }
 
 #endif //TUI_DRAW_IMPL

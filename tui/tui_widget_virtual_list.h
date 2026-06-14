@@ -42,7 +42,7 @@ typedef struct {
     bool   has_rendered;
 } WidgetVirtualListState;
 
-private void tui_widget_virtual_list_auto_scroll(WidgetVirtualListState *state){
+static void _tui_widget_virtual_list_auto_scroll(WidgetVirtualListState *state){
     if(!state->has_rendered) return;
 
     Panel *panel      = tui_get_panel_focused();
@@ -57,7 +57,7 @@ private void tui_widget_virtual_list_auto_scroll(WidgetVirtualListState *state){
     }
 }
 
-private void tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2i position){
     WidgetVirtualListData  *data  = widget->data;
     WidgetVirtualListState *state = widget->state;
 
@@ -86,7 +86,7 @@ private void tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2
     }
 }
 
-private bool tui_widget_virtual_list_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_virtual_list_input(Widget *widget, InputEvent input_event){
     WidgetVirtualListData  *data  = widget->data;
     WidgetVirtualListState *state = widget->state;
 
@@ -101,13 +101,13 @@ private bool tui_widget_virtual_list_input(Widget *widget, InputEvent input_even
             }
             memcpy(data->storage, &state->selected_index, sizeof(size_t));
             if(data->on_select != nullptr) data->on_select();
-            tui_widget_virtual_list_auto_scroll(state);
+            _tui_widget_virtual_list_auto_scroll(state);
             return true;
         case KEY_DOWN:
             state->selected_index = (state->selected_index + 1) % data->items.count;
             memcpy(data->storage, &state->selected_index, sizeof(size_t));
             if(data->on_select != nullptr) data->on_select();
-            tui_widget_virtual_list_auto_scroll(state);
+            _tui_widget_virtual_list_auto_scroll(state);
             return true;
         case KEY_ENTER:
             if(data->on_click != nullptr){
@@ -159,8 +159,8 @@ void tui_widget_virtual_list_(const char *widget_id, WidgetVirtualListParams *pa
         .size.h    = (int)params->items.count,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_virtual_list_input,
-        .render    = &tui_widget_virtual_list_render,
+        .input     = &_tui_widget_virtual_list_input,
+        .render    = &_tui_widget_virtual_list_render,
     };
     tui_widget_push(new_widget);
 }

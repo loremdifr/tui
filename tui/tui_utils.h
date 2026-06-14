@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#define private static
 #define arr_size(arr) (sizeof(arr) / sizeof(arr[0]))
 
 typedef struct {
@@ -280,7 +279,7 @@ void utf8_unpack(const uint32_t packed_bytes, uint8_t *unpacked_bytes){
 }
 
 
-private uint32_t utf8_codepoint_from_bytes(const uint8_t bytes[static 4]){
+uint32_t utf8_codepoint_from_bytes(const uint8_t bytes[static 4]){
     //to get the utf8 codepoint we have to remove the continuation bits from
     //each byte (first two), and then concat the other bits in order
     //NOTE: first 2 bits are the continuation byte marker, so we use multiple of 8-2=6

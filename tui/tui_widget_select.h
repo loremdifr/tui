@@ -35,7 +35,7 @@ typedef struct {
     WidgetSelectOptions   options;
 } WidgetSelectData;
 
-private const uint8_t *tui_widget_select_label(WidgetSelectData *data){
+static const uint8_t* _tui_widget_select_label(WidgetSelectData *data){
     if(data == nullptr) return u8"";
     if(data->options.count == 0) return u8"";
     size_t selected_index = 0;
@@ -50,10 +50,10 @@ private const uint8_t *tui_widget_select_label(WidgetSelectData *data){
     return data->options.values[selected_index].label;
 }
 
-private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_select_render(Widget *widget, Screen *screen, vec2i position){
     WidgetSelectData  *data = widget->data;
 
-    auto selected_label   = tui_widget_select_label(data);
+    auto selected_label   = _tui_widget_select_label(data);
     size_t selected_width = utf8_str_display_width(selected_label);
 
     if(widget->focused){
@@ -73,7 +73,7 @@ private void tui_widget_select_render(Widget *widget, Screen *screen, vec2i posi
 
 }
 
-private bool tui_widget_select_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_select_input(Widget *widget, InputEvent input_event){
     WidgetSelectData *data = widget->data;
 
     switch (input_event.input_type) {
@@ -102,7 +102,7 @@ private bool tui_widget_select_input(Widget *widget, InputEvent input_event){
     return tui_widget_overlay_is_open();
 }
 
-private void tui_widget_select_overlay(Widget *widget){
+static void _tui_widget_select_overlay(Widget *widget){
     WidgetSelectData *data = widget->data;
 
     tui_layer_begin(LAYER_WIDGETS_OVERLAY_DO_NOT_USE, LAYOUT_SINGLE_PANEL);
@@ -135,7 +135,7 @@ void tui_widget_select_(const char *widget_id, WidgetSelectParams *params){
     widget_data->label_width    = utf8_str_display_width(params->label);
     widget_data->options        = params->options;
 
-    auto selected_label   = tui_widget_select_label(widget_data);
+    auto selected_label   = _tui_widget_select_label(widget_data);
     size_t selected_width = utf8_str_display_width(selected_label);
 
     Widget new_widget = {
@@ -145,9 +145,9 @@ void tui_widget_select_(const char *widget_id, WidgetSelectParams *params){
         .size.h    = 1 + PADDING,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_select_input,
-        .render    = &tui_widget_select_render,
-        .overlay   = &tui_widget_select_overlay,
+        .input     = &_tui_widget_select_input,
+        .render    = &_tui_widget_select_render,
+        .overlay   = &_tui_widget_select_overlay,
         .overlay_title = params->overlay_title ? params->overlay_title : params->label,
     };
     tui_widget_push(new_widget);

@@ -49,20 +49,20 @@ static WidgetVirtualListItem VIRTUAL_LIST_ITEMS[] = {
     {.label = u8"Ferro"},
 };
 
-private void page_virtual_list_init(void){
+static void page_virtual_list_init(void){
     VIRTUAL_LIST_SELECTED = 0;
 }
 
-private bool page_virtual_list_input(InputEvent input_event){
+static bool page_virtual_list_input(InputEvent input_event){
     (void)input_event;
     return false;
 }
 
-private void page_virtual_list_process(float delta_time){
+static void page_virtual_list_process(float delta_time){
     (void)delta_time;
 }
 
-private void page_virtual_list_render(void){
+static void page_virtual_list_render(void){
     tui_panel_begin(SLOT_MAIN);
         tui_widget_virtual_list(
             "VIRTUAL_LIST",

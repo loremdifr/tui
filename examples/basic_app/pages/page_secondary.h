@@ -9,16 +9,16 @@ extern Page PAGE_SECONDARY;
 #ifdef PAGE_SECONDARY_IMPL
 
 //variables de la pagina
-private bool secondary_popup = false;
+static bool secondary_popup = false;
 
-private void close_secondary_popup(void){
+static void close_secondary_popup(void){
 	secondary_popup = false;
 }
 
-private void page_secondary_init(void){
+static void page_secondary_init(void){
 }
 
-private bool page_secondary_input(InputEvent input_event){
+static bool page_secondary_input(InputEvent input_event){
     switch (input_event.input_type) {
     case INPUT_KEY:
         switch (input_event.key_event.key) {
@@ -36,11 +36,11 @@ private bool page_secondary_input(InputEvent input_event){
     return false;
 }
 
-private void page_secondary_process(float delta_time){
+static void page_secondary_process(float delta_time){
     (void)delta_time;
 }
 
-private void page_secondary_canvas_render(Screen *screen, vec2i position){
+static void page_secondary_canvas_render(Screen *screen, vec2i position){
     // Test tui_draw_box
     tui_draw_box(screen, (rect2i){
         .pos = position,
@@ -103,7 +103,7 @@ private void page_secondary_canvas_render(Screen *screen, vec2i position){
     tui_draw_box_title(screen, box_with_title, &title, BOX_TITLE_TOP_LEFT);
 }
 
-private void page_secondary_render(void){
+static void page_secondary_render(void){
 	tui_panel_begin(SLOT_SIDEBAR);
 		tui_widget_label(u8"SIDEBAR");
 		tui_widget_label(u8"---------");

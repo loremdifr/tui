@@ -29,7 +29,7 @@ typedef struct {
     FunctionPointer on_select;
 } WidgetInputRadioData;
 
-private bool tui_widget_input_radio_is_selected(WidgetInputRadioData *widget_data){
+static bool _tui_widget_input_radio_is_selected(WidgetInputRadioData *widget_data){
     assert(widget_data != nullptr);
     assert(widget_data->storage != nullptr);
     assert(widget_data->value != nullptr);
@@ -42,9 +42,9 @@ private bool tui_widget_input_radio_is_selected(WidgetInputRadioData *widget_dat
     ) == 0;
 }
 
-private void tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i position){
+static void _tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i position){
     WidgetInputRadioData *widget_data = widget->data;
-    bool is_selected = tui_widget_input_radio_is_selected(widget_data);
+    bool is_selected = _tui_widget_input_radio_is_selected(widget_data);
 
     static const uint8_t RADIO_ON[4]  = u8"◉";
     static const uint8_t RADIO_OFF[4] = u8"○";
@@ -70,7 +70,7 @@ private void tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i
     );
 }
 
-private bool tui_widget_input_radio_input(Widget *widget, InputEvent input_event){
+static bool _tui_widget_input_radio_input(Widget *widget, InputEvent input_event){
     WidgetInputRadioData *widget_data = widget->data;
 
     switch (input_event.input_type) {
@@ -129,8 +129,8 @@ void tui_widget_input_radio_(const char *widget_id, WidgetInputRadioParams *para
         .size.h    = 1 + PADDING,
         .focusable = true,
         .is_inline = params->is_inline,
-        .input     = &tui_widget_input_radio_input,
-        .render    = &tui_widget_input_radio_render,
+        .input     = &_tui_widget_input_radio_input,
+        .render    = &_tui_widget_input_radio_render,
     };
     tui_widget_push(new_widget);
 }

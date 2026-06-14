@@ -145,16 +145,16 @@ typedef struct {
 	bool consumed;
 } InputEvent;
 
-private constexpr int EVENT_QUEUE_MAX = 64;
+static constexpr int EVENT_QUEUE_MAX = 64;
 typedef struct {
 	InputEvent events[EVENT_QUEUE_MAX];
 	int count;
 } InputEventQueue;
 
 extern InputEventQueue EVENT_QUEUE;
-private void input_event_queue_push(InputEvent input_event);
-private bool tui_poll_input(int timeout_ms);
-private void tui_parse_input(void);
+static void _tui_input_event_queue_push(InputEvent input_event);
+static bool _tui_poll_input(int timeout_ms);
+static void _tui_parse_input(void);
 
 typedef bool (*ProcessInputEventFunction)(InputEvent);
 
@@ -176,30 +176,30 @@ double get_curr_time(void);
 #ifdef TUI_PLATFORM_IMPL
 
 InputEventQueue EVENT_QUEUE = {};
-private inline void input_event_queue_clear(){
+static inline void _tui_input_event_queue_clear(){
 	EVENT_QUEUE.count = 0;
 }
 
-private void input_event_queue_push(InputEvent input_event){
+static void _tui_input_event_queue_push(InputEvent input_event){
 	if(EVENT_QUEUE.count >= EVENT_QUEUE_MAX){
 		 return; //event queue full
 	}
 	EVENT_QUEUE.events[EVENT_QUEUE.count++] = input_event;
 }
 
-private InputEvent *input_event_queue_at(int index){
+static InputEvent* _tui_input_event_queue_at(int index){
 	assert(EVENT_QUEUE.count > 0);
     index                  = clamp(index, 0, EVENT_QUEUE.count);
     InputEvent *next_event = &(EVENT_QUEUE.events[index]);
 	return next_event;
 }
 
-private void emit_resize_event(void){
+static void _tui_emit_resize_event(void){
 	//TODO: throttle them...?
 	InputEvent resize_event = {
         .input_type = INPUT_WINDOW_RESIZE,
 	};
-	input_event_queue_push(resize_event);
+	_tui_input_event_queue_push(resize_event);
 }
 
 typedef enum {
@@ -208,15 +208,15 @@ typedef enum {
 	PARSE_CONTROL_SEQUENCE,
 	PARSE_UTF8,
 } InputParseState;
-private InputParseState input_state = PARSE_START;
-private double          last_input_time = 0.0;
+static InputParseState INPUT_STATE = PARSE_START;
+static double          LAST_INPUT_TIME = 0.0;
 
-private void emit_special_key(Key key){
+static void _tui_emit_special_key(Key key){
 	InputEvent input_event = {
         .input_type    = INPUT_KEY,
         .key_event.key = key,
 	};
-	input_event_queue_push(input_event);
+	_tui_input_event_queue_push(input_event);
 }
 
 #ifdef TUI_WINDOWS
@@ -257,7 +257,7 @@ void tui_close(void){
 
 }
 
-private bool tui_poll_input(int timeout_ms){
+static bool _tui_poll_input(int timeout_ms){
     DWORD wait_result = WaitForSingleObject(
         TUI_WIN_HANDLE_IN,
         timeout_ms < 0 ? 0 : (DWORD)timeout_ms
@@ -274,7 +274,7 @@ private bool tui_poll_input(int timeout_ms){
     return (success && count > 0);
 }
 
-private Key tui_win_vk_to_key(WORD vk){
+static Key _tui_win_vk_to_key(WORD vk){
 	switch(vk){
 	case VK_UP:       return KEY_UP;
 	case VK_DOWN:     return KEY_DOWN;
@@ -310,7 +310,7 @@ private Key tui_win_vk_to_key(WORD vk){
 	}
 }
 
-private void tui_parse_input(void){
+static void _tui_parse_input(void){
 	INPUT_RECORD records[64];
     DWORD count = 0;
     auto success = ReadConsoleInputW(
@@ -441,8 +441,8 @@ double get_curr_time(void){
 #include <sys/ioctl.h>
 #include <sys/signalfd.h>
 
-private int SIGNAL_FD_EVENT;
-private void tui_setup_sigwinch(void){
+static int SIGNAL_FD_EVENT;
+static void _tui_setup_sigwinch(void){
 	// NOTE: first we block Block the SIGWINCH signal
 	//       so the default async handler never triggers
     sigset_t mask;
@@ -458,7 +458,7 @@ private void tui_setup_sigwinch(void){
     assert(SIGNAL_FD_EVENT >= 0);
 }
 
-private struct termios TERMIOS_ORIGINAL;
+static struct termios TERMIOS_ORIGINAL;
 void tui_init(void){
 	tcgetattr(STDIN_FILENO, &TERMIOS_ORIGINAL);
 	struct termios raw = TERMIOS_ORIGINAL;
@@ -477,7 +477,7 @@ void tui_init(void){
     tui_write("\033[?1006h"); //SGR extended coords
     tui_write("\033[?25l");   //ocultar cursor
 
-    tui_setup_sigwinch();
+    _tui_setup_sigwinch();
 }
 
 void tui_close(void){
@@ -487,7 +487,7 @@ void tui_close(void){
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &TERMIOS_ORIGINAL);
 }
 
-private bool tui_poll_input(int timeout_ms){
+static bool _tui_poll_input(int timeout_ms){
 	struct pollfd polls[2] = {
 		[0] = { .fd = STDIN_FILENO,    .events = POLLIN }, //input
 		[1] = { .fd = SIGNAL_FD_EVENT, .events = POLLIN }, //signals
@@ -503,7 +503,7 @@ private bool tui_poll_input(int timeout_ms){
 		);
 		if(signal_fd_info == sizeof(struct signalfd_siginfo)){
 			if(fd_siginfo.ssi_signo == SIGWINCH){
-				emit_resize_event();
+				_tui_emit_resize_event();
 			}
 		}
 	}
@@ -534,7 +534,7 @@ void tui_write_bytes(const uint8_t *bytes, uint8_t total_bytes){
 	write(STDOUT_FILENO, bytes, total_bytes);
 }
 
-private void emit_key(uint32_t unicode, bool alt){
+static void _tui_emit_key(uint32_t unicode, bool alt){
     //for single byte ascii
     bool ctrl  = (unicode < 32);
     bool shift = (unicode < 128 && unicode != (uint32_t)tolower(unicode));
@@ -550,10 +550,10 @@ private void emit_key(uint32_t unicode, bool alt){
         .key_event.shift   = shift,
         .key_event.unicode = unicode,
 	};
-	input_event_queue_push(input_event);
+	_tui_input_event_queue_push(input_event);
 }
 
-private void emit_escape_sequence(const char *params, uint8_t final_byte){
+static void _tui_emit_escape_sequence(const char *params, uint8_t final_byte){
 	bool ctrl = (strcmp(params, "1;5") == 0);
 	InputEvent event = {
         .input_type       = INPUT_KEY,
@@ -608,11 +608,11 @@ private void emit_escape_sequence(const char *params, uint8_t final_byte){
 	case 'm':
 	}
 
-	input_event_queue_push(event);
+	_tui_input_event_queue_push(event);
 }
 
-private void parse_next_byte(uint8_t byte){
-    last_input_time = get_curr_time();
+static void _tui_parse_next_byte(uint8_t byte){
+    LAST_INPUT_TIME = get_curr_time();
 	//state machine for parsing ze bytten
     constexpr int  params_max         = 32;
     static    char params[params_max] = {};
@@ -624,29 +624,29 @@ private void parse_next_byte(uint8_t byte){
     static uint8_t utf8_length_current = 0;
     static uint8_t utf8_length_expected = 0;
 
-	switch(input_state){
+	switch(INPUT_STATE){
 	case PARSE_START:
 		switch(byte){
 		case '\033':
-			input_state = PARSE_ESCAPE;
-			last_input_time = get_curr_time();
+			INPUT_STATE = PARSE_ESCAPE;
+			LAST_INPUT_TIME = get_curr_time();
 			return;
 		case '\r':
-		case '\n':   emit_special_key(KEY_ENTER);     goto reset_state;
+		case '\n':   _tui_emit_special_key(KEY_ENTER);     goto reset_state;
 		//TODO: backspace is not working properly, getting detected as KEY_DELETE
 		case 127:
-		case '\b':   emit_special_key(KEY_BACKSPACE); goto reset_state;
-		case '\t':   emit_special_key(KEY_TAB);       goto reset_state;
+		case '\b':   _tui_emit_special_key(KEY_BACKSPACE); goto reset_state;
+		case '\t':   _tui_emit_special_key(KEY_TAB);       goto reset_state;
 		//TODO: more keys..?
 		default:
             uint8_t length = utf8_char_length(byte);
             if(length <= 1){ //ascii or empty
-                emit_key(byte, false);
+                _tui_emit_key(byte, false);
                 goto reset_state;
             }
             //utf8 string!
-            input_state          = PARSE_UTF8;
-            last_input_time      = get_curr_time();
+            INPUT_STATE          = PARSE_UTF8;
+            LAST_INPUT_TIME      = get_curr_time();
             utf8_bytes[0]        = byte;
             utf8_length_current  = 1; //accumulates
             utf8_length_expected = length;
@@ -656,11 +656,11 @@ private void parse_next_byte(uint8_t byte){
 
 	case PARSE_ESCAPE:
 		if(byte == '['){
-			input_state = PARSE_CONTROL_SEQUENCE;
+			INPUT_STATE = PARSE_CONTROL_SEQUENCE;
 			params_length = 0;
 			return;
 		}else{
-			emit_key(byte, true);
+			_tui_emit_key(byte, true);
 			goto reset_state;
 		}
 
@@ -671,7 +671,7 @@ private void parse_next_byte(uint8_t byte){
 			return;
 		}else{
 			params[params_length] = '\0'; //null termination
-			emit_escape_sequence(params, byte);
+			_tui_emit_escape_sequence(params, byte);
 			goto reset_state;
 		}
 
@@ -680,18 +680,18 @@ private void parse_next_byte(uint8_t byte){
         utf8_bytes[utf8_length_current++] = byte;
         if(utf8_length_current < utf8_length_expected) return;
     	//utf8 completed!
-        emit_key(utf8_pack(utf8_bytes), false);
+        _tui_emit_key(utf8_pack(utf8_bytes), false);
         goto reset_state;
 	}
 
 	reset_state:
-	input_state          = PARSE_START;
+	INPUT_STATE          = PARSE_START;
 	params_length        = 0;
 	utf8_length_current  = 0;
 	utf8_length_expected = 0;
 }
 
-private void tui_parse_input(void){
+static void _tui_parse_input(void){
 	char input_buffer[64];
 	int bytes_written = (int)read(
 		STDIN_FILENO, input_buffer, sizeof(input_buffer)
@@ -704,7 +704,7 @@ private void tui_parse_input(void){
 	}
 
 	for (int i = 0; i < bytes_written; i++){
-		parse_next_byte(input_buffer[i]);
+		_tui_parse_next_byte(input_buffer[i]);
 	}
 }
 
@@ -734,17 +734,17 @@ void tui_write_format(const char *format, ...){
 
 void tui_input_read(double timeout_s){
 	//TODO: a bit hacky now...
-	input_event_queue_clear();
+	_tui_input_event_queue_clear();
 	auto now = get_curr_time();
-	if(input_state != PARSE_START && (now - last_input_time) > 0.05){
+	if(INPUT_STATE != PARSE_START && (now - LAST_INPUT_TIME) > 0.05){
 		//if we were waiting for escape to continue and it didnt, emit escape
-        if(input_state == PARSE_ESCAPE) emit_special_key(KEY_ESCAPE);
+        if(INPUT_STATE == PARSE_ESCAPE) _tui_emit_special_key(KEY_ESCAPE);
         //otherwise it probably means we got an unfinished utf8, which should never
         //realistically happen, so we just ignore it for now.
-		input_state = PARSE_START;
+		INPUT_STATE = PARSE_START;
 	}
-	if (!tui_poll_input(timeout_s * 1000)) return;
-	tui_parse_input();
+	if (!_tui_poll_input(timeout_s * 1000)) return;
+	_tui_parse_input();
 }
 
 void tui_input_process(ProcessInputEventFunction input_processor){
@@ -753,7 +753,7 @@ void tui_input_process(ProcessInputEventFunction input_processor){
 	// returning true from any of those functions is
 	// effectively like calling stopPropagation() in JS.
 	for(int i = 0; i < EVENT_QUEUE.count; i++){
-		auto input_event = input_event_queue_at(i);
+		auto input_event = _tui_input_event_queue_at(i);
 		if(input_event->consumed) continue;
 		input_event->consumed = input_processor(*input_event);
 	}
