@@ -305,7 +305,7 @@ static bool _tui_widget_input_text_input(Widget *widget, InputEvent input_event)
 
 //public
 void tui_widget_input_text_(const char *widget_id, _WidgetInputTextParams *params){
-    Panel *panel = tui_get_panel_building();
+    Panel *panel = _tui_get_panel_building();
 
     //widget data
 	_WidgetInputTextData *widget_data = (_WidgetInputTextData *)arena_alloc(

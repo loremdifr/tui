@@ -64,7 +64,7 @@ static int _tui_widget_table_compute_column_widths(_WidgetTableDataInternal *dat
 static void _tui_widget_table_auto_scroll(WidgetTableState *state){
     if(!state->has_rendered) return;
 
-    Panel *panel   = tui_get_panel_focused();
+    Panel *panel   = _tui_get_panel_focused();
     rect2i visible = panel->inner_rect;
     // first visible data row (below header + separator)
     int first_visible = max(0, visible.pos.y - (state->last_render_y + 1) + 1);
@@ -210,7 +210,7 @@ void tui_widget_table_(const char *widget_id, _WidgetTableParams *params){
     data->table     = params->table;
     data->on_select = params->on_select;
     data->on_click  = params->on_click;
-    data->panel     = tui_get_panel_building();
+    data->panel     = _tui_get_panel_building();
 
     int col_widths_size = (int)params->table.column_count * sizeof(int);
     data->column_widths = (int *)arena_alloc(

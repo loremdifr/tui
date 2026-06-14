@@ -81,15 +81,15 @@ static bool _tui_widget_select_input(Widget *widget, InputEvent input_event){
     case INPUT_KEY:
         switch (input_event.key_event.key) {
         case KEY_ENTER:
-            if(tui_widget_overlay_is_open()){
-                tui_widget_overlay_close();
+            if(_tui_widget_overlay_is_open()){
+                _tui_widget_overlay_close();
             }else{
-                tui_widget_overlay_open();
+                _tui_widget_overlay_open();
             }
             return true; //important! we capture the event!
         case KEY_ESCAPE:
-            if(!tui_widget_overlay_is_open()) break;
-            tui_widget_overlay_close();
+            if(!_tui_widget_overlay_is_open()) break;
+            _tui_widget_overlay_close();
             return true; //important! we capture the event!
         case KEY_NONE:
         default:
@@ -100,7 +100,7 @@ static bool _tui_widget_select_input(Widget *widget, InputEvent input_event){
         break;
     }
 
-    return tui_widget_overlay_is_open();
+    return _tui_widget_overlay_is_open();
 }
 
 static void _tui_widget_select_overlay(Widget *widget){
@@ -116,7 +116,7 @@ static void _tui_widget_select_overlay(Widget *widget){
                     .storage      = data->storage,
                     .storage_size = sizeof(size_t),
                     .value        = &data->options.values[i].value,
-                    .on_select    = &tui_widget_overlay_close
+                    .on_select    = &_tui_widget_overlay_close
                 );
             }
         tui_panel_end();

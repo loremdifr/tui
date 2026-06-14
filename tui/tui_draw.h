@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
-// #include "tui_platform.h"
 #include "tui_utils.h"
 #include "tui_screen.h"
 #include "tui_string.h"

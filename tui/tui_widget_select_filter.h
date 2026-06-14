@@ -163,11 +163,11 @@ static bool _tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent 
             if(state->selected_index >= 0
             && state->selected_index < (int)state->current_options.count){
                 *data->storage = state->current_options.values[state->selected_index].value;
-                tui_widget_overlay_close();
+                _tui_widget_overlay_close();
             }
             return true;
         case KEY_ESCAPE:
-            tui_widget_overlay_close();
+            _tui_widget_overlay_close();
             return true;
         case KEY_UP:
             if(state->current_options.count > 0){
@@ -340,24 +340,24 @@ static bool _tui_widget_select_filter_input(Widget *widget, InputEvent input_eve
     case INPUT_KEY:
         switch(input_event.key_event.key){
         case KEY_ENTER:
-            if(tui_widget_overlay_is_open()){
-                tui_widget_overlay_close();
+            if(_tui_widget_overlay_is_open()){
+                _tui_widget_overlay_close();
             }else{
                 //reset query
                 state->query.data[0] = '\0';
                 state->query.bytes = 0;
                 state->query.length = 0;
                 state->cursor = 0;
-                tui_widget_overlay_open();
+                _tui_widget_overlay_open();
             }
             return true;
         case KEY_ESCAPE:
-            if(!tui_widget_overlay_is_open()) break;
-            tui_widget_overlay_close();
+            if(!_tui_widget_overlay_is_open()) break;
+            _tui_widget_overlay_close();
             return true;
         case KEY_UP:
         case KEY_DOWN:
-            if(!tui_widget_overlay_is_open()) break;
+            if(!_tui_widget_overlay_is_open()) break;
             return false;
         case KEY_NONE:
         default:
@@ -368,7 +368,7 @@ static bool _tui_widget_select_filter_input(Widget *widget, InputEvent input_eve
         break;
     }
 
-    return tui_widget_overlay_is_open();
+    return _tui_widget_overlay_is_open();
 }
 
 void tui_widget_select_filter_(const char *widget_id, _WidgetSelectFilterParams *params){

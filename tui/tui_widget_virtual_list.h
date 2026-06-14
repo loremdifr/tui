@@ -46,7 +46,7 @@ typedef struct {
 static void _tui_widget_virtual_list_auto_scroll(_WidgetVirtualListState *state){
     if(!state->has_rendered) return;
 
-    Panel *panel      = tui_get_panel_focused();
+    Panel *panel      = _tui_get_panel_focused();
     rect2i visible    = panel->inner_rect;
     int first_visible = visible.pos.y - state->last_render_y;
     int last_visible  = first_visible + visible.size.h;
@@ -137,7 +137,7 @@ void tui_widget_virtual_list_(const char *widget_id, _WidgetVirtualListParams *p
     data->items     = params->items;
     data->on_select = params->on_select;
     data->on_click  = params->on_click;
-    data->panel     = tui_get_panel_building();
+    data->panel     = _tui_get_panel_building();
 
     size_t max_label_width = 0;
     for(size_t i = 0; i < params->items.count; i++){

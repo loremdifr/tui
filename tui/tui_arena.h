@@ -54,6 +54,8 @@ const void *arena_alloc(Arena *arena, size_t size){
     return ptr;
 }
 
+//TODO: probably would be better if we did chunks/extents in a linked list
+//      to avoid huge reallocs in the middle of a frame
 const void *arena_realloc(Arena *arena, void *prev_ptr, size_t prev_size, size_t new_size) {
     if (new_size <= prev_size) return prev_ptr;
 
