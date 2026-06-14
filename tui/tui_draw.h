@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include "tui_style.h"
 #include "tui_utils.h"
 #include "tui_screen.h"
 #include "tui_string.h"
@@ -29,19 +30,6 @@ void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total
 void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to);
 
 #ifdef TUI_DRAW_IMPL
-
-constexpr uint8_t BOX[]    = u8"▢";
-constexpr uint8_t BOX_H[]  = u8"─";
-constexpr uint8_t BOX_V[]  = u8"│";
-constexpr uint8_t BOX_TL[] = u8"╭";//u8"┌";
-constexpr uint8_t BOX_TR[] = u8"╮";//u8"┐";
-constexpr uint8_t BOX_BL[] = u8"╰";//u8"└";
-constexpr uint8_t BOX_BR[] = u8"╯";//u8"┘";
-constexpr uint8_t BOX_VR[] = u8"├";
-constexpr uint8_t BOX_VL[] = u8"┤";
-constexpr uint8_t BOX_HB[] = u8"┬";
-constexpr uint8_t BOX_HT[] = u8"┴";
-constexpr uint8_t BOX_HV[] = u8"┼";
 
 void tui_draw_box(Screen *screen, rect2i rect){
     //this function only draws the border given, without looking at any neighbors
@@ -168,11 +156,11 @@ void tui_draw_box_title(Screen *screen, rect2i box, String *title, BoxTitleAncho
         case BOX_TITLE_BOTTOM_RIGHT: x = right; y = bottom; break;
     }
 
-    screen_set_utf8(  screen, x,                 y, u8"╸");
-    screen_set_char(  screen, x+1,               y, ' ');
+    screen_set_utf8(  screen, x,                 y, BOX_TITLE_CAP_LEFT);
+    screen_set_char(  screen, x+1,               y, EMPTY_CHAR);
     screen_set_string(screen, x+2,               y, title);
-    screen_set_char(  screen, x+2+title_width,   y, ' ');
-    screen_set_utf8(  screen, x+2+title_width+1, y, u8"╺");
+    screen_set_char(  screen, x+2+title_width,   y, EMPTY_CHAR);
+    screen_set_utf8(  screen, x+2+title_width+1, y, BOX_TITLE_CAP_RIGHT);
 }
 
 void tui_draw_line(Screen *screen, uint8_t *utf8_char, vec2i from, vec2i to){
@@ -275,12 +263,6 @@ void tui_draw_circ(Screen *screen, uint8_t *utf8_char, rect2i rect){
 }
 
 void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
-    //TODO: move these to top level?
-    static uint8_t *SCROLL_CAP_TOP    = u8"╵";
-    static uint8_t *SCROLL_CAP_BOTTOM = u8"╷";
-    static uint8_t *SCROLL_BG         = u8"▋";
-    static uint8_t *SCROLL_KNOB       = u8"▋";
-
     //draw end caps
     screen_set_utf8(screen, from.x, from.y, SCROLL_CAP_TOP);
     screen_set_utf8(screen, to.x, to.y, SCROLL_CAP_BOTTOM);
@@ -289,8 +271,8 @@ void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total
     to.y -= 1;
 
     //draw scroll background
-    screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
-    tui_draw_line(screen, SCROLL_BG, from, to);
+    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
+    tui_draw_line(screen, SCROLL_V_BG, from, to);
 
     //size of the knob
     auto  scrollbar_size = to.y - from.y;
@@ -310,17 +292,12 @@ void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total
     auto knob_to = (vec2i){.x = from.x, .y = knob_from.y + knob_size};
 
     //draw the knob
-    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
-    tui_draw_line(screen, SCROLL_KNOB, knob_from, knob_to);
+    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+    tui_draw_line(screen, SCROLL_V_KNOB, knob_from, knob_to);
 }
 
 void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int total_size, int shown_from, int shown_to){
-    //TODO: move these to top level?
     //TODO: surely this can be refactored somehow...
-    static uint8_t *SCROLL_CAP_LEFT  = u8"╴";
-    static uint8_t *SCROLL_CAP_RIGHT = u8"╶";
-    static uint8_t *SCROLL_BG        = u8"▂";
-    static uint8_t *SCROLL_KNOB      = u8"▂";
 
     //draw end caps
     screen_set_utf8(screen, from.x, from.y, SCROLL_CAP_LEFT);
@@ -330,8 +307,8 @@ void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int tot
     to.x   -= 1;
 
     //draw scroll background
-    screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
-    tui_draw_line(screen, SCROLL_BG, from, to);
+    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
+    tui_draw_line(screen, SCROLL_H_BG, from, to);
 
     //size of the knob
     auto  scrollbar_size  = to.x - from.x;
@@ -351,8 +328,8 @@ void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int tot
     auto knob_to = (vec2i){.x = knob_from.x + knob_size, .y = from.y};
 
     //draw the knob
-    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
-    tui_draw_line(screen, SCROLL_KNOB, knob_from, knob_to);
+    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+    tui_draw_line(screen, SCROLL_H_KNOB, knob_from, knob_to);
 }
 
 

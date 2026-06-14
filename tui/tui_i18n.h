@@ -1,5 +1,5 @@
-#ifndef TUI_I18N_H
-#define TUI_I18N_H
+#ifndef TUI_I18N
+#define TUI_I18N
 
 #ifndef I18N_HINT_SELECT_KEY
 #define I18N_HINT_SELECT_KEY u8"[↑] [↓]"
@@ -61,4 +61,4 @@
 #define I18N_HELP_CLOSE u8"[?] Hide Help Panel"
 #endif
 
-#endif // TUI_I18N_H
+#endif // TUI_I18N

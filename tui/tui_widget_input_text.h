@@ -83,7 +83,7 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     );
     if(data->string.length == 0){
         //show placeholder
-        screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+        screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
         auto placeholder_substr = string_from_substr(data->placeholder, 0, data->input_width);
         screen_set_string(
             screen,
@@ -93,7 +93,7 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         );
     }else{
         //show text
-        screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+        screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
         auto text_substr = string_substr(
             &data->string,
             state->scroll,
@@ -109,7 +109,7 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
 
     if(widget->focused && !state->editing){
         const uint8_t *edit_icon = u8"🖉";
-        screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
+        screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
         screen_set_utf8(
             screen,
             position.x + widget->size.w - utf8_str_display_width(edit_icon),
@@ -123,20 +123,20 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         int caret_x = position.x + PADDING + data->label_width + (int)(state->cursor - state->scroll);
         if(state->cursor < data->string.length){
             //care is on a character, invert that character color
-            screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
+            screen_format(NORMAL, COLOR_BG_TEXT, COLOR_FG_PRIMARY);
             auto char_substr = string_substr(&data->string, state->cursor, state->cursor + 1);
             screen_set_string(screen, caret_x, position.y, &char_substr);
         }else{
             //simple solid block
-            screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
+            screen_format(NORMAL, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
             screen_set_utf8(screen, caret_x, position.y, u8"█");
         }
     }
 
     if(widget->focused){
-        screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
+        screen_format(NORMAL, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
     }else{
-        screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+        screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
     }
 
     //underline

@@ -124,8 +124,7 @@ static void _tui_reset_hotkeys(void){
 }
 
 static void _tui_render_hotkeys(Screen *screen){
-    screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
-    auto separator = u8" • ";
+    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
 
     size_t max_width = screen->size.w; //in characters/cells
     size_t max_size  = max_width * 4 + 1; //4 bytes for u8 + terminator
@@ -143,14 +142,14 @@ static void _tui_render_hotkeys(Screen *screen){
         //create current hint text
         uint8_t hint_text[max_size] = {};
         utf8_str_concat(hint_text, hkey.key);
-        utf8_str_concat(hint_text, u8" ");
+        utf8_str_concat(hint_text, EMPTY_U8);
         utf8_str_concat(hint_text, hkey.hint);
         if(i != HOTKEY_HINTS.total - 1){
         	//last hotkey doesnt have separator
         	//TODO: use the max_width instead?
-        	screen_format(NORMAL, COLOR_BLUE, COLOR_BLACK);
-            utf8_str_concat(hint_text, separator);
-            screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
+        	screen_format(NORMAL, COLOR_FG_INFO, COLOR_BG_SECONDARY);
+            utf8_str_concat(hint_text, KEY_HINT_SEPARATOR);
+            screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
         }
 
         //add hint to the display_str
@@ -170,8 +169,7 @@ static void _tui_render_hotkeys(Screen *screen){
     //check if we need more space
     if(included_hints_count < HOTKEY_HINTS.total){
     	//now we need to make room in the display_str for the help hint
-	    static const uint8_t help_text[] = u8"[?] Help";
-	    size_t help_width = utf8_str_display_width(help_text);
+	    size_t help_width = utf8_str_display_width(I18N_HELP_OPEN);
 
 	    while(included_hints_count > 0){
 	    	//remove hints until the help hint fits
@@ -191,7 +189,7 @@ static void _tui_render_hotkeys(Screen *screen){
         screen_set_utf8_str(
         	screen,
         	max_width - help_width,
-        	screen->size.h, help_text
+        	screen->size.h, I18N_HELP_OPEN
     	);
 
 	    HOTKEY_HELP_ENABLED = true;
@@ -211,7 +209,7 @@ static void _tui_render_hotkeys(Screen *screen){
         int box_height = line_count + BORDER * 2 + PADDING * 2;
         int box_y      = max(0, screen->size.h - box_height);
 
-        tui_draw_rect(screen, u8" ", (rect2i){
+        tui_draw_rect(screen, EMPTY_U8, (rect2i){
             .pos = {0, box_y},
             .size = {max_width, box_height}
         });
@@ -238,7 +236,7 @@ static void _tui_render_hotkeys(Screen *screen){
         for(int i = 0; i < line_count; i++){
             uint8_t hint_text[max_size] = {};
             utf8_str_concat(hint_text, HOTKEY_HINTS.hints[i].key);
-            utf8_str_concat(hint_text, u8" ");
+            utf8_str_concat(hint_text, EMPTY_U8);
             utf8_str_concat(hint_text, HOTKEY_HINTS.hints[i].hint);
             screen_set_utf8_str(
             	screen,

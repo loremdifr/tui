@@ -1,94 +1,35 @@
 REFACTOR:
-	[x]	first, salvage parts from the overlays @done (26-06-08 07:10)
-	[x]	then, remove them @done (26-06-08 07:10)
-	[x]	then, introduce the layers @done (26-06-08 07:10)
-	[x]	then, make the base layer work @done (26-06-08 07:10)
-	[x]	then, ensure the layer focusing mechanism exists @done (26-06-08 07:10)
-	[x]	add the overlay layer and make the overlay work again @done (26-06-08 08:51)
-		[x]	- shrink overlay layer! @done (26-06-08 08:51)
-	[x]	add the widget overlay layer and make it work again @done (26-06-08 08:51)
-	[x]	overlay layer @done (26-06-10 07:52)
-		[x]	ability to actually close the subwidget @done (26-06-09 02:52)
-		[x]	ability to autoselect a widget, or even auto-enable it (filtering for example) @done (26-06-10 07:52)
-		[x]	window title? @done (26-06-09 23:16)
-	[x]	bug: SEGFAULT while going to another page @done (26-06-09 02:52)
-	[x]	bug: shift+tab does not cycle properly, it goes to negative one somehow @done (26-06-09 03:03)
 	[ ] task: radio buttons have too much vertical padding
-	[x]	bug: the other app had some glitches with the inline buttons at some point, need investigate further. @done (26-06-10 07:52)
-	[x]	bug: input text editor left arrow @done (26-06-08 23:13)
-	[x]	bug: input text freezing when spamming the word movement keys @done (26-06-09 00:40)
-	[x]	bug: left padding on label gone @done (26-06-10 07:53)
-	[x]	bug: fix navigation button to next page broken @done (26-06-08 23:13)
-	[x]	task: filter out the hotkey hints that arent needed on each page @done (26-06-09 01:09)
-	[x]	task: finish implementation of select @done (26-06-09 03:03)
-	[x]	task: finish implementation of select with autocomplete @done (26-06-09 06:17)
-		[x]	task: figure out how to implement the list with autocompletions better @done (26-06-09 06:17)
-		[x]	task: select_filter should allow navegation between panels with arrows @done (26-06-10 07:53)
-	[x]	task: need a global way of exiting the app without having to define it in every page... alt q? @done (26-06-08 23:14)
 
 --- ✄ -----------------------
+BUGS:
+	[ ]	hotkeys don't trigger properly with caps lock on. test: caps lock on, alt+q
 
 	[ ]	fix the declaration of stb style files: the IMPL should not be encapsulated inside the initial if guard declaration
 
 MUST-HAVE:
 
-	[x]	Page Navigation @done (26-06-08 03:31)
-		[x]	test moving to different pages @done (26-06-08 03:30)
-		[x]	actually dont crash if there's no previous page when going back @done (26-06-08 03:31)
-		[x]	show the history at the top of the screen @done (26-06-08 03:31)
 	[ ]	pages functionpointers must be optional
 	[ ]	probably all containers need scrolling
 		-	because all panels have a border, we can render the scrollbar inside the border!
 		- scrolling requires knowing the entire widgets_rect and we DO have it!
-		[x]	add scroll offset support for panels, add to the panel state @done (26-06-03 12:39)
-		[x]	create functional scrollbars @done (26-06-03 12:39)
-		[x]	add scrolling hotkey @done (26-06-03 12:39)
-		[x]	scrolling hotkey hint @done (26-06-03 13:22)
 		[ ]	add auto scrolling to focused element
 		[ ]	animate scrolling...?
 		[ ]	add mouse support
 	[ ]	RESIZE
-		[x]	handle resize properly on linux @done (26-05-31 17:24)
 		[ ]	hnadle resize on windows
 		[ ]	size aware guards to never render the screen "ugly"
 			- these could be smart by using the size of panels.
 			- panels will be vertically scrollable but never horizontally scrollable, so width is far more important to guard against
-	[x]	margin between widgets is being accounted for twice @done (26-05-25 20:20)
 		- it's not, it's an illussion because of the empty space provided by the box characters
 		- might need to make it so MARGIN is defined inside the element somehow, and labels get 1 more than others.
-	[x]	some way of declaring widgets inline vs block @done (26-06-03 13:22)
-	[x]	focused element + element navigation functionality provided by the framework @done (26-05-24 05:28)
-		who should hold this reference? because the existing widgets disappear every frame
-		so realistically the only way is that the user gives the framework an ID and the framework tracks that ID.
-		But then, how does the framework know it's position to move to?
-		maps the ID to the current index in the frame and moves to that ID!
-		[x]	widgets are only being called by render, their init, process, and input is never called @done (26-05-24 13:11)
-		[x]	automatic "go back" navigation always enabled (ESC) @done (26-05-24 14:56)
-	[x]	popup layer functionality @done (26-06-03 15:47)
-	[x]	bottom hotkeys declaration support @done (26-05-24 14:55)
 
 	Widgets:
-		[x]	label @done (26-05-22 01:11)
-			[x]	word wrap @done (26-06-03 11:39)
-		[x]	button @done (26-05-24 14:56)
 		[ ]	text input
-			[x]	basic input @done (26-05-30 21:20)
-			[x]	utf8 support @done (26-05-30 21:20)
-			[x]	deleting and backspacing @done (26-05-30 21:20)
-			[x]	scrollable content and avoid overflow @done (26-06-01 03:15)
-			[x]	word by word movment @done (26-06-08 03:31)
 			[ ]	selection
 			[ ]	expandable size to the placeholder or container max
-		[x]	select @done (26-06-08 03:31)
-		[x]	select with autocomplete @done (26-06-08 03:31)
-		[x]	number input @done (26-06-08 03:31)
-		[x]	checkbox @done (26-06-08 03:31)
-		[x]	switch toggle @done (26-05-30 21:18)
-		[x]	spinner @done (26-05-30 21:18)
 		[ ]	tabs
-		[x]	radio @done (26-06-08 03:31)
 		[ ]	table ?
-		[x]	two or more elements side by side? inline widgets!
 
 Extra stuff:
 	[ ]	mouse support
@@ -96,7 +37,71 @@ Extra stuff:
 		[ ]	hover
 		[ ]	drag
 
-[x]	scrollable content @done (26-06-03 15:47)
-[x]	Panel title? @done (26-06-08 03:31)
 [ ]	top menu declaration support
 [ ]	tooltip layout functionality
+
+＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+Archive:
+	[x]	task: select_filter should allow navegation between panels with arrows @done (26-06-10 07:53) @project(REFACTOR)
+	[x]	bug: left padding on label gone @done (26-06-10 07:53) @project(REFACTOR)
+	[x]	overlay layer @done (26-06-10 07:52) @project(REFACTOR)
+	[x]	bug: the other app had some glitches with the inline buttons at some point, need investigate further. @done (26-06-10 07:52) @project(REFACTOR)
+	[x]	ability to autoselect a widget, or even auto-enable it (filtering for example) @done (26-06-10 07:52) @project(REFACTOR)
+	[x]	window title? @done (26-06-09 23:16) @project(REFACTOR)
+	[x]	task: finish implementation of select with autocomplete @done (26-06-09 06:17) @project(REFACTOR)
+	[x]	task: figure out how to implement the list with autocompletions better @done (26-06-09 06:17) @project(REFACTOR)
+	[x]	task: finish implementation of select @done (26-06-09 03:03) @project(REFACTOR)
+	[x]	bug: shift+tab does not cycle properly, it goes to negative one somehow @done (26-06-09 03:03) @project(REFACTOR)
+	[x]	bug: SEGFAULT while going to another page @done (26-06-09 02:52) @project(REFACTOR)
+	[x]	ability to actually close the subwidget @done (26-06-09 02:52) @project(REFACTOR)
+	[x]	task: filter out the hotkey hints that arent needed on each page @done (26-06-09 01:09) @project(REFACTOR)
+	[x]	bug: input text freezing when spamming the word movement keys @done (26-06-09 00:40) @project(REFACTOR)
+	[x]	task: need a global way of exiting the app without having to define it in every page... alt q? @done (26-06-08 23:14) @project(REFACTOR)
+	[x]	bug: input text editor left arrow @done (26-06-08 23:13) @project(REFACTOR)
+	[x]	bug: fix navigation button to next page broken @done (26-06-08 23:13) @project(REFACTOR)
+	[x]	add the widget overlay layer and make it work again @done (26-06-08 08:51) @project(REFACTOR)
+	[x]	add the overlay layer and make the overlay work again @done (26-06-08 08:51) @project(REFACTOR)
+	[x]	- shrink overlay layer! @done (26-06-08 08:51) @project(REFACTOR)
+	[x]	then, remove them @done (26-06-08 07:10) @project(REFACTOR)
+	[x]	then, make the base layer work @done (26-06-08 07:10) @project(REFACTOR)
+	[x]	then, introduce the layers @done (26-06-08 07:10) @project(REFACTOR)
+	[x]	then, ensure the layer focusing mechanism exists @done (26-06-08 07:10) @project(REFACTOR)
+	[x]	first, salvage parts from the overlays @done (26-06-08 07:10) @project(REFACTOR)
+	[x]	word by word movment @done (26-06-08 03:31) @project(MUST-HAVE / Widgets)
+	[x]	show the history at the top of the screen @done (26-06-08 03:31) @project(MUST-HAVE)
+	[x]	select with autocomplete @done (26-06-08 03:31) @project(MUST-HAVE / Widgets)
+	[x]	select @done (26-06-08 03:31) @project(MUST-HAVE / Widgets)
+	[x]	radio @done (26-06-08 03:31) @project(MUST-HAVE / Widgets)
+	[x]	number input @done (26-06-08 03:31) @project(MUST-HAVE / Widgets)
+	[x]	checkbox @done (26-06-08 03:31) @project(MUST-HAVE / Widgets)
+	[x]	actually dont crash if there's no previous page when going back @done (26-06-08 03:31) @project(MUST-HAVE)
+	[x]	Panel title? @done (26-06-08 03:31)
+	[x]	Page Navigation @done (26-06-08 03:31) @project(MUST-HAVE)
+	[x]	test moving to different pages @done (26-06-08 03:30) @project(MUST-HAVE)
+	[x]	scrollable content @done (26-06-03 15:47)
+	[x]	popup layer functionality @done (26-06-03 15:47) @project(MUST-HAVE)
+	[x]	some way of declaring widgets inline vs block @done (26-06-03 13:22) @project(MUST-HAVE)
+	[x]	scrolling hotkey hint @done (26-06-03 13:22) @project(MUST-HAVE)
+	[x]	create functional scrollbars @done (26-06-03 12:39) @project(MUST-HAVE)
+	[x]	add scrolling hotkey @done (26-06-03 12:39) @project(MUST-HAVE)
+	[x]	add scroll offset support for panels, add to the panel state @done (26-06-03 12:39) @project(MUST-HAVE)
+	[x]	word wrap @done (26-06-03 11:39) @project(MUST-HAVE / Widgets)
+	[x]	scrollable content and avoid overflow @done (26-06-01 03:15) @project(MUST-HAVE / Widgets)
+	[x]	handle resize properly on linux @done (26-05-31 17:24) @project(MUST-HAVE)
+	[x]	utf8 support @done (26-05-30 21:20) @project(MUST-HAVE / Widgets)
+	[x]	deleting and backspacing @done (26-05-30 21:20) @project(MUST-HAVE / Widgets)
+	[x]	basic input @done (26-05-30 21:20) @project(MUST-HAVE / Widgets)
+	[x]	switch toggle @done (26-05-30 21:18) @project(MUST-HAVE / Widgets)
+	[x]	spinner @done (26-05-30 21:18) @project(MUST-HAVE / Widgets)
+	[x]	margin between widgets is being accounted for twice @done (26-05-25 20:20) @project(MUST-HAVE)
+	[x]	button @done (26-05-24 14:56) @project(MUST-HAVE / Widgets)
+	[x]	automatic "go back" navigation always enabled (ESC) @done (26-05-24 14:56) @project(MUST-HAVE)
+	[x]	bottom hotkeys declaration support @done (26-05-24 14:55) @project(MUST-HAVE)
+	[x]	widgets are only being called by render, their init, process, and input is never called @done (26-05-24 13:11) @project(MUST-HAVE)
+	[x]	focused element + element navigation functionality provided by the framework @done (26-05-24 05:28) @project(MUST-HAVE)
+		who should hold this reference? because the existing widgets disappear every frame
+		so realistically the only way is that the user gives the framework an ID and the framework tracks that ID.
+		But then, how does the framework know it's position to move to?
+		maps the ID to the current index in the frame and moves to that ID!
+	[x]	label @done (26-05-22 01:11) @project(MUST-HAVE / Widgets)
+	[x]	two or more elements side by side? inline widgets! @project(MUST-HAVE / Widgets)

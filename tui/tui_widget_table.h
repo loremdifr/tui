@@ -129,11 +129,11 @@ static void _tui_widget_table_render(Widget *widget, Screen *screen, vec2i posit
         int row_y = data_top + i;
 
         if(selected && widget->focused){
-            screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
+            screen_format(NORMAL, COLOR_BG_TEXT, COLOR_BG_PRIMARY);
         }else if(selected){
-            screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+            screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
         }else{
-            screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
+            screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
         }
 
         int dx = position.x + PADDING;
@@ -146,11 +146,11 @@ static void _tui_widget_table_render(Widget *widget, Screen *screen, vec2i posit
                 screen_set_utf8(screen, dx, row_y, u8"│");
                 dx += 1;
                 if(selected && widget->focused){
-                    screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
+                    screen_format(NORMAL, COLOR_BG_TEXT, COLOR_BG_PRIMARY);
                 }else if(selected){
-                    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+                    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
                 }else{
-                    screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
+                    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
                 }
             }
         }

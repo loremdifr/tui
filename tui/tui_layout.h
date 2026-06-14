@@ -201,7 +201,7 @@ static inline int _tui_center_in_container(int base, int length, int container_l
 static void _tui_render_widget(Widget *widget, vec2i position){
     widget->render(widget, LAYOUT_STATE.screen, position);
     //always reset color after a widget!
-    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
 }
 
 static void _tui_render_panel(Panel *panel, int scroll_offset){
@@ -301,9 +301,9 @@ static void _tui_render_panel(Panel *panel, int scroll_offset){
 
     //draw panel border
     if(panel->focused){
-        screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+        screen_format(NORMAL, COLOR_FG_PANEL_FOCUS, COLOR_BG_TEXT);
     }else{
-        screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+        screen_format(NORMAL, COLOR_FG_PANEL, COLOR_BG_TEXT);
     }
     tui_draw_box(LAYOUT_STATE.screen, panel->outer_rect);
 
@@ -788,7 +788,7 @@ static void _tui_layout_render(){
             }
 
             //clear panel background
-            tui_draw_rect(LAYOUT_STATE.screen, u8" ", panel->outer_rect);
+            tui_draw_rect(LAYOUT_STATE.screen, EMPTY_U8, panel->outer_rect);
 
             //render
             int scroll_offset = layer->panel_scroll_offset[i];

@@ -10,6 +10,7 @@
 #include <stdarg.h>
 
 #include "tui_i18n.h"
+#include "tui_style.h"
 
 #define TUI_UTILS_IMPL
 #include "tui_utils.h"
@@ -107,7 +108,7 @@ _AppState APP_STATE = {};
 //TUI loop ---------------------------------------------------------------------
 
 static void _tui_render_header(Screen *screen){
-	screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+	screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
 
 	if (NAV_HISTORY.count <= 0) return;
 
@@ -125,7 +126,7 @@ static void _tui_render_header(Screen *screen){
 	uint8_t header_str[256] = {};
     // construct the breadcrumb string
     for (int i = 0; i < count; i++){
-        if (i > 0) utf8_str_concat(header_str, u8" > ");
+        if (i > 0) utf8_str_concat(header_str, NAV_HISTORY_SEPARATOR);
         utf8_str_concat(header_str, titles[i]);
     }
 
@@ -143,6 +144,9 @@ static void _tui_render(void){
 				continue;
 			}
 
+			//TODO: when a new cell is less wide than the previous cell, we're
+			//      not properly clearing the entire space the previous cell occuppied
+
 			//skip cells that are the second column of a wide character
 			//TODO: is this correct..? test more
 			auto prev_column_cell = screen_get(&APP_STATE.next_screen, x - 1, y);
@@ -152,7 +156,7 @@ static void _tui_render(void){
 			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
 			_tui_write_color(next_cell->text_format, next_cell->fg_color, next_cell->bg_color);
 			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
-				tui_write(" ");
+				tui_write((char *)EMPTY_U8);
 			}else{
 				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
 			}
@@ -251,7 +255,7 @@ void tui_run_loop(void){
 		}
 		tui_input_process(&_tui_process_input_hotkeys);
 
-		screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK); //reset format
+		screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT); //reset format
 
 		_tui_layout_render();
 		_tui_render_header(&APP_STATE.next_screen);

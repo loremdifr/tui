@@ -53,11 +53,11 @@ static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
         bool active = (int)i == selected_index;
 
         //draw left side of tab
-        auto fg_color = COLOR_BLACK;
-        auto bg_color = COLOR_DARK_WHITE;
+        auto fg_color = COLOR_BG_TEXT;
+        auto bg_color = COLOR_BG_SECONDARY;
         if(active){
-            fg_color = (widget->focused) ? COLOR_MAGENTA : COLOR_WHITE;
-            bg_color = COLOR_DARK_MAGENTA;
+            fg_color = (widget->focused) ? COLOR_FG_PRIMARY : COLOR_FG_TEXT;
+            bg_color = COLOR_BG_PRIMARY;
          }
 
         screen_format(NORMAL, fg_color, bg_color);
@@ -68,7 +68,7 @@ static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
         //draw tab
 
         for(int x = tab_x + 1; x < tab_x + tab_w; x++){
-            screen_set_char(screen, x, position.y, ' ');
+            screen_set_char(screen, x, position.y, EMPTY_CHAR);
         }
 
         int lx = tab_x + 1 + (tab_w - 2 - label_w) / 2;
@@ -77,7 +77,7 @@ static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
         tab_x += tab_w;
     }
 
-    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
 }
 
 static bool _tui_widget_tabs_input(Widget *widget, InputEvent input_event){

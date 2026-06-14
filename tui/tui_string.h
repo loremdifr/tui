@@ -156,7 +156,7 @@ Lines string_split_into_lines(String *str, [[maybe_unused]] size_t max_width){
 
             //TODO: might want to check in a different way,
             //      to account for different space types (break, tab ,etc)
-            if(str->data[byte_pos] != ' ') continue;
+            if(str->data[byte_pos] != EMPTY_CHAR) continue;
 
             //line break found
             line_end = i + 1; //TODO: +1 or -1?

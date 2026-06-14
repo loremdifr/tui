@@ -74,7 +74,7 @@ static void _tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2
         int y = position.y + i;
 
         if(selected && widget->focused){
-            screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
+            screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
         }else if(selected){
             screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
         }else{

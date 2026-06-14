@@ -180,18 +180,22 @@ static void _tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
     const size_t suffix_width = 3;
     size_t field_width = widget->size.w - data->label_width - suffix_width;
 
-    screen_format(widget->focused ? BOLD : NORMAL, widget->focused ? COLOR_MAGENTA : COLOR_WHITE, COLOR_BLACK);
+    screen_format(
+        widget->focused ? BOLD : NORMAL,
+        widget->focused ? COLOR_FG_PRIMARY : COLOR_FG_TEXT,
+        COLOR_BG_TEXT
+    );
     screen_set_utf8_str(screen, position.x + PADDING, position.y, data->label);
 
     size_t value_width = utf8_str_display_width(value_text);
     screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
     screen_set_utf8_str(screen, position.x + PADDING + data->label_width, position.y, value_text);
     for(size_t x = value_width; x < field_width; x++){
-        screen_set_char(screen, position.x + PADDING + (int)data->label_width + (int)x, position.y, ' ');
+        screen_set_char(screen, position.x + PADDING + (int)data->label_width + (int)x, position.y, EMPTY_CHAR);
     }
 
     if(widget->focused){
-        screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
+        screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
     }else{
         screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
     }
@@ -205,17 +209,17 @@ static void _tui_widget_input_number_render(Widget *widget, Screen *screen, vec2
     if(widget->focused && state->editing && state->caret_show){
         int caret_x = position.x + PADDING + (int)data->label_width + (int)state->cursor;
         if(state->cursor < state->buffer_len){
-            screen_format(NORMAL, COLOR_BLACK, COLOR_MAGENTA);
+            screen_format(NORMAL, COLOR_BG_TEXT, COLOR_FG_PRIMARY);
             char caret_chr[2] = {state->buffer[state->cursor], '\0'};
             screen_set_str(screen, caret_x, position.y, caret_chr);
         }else{
-            screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
+            screen_format(NORMAL, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
             screen_set_utf8(screen, caret_x, position.y, u8"█");
         }
     }
 
     if(widget->focused){
-        screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
+        screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
     }else{
         screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
     }

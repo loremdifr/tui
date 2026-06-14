@@ -58,7 +58,7 @@ static void _tui_widget_select_render(Widget *widget, Screen *screen, vec2i posi
     size_t selected_width = utf8_str_display_width(selected_label);
 
     if(widget->focused){
-        screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
+        screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
     }else{
         screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
     }

@@ -37,12 +37,12 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
     _WidgetSwitchState *widget_state = widget->state;
     _WidgetSwitchData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {
-        {.text=u8"██  ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
-        {.text=u8"▐█▌ ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
-        {.text=u8"▐██ ", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_RED},
-        {.text=u8" ██▌", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_GREEN},
-        {.text=u8" ▐██", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_GREEN},
-        {.text=u8"  ██", .fg_color=COLOR_BRIGHT_WHITE, .bg_color=COLOR_DARK_GREEN},
+        {.text=u8"██  ", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_DANGER},
+        {.text=u8"▐█▌ ", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_DANGER},
+        {.text=u8"▐██ ", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_DANGER},
+        {.text=u8" ██▌", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_SUCCESS},
+        {.text=u8" ▐██", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_SUCCESS},
+        {.text=u8"  ██", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_SUCCESS},
     };
     static const size_t frames_count = arr_size(frames);
     static const double animation_speed = 0.15;
@@ -76,7 +76,7 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
 
     //render LABEL
     if(widget->focused){
-		screen_format(BOLD, COLOR_MAGENTA, COLOR_BLACK);
+		screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
 	}else{
         screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
     }
