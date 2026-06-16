@@ -1,47 +1,48 @@
 REFACTOR:
 	[ ] task: radio buttons have too much vertical padding
+	[ ] move most of tui.h to a tui_core.h file and have tui.h only contain includes.
+		[ ]	then have a build step where we create the single file with all the includes, and put it in a dist folder
 
 --- ✄ -----------------------
+
 BUGS:
 	[ ]	hotkeys don't trigger properly with caps lock on. test: caps lock on, alt+q
 
-	[ ]	fix the declaration of stb style files: the IMPL should not be encapsulated inside the initial if guard declaration
+WIDGETS:
+	[ ]	text input: selection
+	[ ]	tabs
+	[ ]	table
+	[ ]	headers
+	[ ]	figlets
+	[ ]	markdown parser
+	[ ]	multiline textarea
 
-MUST-HAVE:
+EXAMPLE APPS:
+	[ ]	snake
+	[ ]	tetris
+	[ ]	music player
+	[ ]	man pages browser
+	[ ]	text editor
 
-	[ ]	pages functionpointers must be optional
-	[ ]	probably all containers need scrolling
-		-	because all panels have a border, we can render the scrollbar inside the border!
-		- scrolling requires knowing the entire widgets_rect and we DO have it!
-		[ ]	add auto scrolling to focused element
-		[ ]	animate scrolling...?
-		[ ]	add mouse support
-	[ ]	RESIZE
-		[ ]	hnadle resize on windows
-		[ ]	size aware guards to never render the screen "ugly"
+FEATURES:
+	[ ]	panel scrolling: add auto scrolling to focused element
+	[ ]	panel scrolling: animate smooth scrolling
+	[ ]	full mouse support
+	[ ]	top menu declaration support (File Edit Help etc)
+		not sure how this will interact with the navigation title
+	[ ]	tooltip layer functionality, for when mouse is available
+	[ ]	Theming: better support for fully theming the app colors, including default common themes
+	[ ]	Responsive Layouts: Layouts should use the terminal size to determine how panels should be organized
+		for example, we could hide panels entirely and only show the focused one. We could also move a sidebar to the top or bottom. etc.
+	[ ]	Resize: windows support
+	[ ]	Resize: size aware guards to never render the screen "ugly" (perhaps this goes into the layout?)
 			- these could be smart by using the size of panels.
 			- panels will be vertically scrollable but never horizontally scrollable, so width is far more important to guard against
-		- it's not, it's an illussion because of the empty space provided by the box characters
-		- might need to make it so MARGIN is defined inside the element somehow, and labels get 1 more than others.
-
-	Widgets:
-		[ ]	text input
-			[ ]	selection
-			[ ]	expandable size to the placeholder or container max
-		[ ]	tabs
-		[ ]	table ?
-
-Extra stuff:
-	[ ]	mouse support
-		[ ]	click
-		[ ]	hover
-		[ ]	drag
-
-[ ]	top menu declaration support
-[ ]	tooltip layout functionality
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+	[x]	pages functionpointers must be optional @done (26-06-16 16:16) @project(MUST-HAVE)
+	[x]	probably all containers need scrolling @done (26-06-16  16:17) @project(MUST-HAVE)
 	[x]	task: select_filter should allow navegation between panels with arrows @done (26-06-10 07:53) @project(REFACTOR)
 	[x]	bug: left padding on label gone @done (26-06-10 07:53) @project(REFACTOR)
 	[x]	overlay layer @done (26-06-10 07:52) @project(REFACTOR)

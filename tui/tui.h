@@ -144,9 +144,6 @@ static void _tui_render(void){
 				continue;
 			}
 
-			//TODO: when a new cell is less wide than the previous cell, we're
-			//      not properly clearing the entire space the previous cell occuppied
-
 			//skip cells that are the second column of a wide character
 			//TODO: is this correct..? test more
 			auto prev_column_cell = screen_get(&APP_STATE.next_screen, x - 1, y);
@@ -159,6 +156,18 @@ static void _tui_render(void){
 				tui_write((char *)EMPTY_U8);
 			}else{
 				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
+			}
+
+			//do we need to erase cells of a previous character,
+			//if it was wider than this one?
+			auto width_diff = next_cell->display_width - curr_cell->display_width;
+			if(width_diff > 0){
+				for(int i = 1; i <= width_diff; i++){
+					auto target_x = x + i;
+					if(target_x >= APP_STATE.curr_screen.size.x) break;
+					tui_move_to(target_x + 1, y + 1); //we add 1 because terminal pos is 1 based
+					tui_write((char *)EMPTY_U8);
+				}
 			}
 		}
 	}
