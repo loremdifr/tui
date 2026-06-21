@@ -266,7 +266,6 @@ static bool _tui_widget_input_text_input(Widget *widget, InputEvent input_event)
         case KEY_UP:
         case KEY_DOWN:
         case KEY_TAB:
-        case KEY_BACKTAB:
             // don't consume, let bubble to hotkeys for widget/panel navigation
             return false;
         case KEY_ENTER:

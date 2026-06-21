@@ -44,7 +44,6 @@ typedef enum {
     KEY_RIGHT,
     KEY_ESCAPE,
     KEY_TAB,
-    KEY_BACKTAB, //shift + tab
     KEY_BACKSPACE,
     KEY_ENTER,
     KEY_DELETE,
@@ -219,6 +218,57 @@ static void _tui_emit_special_key(Key key){
 	_tui_input_event_queue_push(input_event);
 }
 
+static void _tui_init_kitty_keyboard_protocol(void){
+	//https://sw.kovidgoyal.net/kitty/keyboard-protocol/
+	tui_write("\033[>1u"); //enables kity
+
+	//now we ask the current state of kitty to confirm that
+	//it was actually enabled. this framework REQUIRES this protocol,
+	//so if it's not available, we will exit the program.
+
+	tui_write("\033[?u"); //ask terminal to tell us current kitty mode
+
+	//because this check is async we give it a time limit to respond
+	double max_wait_time = 1500; //ms
+	char input_buffer[64] = {};
+	int bytes_written = 0;
+	while(max_wait_time > 0){
+		double waited_time = 100;
+		max_wait_time -= 100;
+		if(!_tui_poll_input(waited_time)){
+			continue;
+		}
+
+		//TODO: port to windows
+		bytes_written = (int)read(
+			STDIN_FILENO, input_buffer, sizeof(input_buffer)
+		);
+		if(bytes_written <= 0){
+			continue;
+		}
+
+		//compare with expected value
+		auto compare = strcmp(input_buffer, "\033[?1u");
+		if(compare != 0){
+			continue;
+		}
+
+		//success!
+		return;
+	}
+
+	//we didn't receive anything!
+	tui_close();
+	tui_write("\n---------------------------------------------");
+	tui_write("\nERROR: Kitty Keyboard Protocol not supported.");
+	tui_write("\n---------------------------------------------");
+	tui_write("\n   Your terminal is too old and decrepit.    ");
+	tui_write("\n      Upgrade it to use this program.        ");
+	tui_write("\n---------------------------------------------");
+	tui_write("\n\n");
+	exit(1);
+}
+
 #ifdef TUI_WINDOWS
 
 static HANDLE TUI_WIN_HANDLE_IN;
@@ -249,12 +299,16 @@ void tui_init(void){
 	tui_write("\033[?1000h"); // mouse
     tui_write("\033[?1006h"); // SGR
     tui_write("\033[?25l");   // hide cursor
+    _tui_init_kitty_keyboard_protocol();
 }
 
 void tui_close(void){
+	tui_write("\033[<u");     //disable kity
+	tui_write("\033[?25h");   //mostrar cursor
+	tui_write("\033[?1000l"); //disable mouse
+    tui_write("\033[?1006l"); //disable SGR
 	SetConsoleMode(TUI_WIN_HANDLE_IN,  TUI_WIN_ORIGINAL_IN_MODE);
     SetConsoleMode(TUI_WIN_HANDLE_OUT, TUI_WIN_ORIGINAL_OUT_MODE);
-
 }
 
 static bool _tui_poll_input(int timeout_ms){
@@ -336,7 +390,7 @@ static void _tui_parse_input(void){
     		if(key == KEY_TAB && shift){
     			InputEvent event = {
     				.input_type      = INPUT_KEY,
-    				.key_event.key   = KEY_BACKTAB,
+    				.key_event.key   = KEY_TAB,
 					.key_event.shift = true,
     			};
     			input_event_queue_push(event);
@@ -476,11 +530,12 @@ void tui_init(void){
 	tui_write("\033[?1000h"); //mouse suppo
     tui_write("\033[?1006h"); //SGR extended coords
     tui_write("\033[?25l");   //ocultar cursor
-
     _tui_setup_sigwinch();
+    _tui_init_kitty_keyboard_protocol();
 }
 
 void tui_close(void){
+	tui_write("\033[<u");     //disable kity
 	tui_write("\033[?25h");   //mostrar cursor
 	tui_write("\033[?1000l"); //disabel mouse
     tui_write("\033[?1006l"); //disable SGR
@@ -553,50 +608,44 @@ static void _tui_emit_key(uint32_t unicode, bool alt){
 	_tui_input_event_queue_push(input_event);
 }
 
-static void _tui_emit_escape_sequence(const char *params, uint8_t final_byte){
-	bool ctrl = (strcmp(params, "1;5") == 0);
-	InputEvent event = {
-        .input_type       = INPUT_KEY,
-        .key_event.ctrl   = ctrl,
-        // .key_event.alt = alt, //TODO: add support for alt here
-	};
-
+static Key _tui_byte_to_key(const char *params, uint8_t final_byte){
 	switch(final_byte){
 	//arrow keys
-	case 'A': event.key_event.key = KEY_UP;      break;
-	case 'B': event.key_event.key = KEY_DOWN;    break;
-	case 'C': event.key_event.key = KEY_RIGHT;   break;
-	case 'D': event.key_event.key = KEY_LEFT;    break;
-	case 'H': event.key_event.key = KEY_HOME;    break;
-	case 'F': event.key_event.key = KEY_END;     break;
-	case 'Z':
-		event.key_event.key   = KEY_BACKTAB;
-		event.key_event.shift = true;
-		break;
+	case 'A': return KEY_UP;
+	case 'B': return KEY_DOWN;
+	case 'C': return KEY_RIGHT;
+	case 'D': return KEY_LEFT;
+	case 'F': return KEY_END;
+	case 'H': return KEY_HOME;
+	case 'P': return KEY_F1;
+	case 'Q': return KEY_F2;
+	case 'R': return KEY_F3;
+	case 'S': return KEY_F4;
+	case 'Z': return KEY_TAB; //this is actually backtab but kitty should catch the shift
 
 	//FKEYS
 	case '~': {
 		int code;
 		sscanf(params, "%d", &code);
 		switch(code){
-		case 1:  event.key_event.key = KEY_HOME;     break;
-		//case 2:  event.key_event.key = KEY_INSERT; break; //is this correct?
-		case 3:  event.key_event.key = KEY_DELETE;   break;
-		case 4:  event.key_event.key = KEY_END;      break;
-		case 5:  event.key_event.key = KEY_PAGEUP;   break;
-		case 6:  event.key_event.key = KEY_PAGEDOWN; break;
-		case 11: event.key_event.key = KEY_F1;       break;
-		case 12: event.key_event.key = KEY_F2;       break;
-		case 13: event.key_event.key = KEY_F3;       break;
-		case 14: event.key_event.key = KEY_F4;       break;
-		case 15: event.key_event.key = KEY_F5;       break;
-		case 17: event.key_event.key = KEY_F6;       break;
-		case 18: event.key_event.key = KEY_F7;       break;
-		case 19: event.key_event.key = KEY_F8;       break;
-		case 20: event.key_event.key = KEY_F9;       break;
-		case 21: event.key_event.key = KEY_F10;      break;
-		case 23: event.key_event.key = KEY_F11;      break;
-		case 24: event.key_event.key = KEY_F12;      break;
+		case 1:  return KEY_HOME;
+		// case 2:  return KEY_INSERT;
+		case 3:  return KEY_DELETE;
+		case 4:  return KEY_END;
+		case 5:  return KEY_PAGEUP;
+		case 6:  return KEY_PAGEDOWN;
+		case 11: return KEY_F1;
+		case 12: return KEY_F2;
+		case 13: return KEY_F3;
+		case 14: return KEY_F4;
+		case 15: return KEY_F5;
+		case 17: return KEY_F6;
+		case 18: return KEY_F7;
+		case 19: return KEY_F8;
+		case 20: return KEY_F9;
+		case 21: return KEY_F10;
+		case 23: return KEY_F11;
+		case 24: return KEY_F12;
 		//TODO: agregar mas...?
 		}
 		break;
@@ -607,6 +656,72 @@ static void _tui_emit_escape_sequence(const char *params, uint8_t final_byte){
 	case 'M':
 	case 'm':
 	}
+
+	//kitty
+	int keycode = 0;
+	sscanf(params, "%d", &keycode);
+	keycode = tolower(keycode);
+	if(keycode >= 'a' && keycode <= 'z'){
+		return (Key)keycode;
+	}
+	if(keycode >= '0' && keycode <= '9'){
+		size_t index_from_zero = keycode - '0';
+		return KEY_0 + (Key)index_from_zero;
+	}
+	switch(keycode){
+	case ' ':   return KEY_SPACE;
+	case 8:     return KEY_BACKSPACE;
+	case 9:     return KEY_TAB;
+	case 10:    return KEY_ENTER;
+	case 13:    return KEY_ENTER;
+	case 27:    return KEY_ESCAPE;
+	case 127:   return KEY_BACKSPACE;
+	}
+
+	return KEY_NONE;
+}
+
+static void _tui_emit_escape_sequence(const char *params, uint8_t final_byte){
+	InputEvent event = {
+		.input_type = INPUT_KEY
+	};
+
+	//evaluate if we got Kitty Keyboard Protocol modifiers
+	bool is_kitty_format1 = (final_byte == 'u'); //\033[<key>;<mods>u
+	bool is_kitty_format2 = (params[0] == '1' && params[1] == ';'); //\033[1;<mods><key>
+	bool is_kitty         = is_kitty_format1 || is_kitty_format2;
+	char kitty_key[8] = {};
+	int kitty_mods = 0;
+
+	if(is_kitty_format1){
+		sscanf(params, "%7[^;];%d", kitty_key, &kitty_mods);
+	}else if(is_kitty_format2){
+		sscanf(params, "1;%d%7s", &kitty_mods, kitty_key);
+	}
+
+	event.key_event.key = _tui_byte_to_key(params, final_byte);
+	if(is_kitty && kitty_mods){
+	 	// we're only masking shift, alt, ctrl (1 2 4)
+	 	// otherwise we get noise from stuff like num_lock...
+
+		// tui_close();
+	    // fprintf(stderr, "format2: params='%s' final_byte='%c' mods=%d key='%s'\n",
+	    // 	params, final_byte, kitty_mods, kitty_key);
+	    // exit(1);
+
+		int bit_mask = (kitty_mods - 1) & (1 | 2 | 4);
+		event.key_event.shift = (bit_mask & 1) != 0;
+		event.key_event.alt   = (bit_mask & 2) != 0;
+		event.key_event.ctrl  = (bit_mask & 4) != 0;
+		// if we want others in the future these are all the ones kitty supports:
+		// event.key_event.super     = (bit_mask & 8)   != 0;
+		// event.key_event.hyper     = (bit_mask & 16)  != 0;
+		// event.key_event.meta      = (bit_mask & 32)  != 0;
+		// event.key_event.caps_lock = (bit_mask & 64)  != 0;
+		// event.key_event.num_lock  = (bit_mask & 128) != 0;
+	}
+
+	if(event.key_event.key == KEY_NONE) return;
 
 	_tui_input_event_queue_push(event);
 }
@@ -735,6 +850,8 @@ void tui_write_format(const char *format, ...){
 void tui_input_read(double timeout_s){
 	//TODO: a bit hacky now...
 	_tui_input_event_queue_clear();
+
+	//TODO: clear this now that we don't need it
 	auto now = get_curr_time();
 	if(INPUT_STATE != PARSE_START && (now - LAST_INPUT_TIME) > 0.05){
 		//if we were waiting for escape to continue and it didnt, emit escape

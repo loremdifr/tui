@@ -221,7 +221,6 @@ static bool _tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent 
             text_changed = true;
             return true;
         case KEY_TAB:
-        case KEY_BACKTAB:
             return false;
         case KEY_NONE:
         default:

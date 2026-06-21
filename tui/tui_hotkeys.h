@@ -100,8 +100,8 @@ static void _tui_reset_hotkeys(void){
 	auto layer = _tui_get_layer_focused();
 	if(layer->panel_count > 1){
 		tui_register_key_hint(I18N_HINT_SWITCH_PANEL_KEY, I18N_HINT_SWITCH_PANEL_TEXT);
-		tui_register_key(KEY_TAB,      KEY_MOD_NONE,  &_tui_cursor_next_panel);
-		tui_register_key(KEY_BACKTAB,  KEY_MOD_SHIFT, &_tui_cursor_prev_panel);
+		tui_register_key(KEY_TAB,  KEY_MOD_NONE,  &_tui_cursor_next_panel);
+		tui_register_key(KEY_TAB,  KEY_MOD_SHIFT, &_tui_cursor_prev_panel);
 	}
 
 	//esc to navigate back
@@ -113,6 +113,7 @@ static void _tui_reset_hotkeys(void){
 	//ALT+Q to Close the App!
 	tui_register_key(KEY_Q, KEY_MOD_ALT,  &tui_quit);
 	tui_register_key_hint(I18N_HINT_QUIT_KEY, I18N_HINT_QUIT_TEXT);
+	tui_register_key(KEY_ESCAPE, KEY_MOD_ALT, &tui_quit);
 
 	//? to toggle help overlay
 	//NOTE: registered here instead of tui_render_hotkeys because hotkeys
@@ -121,6 +122,7 @@ static void _tui_reset_hotkeys(void){
 	//      this does mean this key is always registered even when not needed
 	//      but it effectively does nothing when not needed.
 	tui_register_key((Key)'?', KEY_MOD_NONE, &_tui_toggle_help);
+	tui_register_key(KEY_F1,   KEY_MOD_ALT, &_tui_toggle_help);
 }
 
 static void _tui_render_hotkeys(Screen *screen){
