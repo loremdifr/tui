@@ -208,7 +208,6 @@ typedef enum {
 	PARSE_UTF8,
 } InputParseState;
 static InputParseState INPUT_STATE = PARSE_START;
-static double          LAST_INPUT_TIME = 0.0;
 
 static void _tui_emit_special_key(Key key){
 	InputEvent input_event = {
@@ -703,12 +702,6 @@ static void _tui_emit_escape_sequence(const char *params, uint8_t final_byte){
 	if(is_kitty && kitty_mods){
 	 	// we're only masking shift, alt, ctrl (1 2 4)
 	 	// otherwise we get noise from stuff like num_lock...
-
-		// tui_close();
-	    // fprintf(stderr, "format2: params='%s' final_byte='%c' mods=%d key='%s'\n",
-	    // 	params, final_byte, kitty_mods, kitty_key);
-	    // exit(1);
-
 		int bit_mask = (kitty_mods - 1) & (1 | 2 | 4);
 		event.key_event.shift = (bit_mask & 1) != 0;
 		event.key_event.alt   = (bit_mask & 2) != 0;
@@ -727,7 +720,6 @@ static void _tui_emit_escape_sequence(const char *params, uint8_t final_byte){
 }
 
 static void _tui_parse_next_byte(uint8_t byte){
-    LAST_INPUT_TIME = get_curr_time();
 	//state machine for parsing ze bytten
     constexpr int  params_max         = 32;
     static    char params[params_max] = {};
@@ -744,7 +736,6 @@ static void _tui_parse_next_byte(uint8_t byte){
 		switch(byte){
 		case '\033':
 			INPUT_STATE = PARSE_ESCAPE;
-			LAST_INPUT_TIME = get_curr_time();
 			return;
 		case '\r':
 		case '\n':   _tui_emit_special_key(KEY_ENTER);     goto reset_state;
@@ -761,7 +752,6 @@ static void _tui_parse_next_byte(uint8_t byte){
             }
             //utf8 string!
             INPUT_STATE          = PARSE_UTF8;
-            LAST_INPUT_TIME      = get_curr_time();
             utf8_bytes[0]        = byte;
             utf8_length_current  = 1; //accumulates
             utf8_length_expected = length;
@@ -851,15 +841,9 @@ void tui_input_read(double timeout_s){
 	//TODO: a bit hacky now...
 	_tui_input_event_queue_clear();
 
-	//TODO: clear this now that we don't need it
-	auto now = get_curr_time();
-	if(INPUT_STATE != PARSE_START && (now - LAST_INPUT_TIME) > 0.05){
-		//if we were waiting for escape to continue and it didnt, emit escape
-        if(INPUT_STATE == PARSE_ESCAPE) _tui_emit_special_key(KEY_ESCAPE);
-        //otherwise it probably means we got an unfinished utf8, which should never
-        //realistically happen, so we just ignore it for now.
-		INPUT_STATE = PARSE_START;
-	}
+	//restart state machine
+	INPUT_STATE = PARSE_START;
+
 	if (!_tui_poll_input(timeout_s * 1000)) return;
 	_tui_parse_input();
 }
