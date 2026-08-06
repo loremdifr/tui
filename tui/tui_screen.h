@@ -8,6 +8,7 @@
 #include <string.h>
 #include "tui_utils.h"
 #include "tui_string.h"
+#include "tui_theme.h"
 
 typedef enum {
     NORMAL    = 0x00,
@@ -17,47 +18,11 @@ typedef enum {
     BLINKING  = 0x10,
 } TextFormat;
 
-typedef enum {
-    COLOR_BLACK = 0,
-    COLOR_RED,
-    COLOR_GREEN,
-    COLOR_YELLOW,
-    COLOR_BLUE,
-    COLOR_MAGENTA,
-    COLOR_CYAN,
-    COLOR_WHITE,
-    COLOR_BRIGHT_BLACK,
-    COLOR_BRIGHT_RED,
-    COLOR_BRIGHT_GREEN,
-    COLOR_BRIGHT_YELLOW,
-    COLOR_BRIGHT_BLUE,
-    COLOR_BRIGHT_MAGENTA,
-    COLOR_BRIGHT_CYAN,
-    COLOR_BRIGHT_WHITE,
-
-    COLOR_DARK_BLACK,
-    COLOR_DARK_RED,
-    COLOR_DARK_GREEN,
-    COLOR_DARK_YELLOW,
-    COLOR_DARK_BLUE,
-    COLOR_DARK_MAGENTA,
-    COLOR_DARK_CYAN,
-    COLOR_DARK_WHITE,
-
-    // Aliases
-    COLOR_GRAY         = 8,
-    COLOR_GRAY_DARK    = 0,
-    COLOR_MAGENTA_DARK = 5,
-
-    COLOR_DEFAULT      = 256,
-} Color;
-
 typedef struct {
     uint8_t    bytes[4];    //utf8 is 4 bytes max per char
     uint8_t    bytes_used;
     TextFormat text_format;
-    Color      fg_color;
-    Color      bg_color;
+    ColorPair  colors;
     uint8_t    display_width;
 } Cell;
 
@@ -68,7 +33,7 @@ typedef struct{
 
 Screen    screen_create(vec2i size);
 void      screen_clear(Screen *screen);
-void      screen_format(TextFormat text_format, Color fg_color, Color bg_color);
+void      screen_format(TextFormat text_format, ColorPair colors);
 Cell     *screen_get(Screen *screen, int x, int y);
 void      screen_set(Screen *screen, int x, int y, Cell cell);
 void      screen_set_char(Screen *screen, int x, int y, char chr);
@@ -98,15 +63,13 @@ void screen_clear(Screen *screen){
 
 typedef struct {
     TextFormat text_format;
-    Color      fg_color;
-    Color      bg_color;
+    ColorPair  colors;
 } CurrentCellFormat;
 static CurrentCellFormat FORMAT_CURR = {};
 
-void screen_format(TextFormat text_format, Color fg_color, Color bg_color){
+void screen_format(TextFormat text_format, ColorPair colors){
     FORMAT_CURR.text_format = text_format;
-    FORMAT_CURR.fg_color = fg_color;
-    FORMAT_CURR.bg_color = bg_color;
+    FORMAT_CURR.colors = colors;
 }
 
 Cell *screen_get(Screen *screen, int x, int y){
@@ -121,8 +84,7 @@ void screen_set(Screen *screen, int x, int y, Cell cell){
 	assert(screen != NULL);
 
     cell.text_format = FORMAT_CURR.text_format;
-    cell.fg_color    = FORMAT_CURR.fg_color;
-    cell.bg_color    = FORMAT_CURR.bg_color;
+    cell.colors      = FORMAT_CURR.colors;
 
 	x = clamp(x, 0, screen->size.x - 1);
 	y = clamp(y, 0, screen->size.y - 1);
@@ -246,10 +208,13 @@ static inline void _tui_format_params_reset(){
     FORMAT_PARAMS.used = 0;
 }
 
-static inline void _tui_write_color(TextFormat text_format, Color fg_color, Color bg_color){
-    static const char start[]     = "\033[";
-    static const char separator[] = ";";
-    static const char end[]       = "m";
+static inline void _tui_write_color(
+    TextFormat text_format,
+    ColorPair colors,
+){
+    static const char start[]       = "\033[";
+    static const char separator[]   = ";";
+    static const char end[]         = "m";
 
     //formato
     if(text_format == NORMAL){
@@ -261,117 +226,15 @@ static inline void _tui_write_color(TextFormat text_format, Color fg_color, Colo
         if(text_format & BLINKING)  _tui_format_params_push(5);
     }
 
-    //color frente
-    switch (fg_color) {
-        case COLOR_DEFAULT:        _tui_format_params_push(39); break;
-        case COLOR_BLACK:          _tui_format_params_push(30); break;
-        case COLOR_RED:            _tui_format_params_push(31); break;
-        case COLOR_GREEN:          _tui_format_params_push(32); break;
-        case COLOR_YELLOW:         _tui_format_params_push(33); break;
-        case COLOR_BLUE:           _tui_format_params_push(34); break;
-        case COLOR_MAGENTA:        _tui_format_params_push(35); break;
-        case COLOR_CYAN:           _tui_format_params_push(36); break;
-        case COLOR_WHITE:          _tui_format_params_push(37); break;
-        case COLOR_BRIGHT_BLACK:   _tui_format_params_push(90); break;
-        case COLOR_BRIGHT_RED:     _tui_format_params_push(91); break;
-        case COLOR_BRIGHT_GREEN:   _tui_format_params_push(92); break;
-        case COLOR_BRIGHT_YELLOW:  _tui_format_params_push(93); break;
-        case COLOR_BRIGHT_BLUE:    _tui_format_params_push(94); break;
-        case COLOR_BRIGHT_MAGENTA: _tui_format_params_push(95); break;
-        case COLOR_BRIGHT_CYAN:    _tui_format_params_push(96); break;
-        case COLOR_BRIGHT_WHITE:   _tui_format_params_push(97); break;
+    //fg color
+    _tui_format_params_push(38);
+    _tui_format_params_push(2);
+    _tui_format_params_push(colors.fg.r, colors.fg.g, colors.fg.b);
 
-        case COLOR_DARK_BLACK:     _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(232);
-                                   break;
-        case COLOR_DARK_RED:       _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(88);
-                                    break;
-        case COLOR_DARK_GREEN:     _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(22);
-                                    break;
-        case COLOR_DARK_YELLOW:    _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(58);
-                                    break;
-        case COLOR_DARK_BLUE:      _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(18);
-                                    break;
-        case COLOR_DARK_MAGENTA:   _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(90);
-                                    break;
-        case COLOR_DARK_CYAN:      _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(23);
-                                    break;
-        case COLOR_DARK_WHITE:     _tui_format_params_push(38);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(244);
-                                   break;
-
-        default: assert(false);
-    }
-
-    //color fondo
-    switch (bg_color) {
-        case COLOR_DEFAULT:        _tui_format_params_push(49);  break;
-        case COLOR_BLACK:          _tui_format_params_push(40);  break;
-        case COLOR_RED:            _tui_format_params_push(41);  break;
-        case COLOR_GREEN:          _tui_format_params_push(42);  break;
-        case COLOR_YELLOW:         _tui_format_params_push(43);  break;
-        case COLOR_BLUE:           _tui_format_params_push(44);  break;
-        case COLOR_MAGENTA:        _tui_format_params_push(45);  break;
-        case COLOR_CYAN:           _tui_format_params_push(46);  break;
-        case COLOR_WHITE:          _tui_format_params_push(47);  break;
-        case COLOR_BRIGHT_BLACK:   _tui_format_params_push(100); break;
-        case COLOR_BRIGHT_RED:     _tui_format_params_push(101); break;
-        case COLOR_BRIGHT_GREEN:   _tui_format_params_push(102); break;
-        case COLOR_BRIGHT_YELLOW:  _tui_format_params_push(103); break;
-        case COLOR_BRIGHT_BLUE:    _tui_format_params_push(104); break;
-        case COLOR_BRIGHT_MAGENTA: _tui_format_params_push(105); break;
-        case COLOR_BRIGHT_CYAN:    _tui_format_params_push(106); break;
-        case COLOR_BRIGHT_WHITE:   _tui_format_params_push(107); break;
-
-        case COLOR_DARK_BLACK:     _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(232);
-                                   break;
-        case COLOR_DARK_RED:       _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(88);
-                                   break;
-        case COLOR_DARK_GREEN:     _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(22);
-                                   break;
-        case COLOR_DARK_YELLOW:    _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(58);
-                                   break;
-        case COLOR_DARK_BLUE:      _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(18);
-                                   break;
-        case COLOR_DARK_MAGENTA:   _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(90);
-                                   break;
-        case COLOR_DARK_CYAN:      _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(23);
-                                   break;
-        case COLOR_DARK_WHITE:     _tui_format_params_push(48);
-                                   _tui_format_params_push(5);
-                                   _tui_format_params_push(244);
-                                   break;
-
-        default: assert(false);
-    }
+    //bg color
+    _tui_format_params_push(48);
+    _tui_format_params_push(2);
+    _tui_format_params_push(colors.bg.r, colors.bg.g, colors.bg.b);
 
     //concatenar formato
     int terminator_pos = sprintf(FORMAT_PARAMS.str, "%s", start);

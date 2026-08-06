@@ -151,7 +151,7 @@ static void _tui_render(void){
 			if(is_second_column_of_wide_char) continue;
 
 			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
-			_tui_write_color(next_cell->text_format, next_cell->fg_color, next_cell->bg_color);
+			_tui_write_color(next_cell->text_format, next_cell->colors);
 			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
 				tui_write((char *)EMPTY_U8);
 			}else{
@@ -279,6 +279,8 @@ void tui_run_loop(void){
 	screen_free(&APP_STATE.curr_screen);
 	screen_free(&APP_STATE.next_screen);
 	tui_close();
+	screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT); //reset format
+	tui_clear();
 }
 
 void tui_quit(void){

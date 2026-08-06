@@ -23,6 +23,25 @@ typedef struct {
     };
 } vec2i;
 
+
+typedef struct {
+    union{
+        int x;
+        int r;
+        int red;
+    };
+    union {
+        int y;
+        int g;
+        int green;
+    };
+    union {
+        int z;
+        int b;
+        int blue;
+    };
+} vec3i;
+
 typedef struct {
     union{
         vec2i position;

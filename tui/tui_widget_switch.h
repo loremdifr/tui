@@ -34,6 +34,7 @@ typedef struct {
 } _WidgetSwitchState;
 
 static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i position){
+    //TODO: need to be able to get the color theme from here.
     _WidgetSwitchState *widget_state = widget->state;
     _WidgetSwitchData *widget_data   = widget->data;
     static const AnimationFrame frames[] = {

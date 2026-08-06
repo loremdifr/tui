@@ -24,20 +24,23 @@ typedef struct {
 static void _tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i position){
     _WidgetSpinnerState *widget_state = widget->state;
     _WidgetSpinnerData *widget_data   = widget->data;
+
+    //TODO: actually use the color from the theme!
+    const ColorPair colors = {.fg=hex_color(), .bg=hex_color()};
     static const AnimationFrame frames[] = {
-        {.text=u8"⣇⠀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⡏⠀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⠏⠁", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⠋⠉", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⠉⠙", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⠉⠙", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⠈⠹", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⠀⢹", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⠀⣸", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⢀⣰", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⣀⣠", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⣄⣀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
-        {.text=u8"⣆⡀", .fg_color=COLOR_CYAN, .bg_color=COLOR_BLACK},
+        {.text=u8"⣇⠀", .colors=colors},
+        {.text=u8"⡏⠀", .colors=colors},
+        {.text=u8"⠏⠁", .colors=colors},
+        {.text=u8"⠋⠉", .colors=colors},
+        {.text=u8"⠉⠙", .colors=colors},
+        {.text=u8"⠉⠙", .colors=colors},
+        {.text=u8"⠈⠹", .colors=colors},
+        {.text=u8"⠀⢹", .colors=colors},
+        {.text=u8"⠀⣸", .colors=colors},
+        {.text=u8"⢀⣰", .colors=colors},
+        {.text=u8"⣀⣠", .colors=colors},
+        {.text=u8"⣄⣀", .colors=colors},
+        {.text=u8"⣆⡀", .colors=colors},
     };
     static const size_t frames_count = arr_size(frames);
     static const double animation_speed = 1.;
@@ -65,7 +68,7 @@ static void _tui_widget_spinner_render(Widget *widget, Screen *screen, vec2i pos
 
     //render the animation FRAME
     const AnimationFrame *frame = &frames[widget_state->frame_curr];
-    screen_format(BOLD, frame->fg_color, frame->bg_color);
+    screen_format(BOLD, frame->colors);
     screen_set_utf8_str(
         screen,
         position.x + PADDING,

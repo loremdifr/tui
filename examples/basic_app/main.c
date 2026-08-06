@@ -38,7 +38,6 @@ int main(void)
 	tui_run_loop();
 
 	//mensaje de salida
-	tui_clear();
 	printf("\n - PROGRAMA FINALIZADO - \n");
 	return 0;
 }

@@ -74,8 +74,7 @@ typedef struct {
 //TODO: maybe this could go somewhere else
 typedef struct {
     const uint8_t *text;
-    Color fg_color;
-    Color bg_color;
+    ColorPair colors;
 } AnimationFrame;
 
 //API TO DEFINE THE PANELS AND WIDGETS ON THE PAGE
@@ -165,6 +164,7 @@ typedef struct {
     bool         widget_overlay_active; //because the widgets are encapsulated,
                                          // we have to manage their overlay state from here.
     const uint8_t *widget_overlay_title; //temporary, set during overlay build for title rendering
+    Theme theme; //TODO: need to be able to set and get this!
 } _LayoutState;
 
 static _LayoutState LAYOUT_STATE = {
