@@ -236,9 +236,9 @@ static inline void _tui_write_color(
     TextFormat text_format,
     ColorPair colors
 ){
-    static const char start[]       = "\033[";
-    static const char separator[]   = ";";
-    static const char end[]         = "m";
+    static const char start[]     = "\033[";
+    static const char separator[] = ";";
+    static const char end[]       = "m";
 
     //formato
     if(text_format == NORMAL){

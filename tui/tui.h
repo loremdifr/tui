@@ -168,10 +168,10 @@ static void _tui_render(void){
 			if(is_second_column_of_wide_char) continue;
 
 			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
-			_tui_write_color(next_cell->text_format, next_cell->colors);
 			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
 				tui_write_empty_char();
 			}else{
+				_tui_write_color(next_cell->text_format, next_cell->colors);
 				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
 			}
 
@@ -225,6 +225,7 @@ void tui_run_loop(void){
 
 	// tui_set_resize_callback(tui_resize);
 	tui_init(); //platform init
+	_tui_write_color(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]); //init format
 	tui_clear();
 
 	//init pages
@@ -297,7 +298,7 @@ void tui_run_loop(void){
 	screen_free(&APP_STATE.curr_screen);
 	screen_free(&APP_STATE.next_screen);
 	tui_close();
-	screen_format(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]); //reset format
+	tui_write("\033[0m"); //reset colors
 	tui_clear();
 }
 
@@ -312,16 +313,14 @@ void tui_move_to(int x, int y){
 }
 
 void tui_clear(){
-	// screen_format(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]);
 	tui_write(
-		// "\033[48;2;30;40;60m" //this seesm to work?
 		"\033[2J\033[H" // limpia la pantalla y mueve el cursor a 0,0
 		"\033[3J" 		// limpia el scrollback
 	);
 }
 
 void tui_write_empty_char(){
-	screen_format(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]);
+	_tui_write_color(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]);
 	tui_write((const char*)EMPTY_U8);
 }
 
