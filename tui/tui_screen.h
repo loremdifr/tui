@@ -217,7 +217,7 @@ void screen_free(Screen *screen){
 
 // write color + text format -----------------------------
 
-constexpr uint8_t FORMAT_PARAMS_MAX = 8;
+constexpr uint8_t FORMAT_PARAMS_MAX = 16;
 typedef struct{
     uint8_t params[FORMAT_PARAMS_MAX];
     char    str[80];

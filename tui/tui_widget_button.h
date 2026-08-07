@@ -28,7 +28,7 @@ static void _tui_widget_button_render(Widget *widget, Screen *screen, vec2i posi
 	//any processing would be done here if needed
 
 	if(widget->focused){
-		screen_format(BOLD, screen->theme.colors[COLOR_TEXT_FOCUS]);
+		screen_format(BOLD, screen->theme.colors[COLOR_PRIMARY]);
 	}else{
         screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
     }

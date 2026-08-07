@@ -37,13 +37,15 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
     //TODO: need to be able to get the color theme from here.
     _WidgetSwitchState *widget_state = widget->state;
     _WidgetSwitchData *widget_data   = widget->data;
+    const ColorPair color_on  = screen->theme.colors[COLOR_DANGER];
+    const ColorPair color_off = screen->theme.colors[COLOR_SUCCESS];
     const AnimationFrame frames[] = {
-        {.text=u8"██  ", .colors=screen->theme.colors[COLOR_DANGER]},
-        {.text=u8"▐█▌ ", .colors=screen->theme.colors[COLOR_DANGER]},
-        {.text=u8"▐██ ", .colors=screen->theme.colors[COLOR_DANGER]},
-        {.text=u8" ██▌", .colors=screen->theme.colors[COLOR_SUCCESS]},
-        {.text=u8" ▐██", .colors=screen->theme.colors[COLOR_SUCCESS]},
-        {.text=u8"  ██", .colors=screen->theme.colors[COLOR_SUCCESS]},
+        {.text=u8"██░░", .colors=color_on},
+        {.text=u8"▐█▌░", .colors=color_on},
+        {.text=u8"▐██░", .colors=color_on},
+        {.text=u8"░██▌", .colors=color_off},
+        {.text=u8"░▐██", .colors=color_off},
+        {.text=u8"░░██", .colors=color_off},
     };
     static const size_t frames_count = arr_size(frames);
     static const double animation_speed = 0.15;
@@ -77,7 +79,7 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
 
     //render LABEL
     if(widget->focused){
-		screen_format(BOLD, screen->theme.colors[COLOR_TEXT_FOCUS]);
+		screen_format(BOLD, screen->theme.colors[COLOR_PRIMARY]);
 	}else{
         screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
     }

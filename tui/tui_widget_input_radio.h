@@ -54,12 +54,12 @@ static void _tui_widget_input_radio_render(Widget *widget, Screen *screen, vec2i
     int rendered_width = (int)(radio_width + 1 + label_width);
 
     if(widget->focused){
-        screen_format(BOLD, screen->theme.colors[COLOR_TEXT_FOCUS]);
+        screen_format(BOLD, screen->theme.colors[COLOR_PRIMARY]);
         screen_set_utf8_str(screen, position.x + PADDING, position.y, radio);
     }else if (is_selected){
         screen_format(BOLD, screen->theme.colors[COLOR_TEXT]);
     }else{
-        screen_format(BOLD, screen->theme.colors[COLOR_PRIMARY]);
+        screen_format(BOLD, screen->theme.colors[COLOR_SECONDARY]);
     }
 
     screen_set_utf8_str(screen, position.x + PADDING, position.y, radio);

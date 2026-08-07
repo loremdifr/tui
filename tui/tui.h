@@ -92,6 +92,7 @@ Theme  tui_get_theme();
 //aux
 void tui_move_to(int x, int y);
 void tui_clear(void);
+void tui_write_empty_char(void);
 
 // IMPL ------------------------------------------------------------------------
 #ifdef TUI_IMPL
@@ -169,7 +170,7 @@ static void _tui_render(void){
 			tui_move_to(x + 1, y + 1); //we add 1 because terminal pos is 1 based
 			_tui_write_color(next_cell->text_format, next_cell->colors);
 			if(next_cell->display_width == 0 || next_cell->bytes_used == 0){
-				tui_write((char *)EMPTY_U8);
+				tui_write_empty_char();
 			}else{
 				tui_write_bytes(next_cell->bytes, next_cell->bytes_used);
 			}
@@ -182,7 +183,7 @@ static void _tui_render(void){
 					auto target_x = x + i;
 					if(target_x >= APP_STATE.curr_screen.size.x) break;
 					tui_move_to(target_x + 1, y + 1); //we add 1 because terminal pos is 1 based
-					tui_write((char *)EMPTY_U8);
+					tui_write_empty_char();
 				}
 			}
 		}
@@ -311,10 +312,17 @@ void tui_move_to(int x, int y){
 }
 
 void tui_clear(){
+	// screen_format(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]);
 	tui_write(
+		// "\033[48;2;30;40;60m" //this seesm to work?
 		"\033[2J\033[H" // limpia la pantalla y mueve el cursor a 0,0
 		"\033[3J" 		// limpia el scrollback
 	);
+}
+
+void tui_write_empty_char(){
+	screen_format(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]);
+	tui_write((const char*)EMPTY_U8);
 }
 
 
