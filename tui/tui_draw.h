@@ -271,7 +271,7 @@ void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total
     to.y -= 1;
 
     //draw scroll background
-    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
+    screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
     tui_draw_line(screen, SCROLL_V_BG, from, to);
 
     //size of the knob
@@ -292,7 +292,7 @@ void tui_draw_scrollbar_vertical(Screen *screen, vec2i from, vec2i to, int total
     auto knob_to = (vec2i){.x = from.x, .y = knob_from.y + knob_size};
 
     //draw the knob
-    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+    screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
     tui_draw_line(screen, SCROLL_V_KNOB, knob_from, knob_to);
 }
 
@@ -307,7 +307,7 @@ void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int tot
     to.x   -= 1;
 
     //draw scroll background
-    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
+    screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
     tui_draw_line(screen, SCROLL_H_BG, from, to);
 
     //size of the knob
@@ -328,7 +328,7 @@ void tui_draw_scrollbar_horizontal(Screen *screen, vec2i from, vec2i to, int tot
     auto knob_to = (vec2i){.x = knob_from.x + knob_size, .y = from.y};
 
     //draw the knob
-    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+    screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
     tui_draw_line(screen, SCROLL_H_KNOB, knob_from, knob_to);
 }
 

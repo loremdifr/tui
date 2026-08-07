@@ -28,8 +28,11 @@ static void _tui_widget_button_render(Widget *widget, Screen *screen, vec2i posi
 	//any processing would be done here if needed
 
 	if(widget->focused){
-		screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
-	}
+		screen_format(BOLD, screen->theme.colors[COLOR_TEXT_FOCUS]);
+	}else{
+        screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
+    }
+
 	tui_draw_box(screen, (rect2i){
         .position = position,
         .size     = widget->size,

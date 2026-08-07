@@ -37,13 +37,13 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
     //TODO: need to be able to get the color theme from here.
     _WidgetSwitchState *widget_state = widget->state;
     _WidgetSwitchData *widget_data   = widget->data;
-    static const AnimationFrame frames[] = {
-        {.text=u8"██  ", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_DANGER},
-        {.text=u8"▐█▌ ", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_DANGER},
-        {.text=u8"▐██ ", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_DANGER},
-        {.text=u8" ██▌", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_SUCCESS},
-        {.text=u8" ▐██", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_SUCCESS},
-        {.text=u8"  ██", .fg_color=COLOR_FG_TEXT, .bg_color=COLOR_BG_SUCCESS},
+    const AnimationFrame frames[] = {
+        {.text=u8"██  ", .colors=screen->theme.colors[COLOR_DANGER]},
+        {.text=u8"▐█▌ ", .colors=screen->theme.colors[COLOR_DANGER]},
+        {.text=u8"▐██ ", .colors=screen->theme.colors[COLOR_DANGER]},
+        {.text=u8" ██▌", .colors=screen->theme.colors[COLOR_SUCCESS]},
+        {.text=u8" ▐██", .colors=screen->theme.colors[COLOR_SUCCESS]},
+        {.text=u8"  ██", .colors=screen->theme.colors[COLOR_SUCCESS]},
     };
     static const size_t frames_count = arr_size(frames);
     static const double animation_speed = 0.15;
@@ -77,9 +77,9 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
 
     //render LABEL
     if(widget->focused){
-		screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
+		screen_format(BOLD, screen->theme.colors[COLOR_TEXT_FOCUS]);
 	}else{
-        screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+        screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
     }
     screen_set_utf8_str(
         screen,
@@ -90,7 +90,7 @@ static void _tui_widget_switch_render(Widget *widget, Screen *screen, vec2i posi
 
     //render the animation FRAME
     const AnimationFrame *frame = &frames[widget_state->frame_curr];
-    screen_format(BOLD, COLOR_WHITE, frame->bg_color);
+    screen_format(BOLD, frame->colors);
     screen_set_utf8_str(
         screen,
         position.x + PADDING + utf8_str_display_width(widget_data->label),

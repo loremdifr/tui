@@ -74,11 +74,11 @@ static void _tui_widget_virtual_list_render(Widget *widget, Screen *screen, vec2
         int y = position.y + i;
 
         if(selected && widget->focused){
-            screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
+            screen_format(BOLD, screen->theme.colors[COLOR_PRIMARY]);
         }else if(selected){
-            screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+            screen_format(NORMAL, screen->theme.colors[COLOR_TEXT_FOCUS]);
         }else{
-            screen_format(NORMAL, COLOR_DARK_WHITE, COLOR_BLACK);
+            screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
         }
 
         auto selector_icon = selected ? u8"> " : u8"  ";

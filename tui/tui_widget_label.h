@@ -25,7 +25,7 @@ void tui_widget_label_(_WidgetLabelParams *params);
 #ifdef TUI_WIDGET_LABEL_IMPL
 
 static void _tui_widget_label_render(Widget *widget, Screen *screen, vec2i position){
-    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
 	WidgetLabelData *widget_data = widget->data;
 
     for(size_t i = 0; i < widget_data->lines.count; i++){

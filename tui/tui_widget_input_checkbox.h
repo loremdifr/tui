@@ -36,9 +36,9 @@ static void _tui_widget_input_checkbox_render(Widget *widget, Screen *screen, ve
     int rendered_width = (int)(box_width + 1 + label_width);
 
     if(widget->focused){
-        screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
+        screen_format(BOLD, screen->theme.colors[COLOR_TEXT_FOCUS]);
     }else{
-        screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+        screen_format(BOLD, screen->theme.colors[COLOR_TEXT]);
     }
 
     screen_set_utf8_str(screen, position.x + PADDING, position.y, box);

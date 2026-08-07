@@ -59,35 +59,35 @@ static void page_secondary_canvas_render(Screen *screen, vec2i position){
     });
 
     // Test tui_draw_line
-    screen_format(NORMAL, COLOR_RED, COLOR_BLACK);
+    // screen_format(NORMAL, COLOR_RED, COLOR_BLACK);
     tui_draw_line(screen, (uint8_t *)u8"*",
         (vec2i){.x = position.x, .y = position.y + 6},
         (vec2i){.x = position.x + 20, .y = position.y + 6}
     );
 
     // Test tui_draw_line_bresenham (diagonal)
-    screen_format(NORMAL, COLOR_GREEN, COLOR_BLACK);
+    // screen_format(NORMAL, COLOR_GREEN, COLOR_BLACK);
     tui_draw_line_bresenham(screen, (uint8_t *)u8"x",
         (vec2i){.x = position.x, .y = position.y + 7},
         (vec2i){.x = position.x + 10, .y = position.y + 12}
     );
 
     // Test tui_draw_rect
-    screen_format(NORMAL, COLOR_YELLOW, COLOR_BLACK);
+    // screen_format(NORMAL, COLOR_YELLOW, COLOR_BLACK);
     tui_draw_rect(screen, (uint8_t *)u8"█", (rect2i){
         .pos = {.x = position.x + 15, .y = position.y + 8},
         .size = {.w = 4, .h = 3}
     });
 
     // Test tui_draw_circ
-    screen_format(NORMAL, COLOR_CYAN, COLOR_BLACK);
+    // screen_format(NORMAL, COLOR_CYAN, COLOR_BLACK);
     tui_draw_circ(screen, (uint8_t *)u8"o", (rect2i){
         .pos = {.x = position.x + 22, .y = position.y + 10},
         .size = {.w = 8, .h = 5}
     });
 
     // Test tui_draw_line_braille
-    screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
+    // screen_format(NORMAL, COLOR_MAGENTA, COLOR_BLACK);
     tui_draw_line_braille(screen,
         (vec2i){.x = position.x + 35, .y = position.y + 2},
         (vec2i){.x = position.x + 55, .y = position.y + 10}

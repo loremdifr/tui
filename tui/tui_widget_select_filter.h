@@ -91,12 +91,12 @@ static void _tui_widget_select_filter_dropdown_render(Widget *widget, Screen *sc
 
     if(state->query.length == 0){
         //draw placeholder
-        screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
+        screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
         auto placeholder_substr = string_from_substr(data->placeholder, 0, data->input_width);
         screen_set_string(screen, position.x + PADDING, position.y, &placeholder_substr);
     }else{
         //draw text
-        screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+        screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
         auto text_substr = string_substr(
             &state->query,
             state->scroll,
@@ -109,18 +109,18 @@ static void _tui_widget_select_filter_dropdown_render(Widget *widget, Screen *sc
     if(state->caret_show){
         int caret_x = position.x + PADDING + (int)(state->cursor - state->scroll);
         if(state->cursor < state->query.length){
-            screen_format(NORMAL, COLOR_BG_TEXT, COLOR_FG_PRIMARY);
+            screen_format(NORMAL, screen->theme.colors[COLOR_TEXT_FOCUS]);
             auto char_substr = string_substr(&state->query, state->cursor, state->cursor + 1);
             screen_set_string(screen, caret_x, position.y, &char_substr);
         }else{
-            screen_format(NORMAL, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
+            screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
             screen_set_utf8(screen, caret_x, position.y, u8"█");
         }
     }
 
     //separator
     int sep_y = position.y + 1;
-    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
+    screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
     for(int x = position.x; x < position.x + widget->size.w; x++){
         screen_set_utf8(screen, x, sep_y, u8"─");
     }
@@ -131,9 +131,9 @@ static void _tui_widget_select_filter_dropdown_render(Widget *widget, Screen *sc
     int visible = widget->size.h - (list_y - position.y + PADDING);
 
     if(state->current_options.count == 0){ //no options
-        screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
+        screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
         screen_set_utf8_str(screen, base_x, list_y, data->empty_options_label);
-        screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+        screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
         return;
     }
 
@@ -141,18 +141,18 @@ static void _tui_widget_select_filter_dropdown_render(Widget *widget, Screen *sc
         int idx = (int)(state->scroll + i);
         if(idx == state->selected_index){
             //selected
-            screen_format(NORMAL, COLOR_BG_TEXT, COLOR_FG_PRIMARY);
+            screen_format(NORMAL, screen->theme.colors[COLOR_TEXT_FOCUS]);
             for(int x = position.x; x < position.x + widget->size.w; x++){
                 screen_set_char(screen, x, list_y + i, EMPTY_CHAR);
             }
         }else{
-            screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+            screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
         }
         screen_set_utf8_str(screen, base_x, list_y + i, state->current_options.values[idx].label);
     }
 
     //reset format
-    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+    screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
 }
 
 static bool _tui_widget_select_filter_dropdown_input(Widget *widget, InputEvent input_event){
@@ -322,9 +322,9 @@ static void _tui_widget_select_filter_render(Widget *widget, Screen *screen, vec
     size_t selected_width = utf8_str_display_width(selected_label);
 
     if(widget->focused){
-        screen_format(BOLD, COLOR_FG_PRIMARY, COLOR_BG_TEXT);
+        screen_format(BOLD, screen->theme.colors[COLOR_PRIMARY]);
     }else{
-        screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+        screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
     }
 
     screen_set_utf8_str(screen, position.x + PADDING, position.y, data->label);

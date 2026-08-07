@@ -25,6 +25,8 @@
 #define PAGE_TABLE_IMPL
 #include "pages/page_table.h"
 
+#include "tui/tui_theme.h"
+
 int main(void)
 {
 	//setup de la app
@@ -34,6 +36,7 @@ int main(void)
 	// tui_register_page(PAGE_TABLE_ID, &PAGE_TABLE);
 
 	//comienzo de la app
+	tui_set_theme(example_theme);
 	tui_navigate_to(PAGE_EXAMPLE_ID); //definimos la primera pagina o home
 	tui_run_loop();
 

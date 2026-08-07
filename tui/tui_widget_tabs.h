@@ -53,14 +53,14 @@ static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
         bool active = (int)i == selected_index;
 
         //draw left side of tab
-        auto fg_color = COLOR_BG_TEXT;
-        auto bg_color = COLOR_BG_SECONDARY;
-        if(active){
-            fg_color = (widget->focused) ? COLOR_FG_PRIMARY : COLOR_FG_TEXT;
-            bg_color = COLOR_BG_PRIMARY;
-         }
+        // auto fg_color = COLOR_BG_TEXT;
+        // auto bg_color = COLOR_BG_SECONDARY;
+        // if(active){
+        //     fg_color = (widget->focused) ? COLOR_FG_PRIMARY : COLOR_FG_TEXT;
+        //     bg_color = COLOR_BG_PRIMARY;
+        //  }
 
-        screen_format(NORMAL, fg_color, bg_color);
+        // screen_format(NORMAL, fg_color, bg_color);
         if(i != 0){
             screen_set_utf8(screen, tab_x, position.y, u8"│");
         }
@@ -77,7 +77,7 @@ static void _tui_widget_tabs_render(Widget *widget, Screen *screen, vec2i positi
         tab_x += tab_w;
     }
 
-    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+    // screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
 }
 
 static bool _tui_widget_tabs_input(Widget *widget, InputEvent input_event){

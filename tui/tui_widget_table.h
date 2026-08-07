@@ -88,22 +88,22 @@ static void _tui_widget_table_render(Widget *widget, Screen *screen, vec2i posit
 
     // --- sticky header ---
     int header_y = visible.pos.y;
-    screen_format(BOLD, COLOR_GRAY, COLOR_BLACK);
+    screen_format(BOLD, screen->theme.colors[COLOR_SECONDARY]);
     int hx = position.x + PADDING;
     for(size_t col = 0; col < data->table.column_count; col++){
         screen_set_utf8_str(screen, hx, header_y, data->table.headers[col]);
         hx += data->column_widths[col];
         if(col < data->table.column_count - 1){
-            screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+            // screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
             screen_set_utf8(screen, hx, header_y, u8"│");
             hx += 1;
-            screen_format(BOLD, COLOR_GRAY, COLOR_BLACK);
+            // screen_format(BOLD, COLOR_GRAY, COLOR_BLACK);
         }
     }
 
     // --- sticky separator ---
     int sep_y = header_y + 1;
-    screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+    // screen_format(NORMAL, screen->theme.colors[COLOR_PRIMARY]);
     int sx = position.x + PADDING;
     for(size_t col = 0; col < data->table.column_count; col++){
         for(int w = 0; w < data->column_widths[col]; w++){
@@ -128,35 +128,34 @@ static void _tui_widget_table_render(Widget *widget, Screen *screen, vec2i posit
         bool selected = (i == (int)state->selected_index);
         int row_y = data_top + i;
 
-        if(selected && widget->focused){
-            screen_format(NORMAL, COLOR_BG_TEXT, COLOR_BG_PRIMARY);
-        }else if(selected){
-            screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
-        }else{
-            screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
-        }
-
         int dx = position.x + PADDING;
         for(size_t col = 0; col < data->table.column_count; col++){
+            if(selected && widget->focused){
+                screen_format(NORMAL, screen->theme.colors[COLOR_PRIMARY]);
+            }else if(selected){
+                screen_format(NORMAL, screen->theme.colors[COLOR_TEXT_FOCUS]);
+            }else{
+                screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
+            }
             auto cell = &data->table.cells[i * data->table.column_count + col];
             screen_set_utf8_str(screen, dx, row_y, cell->label);
             dx += data->column_widths[col];
             if(col < data->table.column_count - 1){
-                screen_format(NORMAL, COLOR_GRAY, COLOR_BLACK);
+                screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
                 screen_set_utf8(screen, dx, row_y, u8"│");
                 dx += 1;
-                if(selected && widget->focused){
-                    screen_format(NORMAL, COLOR_BG_TEXT, COLOR_BG_PRIMARY);
-                }else if(selected){
-                    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
-                }else{
-                    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_TEXT);
-                }
+                // if(selected && widget->focused){
+                //     screen_format(NORMAL, screen->theme.colors[COLOR_PRIMARY]);
+                // }else if(selected){
+                //     screen_format(NORMAL, screen->theme.colors[COLOR_TEXT_FOCUS]);
+                // }else{
+                //     screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
+                // }
             }
         }
     }
 
-    screen_format(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
 }
 
 static bool _tui_widget_table_input(Widget *widget, InputEvent input_event){

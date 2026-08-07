@@ -8,6 +8,12 @@
 
 #define arr_size(arr) (sizeof(arr) / sizeof(arr[0]))
 
+#define COLOR_HEX(hex) ((vec3i){ \
+    .red   = (hex >> 16) & 0xFF, \
+    .green = (hex >> 8)  & 0xFF, \
+    .blue  = (hex >> 0)  & 0xFF, \
+})
+
 typedef struct {
     union{
         int x;

@@ -84,8 +84,10 @@
 
 //API --------------------------------------------------------------------------
 
-void  tui_run_loop(void); //run on the entry file to start the main loop
-void  tui_quit(void);
+void   tui_run_loop(void); //run on the entry file to start the main loop
+void   tui_quit(void);
+void   tui_set_theme(Theme theme);
+Theme  tui_get_theme();
 
 //aux
 void tui_move_to(int x, int y);
@@ -102,13 +104,27 @@ typedef struct {
 	double  curr_frame_time;
 	double  prev_frame_time;
 	double  frame_delta;
+	Theme   theme;
 } _AppState; //TODO: UI state?
 _AppState APP_STATE = {};
+
+// Theme ------
+void tui_set_theme(Theme theme){
+	APP_STATE.theme = theme;
+	APP_STATE.curr_screen.theme = theme;
+	APP_STATE.next_screen.theme = theme;
+	//TODO: might need to force a render here in case the theme is changed in the
+	//      middle of the rendering process...?
+}
+
+Theme tui_get_theme(){
+	return APP_STATE.theme;
+}
 
 //TUI loop ---------------------------------------------------------------------
 
 static void _tui_render_header(Screen *screen){
-	screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+	screen_format(NORMAL, screen->theme.colors[COLOR_TEXT]);
 
 	if (NAV_HISTORY.count <= 0) return;
 
@@ -203,6 +219,7 @@ void tui_run_loop(void){
 	APP_STATE.fps = 10;
 	APP_STATE.prev_frame_time = get_curr_time();
 	APP_STATE.curr_frame_time = get_curr_time();
+	tui_set_theme(APP_STATE.theme); //in case the theme was set before creating the screens!
 	const double frame_time = 1.0 / APP_STATE.fps;
 
 	// tui_set_resize_callback(tui_resize);
@@ -264,7 +281,7 @@ void tui_run_loop(void){
 		}
 		tui_input_process(&_tui_process_input_hotkeys);
 
-		screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT); //reset format
+		screen_format(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]); //reset format
 
 		_tui_layout_render();
 		_tui_render_header(&APP_STATE.next_screen);
@@ -279,7 +296,7 @@ void tui_run_loop(void){
 	screen_free(&APP_STATE.curr_screen);
 	screen_free(&APP_STATE.next_screen);
 	tui_close();
-	screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT); //reset format
+	screen_format(NORMAL, APP_STATE.theme.colors[COLOR_TEXT]); //reset format
 	tui_clear();
 }
 

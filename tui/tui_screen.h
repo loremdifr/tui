@@ -8,7 +8,30 @@
 #include <string.h>
 #include "tui_utils.h"
 #include "tui_string.h"
-#include "tui_theme.h"
+
+typedef struct{
+    vec3i fg;
+    vec3i bg;
+} ColorPair;
+
+typedef enum{
+    COLOR_TEXT,         // normal text
+    COLOR_TEXT_FOCUS,   // highlighted or selected text, usually inverted
+    COLOR_PANEL,        //
+    COLOR_PANEL_FOCUS,  //
+    COLOR_PRIMARY,      // for an elemented that is "active", like a hovered button
+    COLOR_SECONDARY,
+    COLOR_SUCCESS,
+    COLOR_INFO,
+    COLOR_WARNING,
+    COLOR_DANGER,
+    _THEME_COLOR_COUNT,
+} ThemeColor;
+
+typedef struct {
+    char *name;
+    ColorPair colors[_THEME_COLOR_COUNT];
+} Theme;
 
 typedef enum {
     NORMAL    = 0x00,
@@ -28,7 +51,8 @@ typedef struct {
 
 typedef struct{
 	vec2i  size;
-	Cell *cells;
+	Cell  *cells;
+    Theme  theme; //TODO: need to be able to set and get this!
 } Screen;
 
 Screen    screen_create(vec2i size);
@@ -210,7 +234,7 @@ static inline void _tui_format_params_reset(){
 
 static inline void _tui_write_color(
     TextFormat text_format,
-    ColorPair colors,
+    ColorPair colors
 ){
     static const char start[]       = "\033[";
     static const char separator[]   = ";";
@@ -229,12 +253,16 @@ static inline void _tui_write_color(
     //fg color
     _tui_format_params_push(38);
     _tui_format_params_push(2);
-    _tui_format_params_push(colors.fg.r, colors.fg.g, colors.fg.b);
+    _tui_format_params_push(colors.fg.red);
+    _tui_format_params_push(colors.fg.green);
+    _tui_format_params_push(colors.fg.blue);
 
     //bg color
     _tui_format_params_push(48);
     _tui_format_params_push(2);
-    _tui_format_params_push(colors.bg.r, colors.bg.g, colors.bg.b);
+    _tui_format_params_push(colors.bg.red);
+    _tui_format_params_push(colors.bg.green);
+    _tui_format_params_push(colors.bg.blue);
 
     //concatenar formato
     int terminator_pos = sprintf(FORMAT_PARAMS.str, "%s", start);

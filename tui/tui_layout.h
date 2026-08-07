@@ -155,16 +155,15 @@ typedef struct {
 static _WidgetStateRegistry WIDGET_REGISTRY = {.arena  = nullptr};
 
 typedef struct {
-    vec2i         base_size;
-    PageLayer     layers[LAYER_COUNT];
-    PageLayerKind layer_building;
-    PageLayerKind layer_focused;
-    Screen      *screen;
-    Arena       *arena_frame;
-    bool         widget_overlay_active; //because the widgets are encapsulated,
-                                         // we have to manage their overlay state from here.
-    const uint8_t *widget_overlay_title; //temporary, set during overlay build for title rendering
-    Theme theme; //TODO: need to be able to set and get this!
+    vec2i           base_size;
+    PageLayer       layers[LAYER_COUNT];
+    PageLayerKind   layer_building;
+    PageLayerKind   layer_focused;
+    Screen         *screen;
+    Arena          *arena_frame;
+    bool            widget_overlay_active; //because the widgets are encapsulated,
+                                           // we have to manage their overlay state from here.
+    const uint8_t  *widget_overlay_title; //temporary, set during overlay build for title rendering
 } _LayoutState;
 
 static _LayoutState LAYOUT_STATE = {
@@ -201,7 +200,7 @@ static inline int _tui_center_in_container(int base, int length, int container_l
 static void _tui_render_widget(Widget *widget, vec2i position){
     widget->render(widget, LAYOUT_STATE.screen, position);
     //always reset color after a widget!
-    screen_format(NORMAL, COLOR_FG_TEXT, COLOR_BG_TEXT);
+    screen_format(NORMAL, LAYOUT_STATE.screen->theme.colors[COLOR_TEXT]);
 }
 
 static void _tui_render_panel(Panel *panel, int scroll_offset){
@@ -301,9 +300,9 @@ static void _tui_render_panel(Panel *panel, int scroll_offset){
 
     //draw panel border
     if(panel->focused){
-        screen_format(NORMAL, COLOR_FG_PANEL_FOCUS, COLOR_BG_TEXT);
+        screen_format(NORMAL, LAYOUT_STATE.screen->theme.colors[COLOR_PANEL_FOCUS]);
     }else{
-        screen_format(NORMAL, COLOR_FG_PANEL, COLOR_BG_TEXT);
+        screen_format(NORMAL, LAYOUT_STATE.screen->theme.colors[COLOR_PANEL]);
     }
     tui_draw_box(LAYOUT_STATE.screen, panel->outer_rect);
 

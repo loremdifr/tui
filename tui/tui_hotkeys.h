@@ -126,7 +126,7 @@ static void _tui_reset_hotkeys(void){
 }
 
 static void _tui_render_hotkeys(Screen *screen){
-    screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
+    screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
 
     size_t max_width = screen->size.w; //in characters/cells
     size_t max_size  = max_width * 4 + 1; //4 bytes for u8 + terminator
@@ -149,9 +149,9 @@ static void _tui_render_hotkeys(Screen *screen){
         if(i != HOTKEY_HINTS.total - 1){
         	//last hotkey doesnt have separator
         	//TODO: use the max_width instead?
-        	screen_format(NORMAL, COLOR_FG_INFO, COLOR_BG_SECONDARY);
+        	screen_format(NORMAL, screen->theme.colors[COLOR_INFO]);
             utf8_str_concat(hint_text, KEY_HINT_SEPARATOR);
-            screen_format(NORMAL, COLOR_FG_SECONDARY, COLOR_BG_SECONDARY);
+            screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
         }
 
         //add hint to the display_str
