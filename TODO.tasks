@@ -32,6 +32,9 @@ FEATURES:
 		not sure how this will interact with the navigation title
 	[ ]	tooltip layer functionality, for when mouse is available
 	[ ]	Theming: better support for fully theming the app colors, including default common themes
+		[x]	functioanlity @done (26-08-07 15:42)
+		[ ]	docs
+		[ ]	more included themes
 	[ ]	Responsive Layouts: Layouts should use the terminal size to determine how panels should be organized
 		for example, we could hide panels entirely and only show the focused one. We could also move a sidebar to the top or bottom. etc.
 	[ ]	Resize: windows support

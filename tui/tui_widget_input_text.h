@@ -46,6 +46,8 @@ typedef struct {
     size_t cursor; // char index
     size_t scroll; // char index
     bool   editing;
+    bool   selecting;
+    size_t selection_start;
     bool   caret_show;
     double caret_interval;
     double caret_last_shown;
@@ -73,7 +75,11 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     }
 
     //caret logic
-    tui_text_edit_tick_caret(&state->caret_last_shown, &state->caret_show, state->caret_interval);
+    tui_text_edit_tick_caret(
+        &state->caret_last_shown,
+        &state->caret_show,
+        state->caret_interval
+    );
 
     screen_set_utf8_str(
         screen,
@@ -84,7 +90,9 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
     if(data->string.length == 0){
         //show placeholder
         screen_format(NORMAL, screen->theme.colors[COLOR_SECONDARY]);
-        auto placeholder_substr = string_from_substr(data->placeholder, 0, data->input_width);
+        auto placeholder_substr = string_from_substr(
+            data->placeholder, 0, data->input_width
+        );
         screen_set_string(
             screen,
             position.x + PADDING + data->label_width,
@@ -97,7 +105,11 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
         auto text_substr = string_substr(
             &data->string,
             state->scroll,
-            clamp(data->string.length, 0, state->scroll + data->input_width) + state->scroll
+            clamp(
+                data->string.length,
+                0,
+                state->scroll + data->input_width
+            ) + state->scroll
         );
         screen_set_string(
             screen,
@@ -105,6 +117,31 @@ static void _tui_widget_input_text_render(Widget *widget, Screen *screen, vec2i 
             position.y,
             &text_substr
         );
+
+        //highlight selected text
+        if(state->selecting){
+            auto sel_start = min(state->selection_start, state->cursor);
+            auto sel_end   = max(state->selection_start, state->cursor);
+            auto txt_start = position.x + PADDING + data->label_width;
+
+            auto sel_substr = string_substr(
+                &data->string,
+                sel_start + state->scroll,
+                clamp(
+                    sel_end,
+                    0,
+                    state->scroll + data->input_width
+                ) + state->scroll
+            );
+
+            screen_format(NORMAL, screen->theme.colors[COLOR_TEXT_FOCUS]);
+            screen_set_string(
+                screen,
+                txt_start + sel_start - state->scroll,
+                position.y,
+                &sel_substr
+            );
+        }
     }
 
     if(widget->focused && !state->editing){
@@ -216,14 +253,24 @@ static void _tui_widget_input_text_backspace(Widget *widget){
     tui_text_edit_backspace(&d->string, &s->cursor);
 }
 
+static void _tui_widget_input_text_selection(InputEventKey key, _WidgetInputTextState *widget_state){
+    if(key.shift && !widget_state->selecting){
+        widget_state->selecting = true;
+        widget_state->selection_start = widget_state->cursor;
+    }else if(!key.shift){
+        widget_state->selecting = false;
+    }
+}
+
+
 static bool _tui_widget_input_text_input(Widget *widget, InputEvent input_event){
     _WidgetInputTextData  *widget_data  = widget->data;
     _WidgetInputTextState *widget_state = widget->state;
     switch (input_event.input_type) {
     case INPUT_KEY:
         auto key = input_event.key_event;
+        _tui_widget_input_text_selection(key, widget_state);
         switch (input_event.key_event.key) {
-        case KEY_F1:
         case KEY_HOME:
             if(!widget_state->editing) break;
             _tui_widget_input_text_reset_cursor(widget);
